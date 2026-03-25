@@ -179,6 +179,16 @@ pub mod system {
         "system.alerts"
     }
 
+    /// Command lifecycle events: `system.commands.{action}`
+    pub fn commands(action: &str) -> String {
+        format!("system.commands.{}", action)
+    }
+
+    /// Subscribe to all command lifecycle events: `system.commands.>`
+    pub fn all_commands() -> &'static str {
+        "system.commands.>"
+    }
+
     /// Configuration updates: `system.config`
     pub fn config() -> &'static str {
         "system.config"

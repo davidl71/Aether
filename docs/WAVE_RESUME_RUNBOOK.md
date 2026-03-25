@@ -1,8 +1,8 @@
 # Wave Resume Runbook (multi-session)
 
-Resume long-running parallel wave execution (Wave 0 → 1 → 3) across sessions. Progress is **Todo2 only**: no separate checkpoint file. Completed = task status `Done`; remaining = wave task IDs that are not `Done`.
+Resume long-running parallel wave execution (Wave 0 → 1 → 2) across sessions. Progress is **Todo2 only**: no separate checkpoint file. Completed = task status `Done`; remaining = wave task IDs that are not `Done`.
 
-**Wave definition:** [.cursor/plans/parallel-execution-waves.json](../../.cursor/plans/parallel-execution-waves.json) — `wave_0`, `wave_1`, `wave_3` task ID arrays.
+**Wave definition:** [.cursor/plans/parallel-execution-waves.json](../../.cursor/plans/parallel-execution-waves.json) — normalized `wave_0`, `wave_1`, `wave_2` task ID arrays.
 
 **Source plan:** [.cursor/plans/parallel-execution-subagents.plan.md](../../.cursor/plans/parallel-execution-subagents.plan.md)
 
@@ -10,8 +10,8 @@ Resume long-running parallel wave execution (Wave 0 → 1 → 3) across sessions
 
 ## 1. Current wave and order
 
-- **Order:** Wave 0 → Wave 1 → Wave 3. Do not start the next wave until the current wave has no remaining (non-Done) tasks.
-- **Current wave:** Start at Wave 0. After finishing all remaining tasks in Wave 0, move to Wave 1, then Wave 3.
+- **Order:** Wave 0 → Wave 1 → Wave 2. Do not start the next wave until the current wave has no remaining (non-Done) tasks.
+- **Current wave:** Start at Wave 0. After finishing all remaining tasks in Wave 0, move to Wave 1, then Wave 2.
 
 ---
 
@@ -34,7 +34,7 @@ Resume long-running parallel wave execution (Wave 0 → 1 → 3) across sessions
      (If your exarp-go supports `--status "In Progress"` run that too.) Collect the task IDs from the output, then **intersect** with the wave’s task IDs from the JSON.
 
 3. **Remaining list**  
-   The intersection is the list of task IDs still to run for that wave. If it’s empty, move to the next wave (1, then 3) and repeat from step 1.
+   The intersection is the list of task IDs still to run for that wave. If it’s empty, move to the next wave (1, then 2) and repeat from step 1.
 
 ---
 
@@ -53,7 +53,7 @@ Resume long-running parallel wave execution (Wave 0 → 1 → 3) across sessions
 ## 4. Repeat and finish
 
 - **Same or new session:** Go back to **§2** and recompute “remaining” for the current wave (Todo2 will now have more tasks marked Done).
-- **Next batch:** If remaining is non-empty, run the next 10–15 IDs (§3). If remaining is empty, advance to the next wave (0 → 1 → 3) and repeat from §2.
+- **Next batch:** If remaining is non-empty, run the next 10–15 IDs (§3). If remaining is empty, advance to the next wave (0 → 1 → 2) and repeat from §2.
 - **Done:** When all three waves have no remaining tasks, execution is complete.
 
 ---
@@ -66,4 +66,4 @@ Resume long-running parallel wave execution (Wave 0 → 1 → 3) across sessions
 | Wave IDs | `.cursor/plans/parallel-execution-waves.json` |
 | Remaining | Wave IDs ∩ (Todo + In Progress from exarp-go). |
 | Batch size | 10–15 task IDs per run. |
-| Order | Wave 0 → Wave 1 → Wave 3. |
+| Order | Wave 0 → Wave 1 → Wave 2. |

@@ -34,18 +34,18 @@ def load_waves(root: str) -> dict[str, list[str]]:
 
 def get_non_done_ids(root: str) -> set[str]:
     """Call exarp-go task_workflow list for Todo and In Progress; return union of task IDs."""
-    script = os.path.join(root, "scripts", "run_exarp_go_tool.sh")
+    script = os.path.join(root, "scripts", "run_exarp_go.sh")
     if not os.path.isfile(script) or not os.access(script, os.X_OK):
         return set()
     ids: set[str] = set()
     for status in ("Todo", "In Progress"):
         try:
             out = subprocess.run(
-                [script, "task_workflow", json.dumps({
+                [script, "-tool", "task_workflow", "-args", json.dumps({
                     "action": "list",
                     "status_filter": status,
                     "output_format": "json",
-                })],
+                }), "-quiet"],
                 cwd=root,
                 capture_output=True,
                 text=True,
@@ -76,7 +76,10 @@ def get_non_done_ids(root: str) -> set[str]:
     if not ids:
         try:
             out = subprocess.run(
-                [script, "task_workflow", json.dumps({"action": "list", "status_filter": "Todo"})],
+                [script, "-tool", "task_workflow", "-args", json.dumps({
+                    "action": "list",
+                    "status_filter": "Todo",
+                }), "-quiet"],
                 cwd=root,
                 capture_output=True,
                 text=True,

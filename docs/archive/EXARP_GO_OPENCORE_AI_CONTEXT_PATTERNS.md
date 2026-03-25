@@ -47,7 +47,7 @@ Keep behavior consistent across OpenCode, Cursor, and shell:
 | Test | `test` | `test:run` | `ctest --test-dir build --output-on-failure` |
 | Lint | `lint` | `lint:run` | `./scripts/run_linters.sh` |
 
-See [docs/AI_EDITOR_SETUP.md](AI_EDITOR_SETUP.md) for the full table.
+See [docs/archive/AI_EDITOR_SETUP.md](AI_EDITOR_SETUP.md) for the full table.
 
 ---
 

@@ -1,10 +1,10 @@
 {
   "mcpServers": {
     "exarp-go": {
-      "command": "~/go/bin/exarp-go",
+      "command": "/Users/davidl/go/bin/exarp-go",
       "args": [],
       "env": {
-        "PROJECT_ROOT": "/home/user/Aether",
+        "PROJECT_ROOT": "/Users/davidl/Projects/Trading/Aether",
         "EXARP_WATCH": "0",
         "EXARP_DEBUG_LOG": "0"
       }

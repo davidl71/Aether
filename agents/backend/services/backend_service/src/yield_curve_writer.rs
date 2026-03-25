@@ -1,24 +1,25 @@
 //! Writes box spread yield curve to NATS KV for the Yield tab.
-//! Key: `yield_curve.{symbol}` in the LIVE_STATE bucket. Value: protobuf `YieldCurve` (see proto/messages.proto).
-//! Backend build_curve decodes proto first, with JSON fallback for older entries.
+//! Key: `yield_curve.{symbol}` in the LIVE_STATE bucket. Values are source-annotated JSON
+//! opportunities for this backend writer path; backend readers still try proto first for older
+//! entries and other writers.
 //!
 //! **Pre-population:** Writes once immediately on spawn, then on an interval. This selects a
 //! yield-curve data source, not a trading or execution engine.
 //! - If `YIELD_CURVE_SOURCE=tws` (or config): call `tws_yield_curve::fetch_yield_curve_from_tws(symbol)` per symbol;
-//!   same env as daemon (TWS_HOST, TWS_PORT, YIELD_CURVE_USE_CLOSING, etc.).
+//!   same env as daemon (TWS_HOST, TWS_PORT, YIELD_CURVE_USE_CLOSING, etc.). This branch writes
+//!   source-annotated JSON so the TUI can keep the live source label.
 //! - Else if `YIELD_CURVE_SOURCE_URL` is set: HTTP GET that URL; expect JSON array of curve points (see docs).
 //!   Public reference: boxtrades.com (no API; use for comparison or host your own JSON).
 //! - Otherwise: query Yahoo option chains per symbol, then fall back to synthetic placeholder points when Yahoo is unavailable.
 //! See docs/platform/BOX_SPREAD_YIELD_CURVE_TWS.md and TWS_YIELD_CURVE_KV_WRITER.md.
 
-use api::yield_curve_proto::{encode_yield_curve_to_bytes, yield_curve_from_opportunities};
 use bytes::Bytes;
 use chrono::Utc;
 use market_data::yield_curve::YahooYieldCurveSource;
 use nats_adapter::async_nats::Client;
 use nats_adapter::NatsClient;
 use serde::Deserialize;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -89,6 +90,26 @@ fn default_strike_width() -> f64 {
 #[allow(dead_code)]
 fn default_liquidity_score() -> f64 {
     LIQUIDITY_SCORE
+}
+
+fn annotate_data_source(mut opportunities: Vec<Value>, source: &str) -> Vec<Value> {
+    for opportunity in &mut opportunities {
+        if let Some(obj) = opportunity.as_object_mut() {
+            obj.entry("data_source".to_string())
+                .or_insert_with(|| Value::String(source.to_string()));
+        }
+    }
+    opportunities
+}
+
+fn annotate_data_sources(
+    opportunities: HashMap<String, Vec<Value>>,
+    source: &str,
+) -> HashMap<String, Vec<Value>> {
+    opportunities
+        .into_iter()
+        .map(|(symbol, opportunities)| (symbol, annotate_data_source(opportunities, source)))
+        .collect()
 }
 
 /// DTE values (days to expiry) for synthetic curve points.
@@ -319,24 +340,13 @@ pub fn spawn(
                     match tws_yield_curve::fetch_yield_curve_from_tws(symbol).await {
                         Ok(opportunities) if !opportunities.is_empty() => {
                             let key = format!("{}.{}", KEY_PREFIX, symbol);
-                            let strike_width = opportunities
-                                .first()
-                                .and_then(|o| o.get("spread"))
-                                .and_then(|s| s.get("strike_width"))
-                                .and_then(|v| v.as_f64())
-                                .unwrap_or(STRIKE_WIDTH);
-                            let payload = match yield_curve_from_opportunities(
-                                &opportunities,
-                                symbol,
-                                strike_width,
-                            ) {
-                                Some(yc) => encode_yield_curve_to_bytes(&yc),
-                                None => serde_json::to_vec(&opportunities).unwrap_or_default(),
-                            };
+                            let payload =
+                                serde_json::to_vec(&annotate_data_source(opportunities, "tws"))
+                                    .unwrap_or_default();
                             if let Err(e) = kv.put(key.as_str(), Bytes::from(payload)).await {
                                 warn!(%key, error = %e, "yield curve writer: put failed");
                             } else {
-                                debug!(%key, points = opportunities.len(), "yield curve writer: wrote (TWS)");
+                                debug!(%key, "yield curve writer: wrote (TWS JSON)");
                             }
                         }
                         Ok(_) => debug!(%symbol, "yield curve writer: no TWS points"),
@@ -349,7 +359,7 @@ pub fn spawn(
             }
             let by_symbol: HashMap<String, Vec<serde_json::Value>> = if let Some(url) = source_url {
                 match fetch_curve_from_url(url).await {
-                    Some(map) if !map.is_empty() => map,
+                    Some(map) if !map.is_empty() => annotate_data_sources(map, "url"),
                     _ => {
                         debug!(
                             "yield curve writer: fetch from URL failed or empty, using synthetic"
@@ -410,21 +420,11 @@ pub fn spawn(
                     continue;
                 }
                 let key = format!("{}.{}", KEY_PREFIX, symbol);
-                let strike_width = opportunities
-                    .first()
-                    .and_then(|o| o.get("spread"))
-                    .and_then(|s| s.get("strike_width"))
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(STRIKE_WIDTH);
-                let payload =
-                    match yield_curve_from_opportunities(&opportunities, &symbol, strike_width) {
-                        Some(yc) => encode_yield_curve_to_bytes(&yc),
-                        None => serde_json::to_vec(&opportunities).unwrap_or_default(),
-                    };
+                let payload = serde_json::to_vec(&opportunities).unwrap_or_default();
                 if let Err(e) = kv.put(key.as_str(), Bytes::from(payload)).await {
                     warn!(%key, error = %e, "yield curve writer: put failed");
                 } else {
-                    debug!(%key, points = opportunities.len(), "yield curve writer: wrote");
+                    debug!(%key, points = opportunities.len(), "yield curve writer: wrote (JSON)");
                 }
             }
         }

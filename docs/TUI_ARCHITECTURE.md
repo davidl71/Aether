@@ -10,7 +10,7 @@
 
 The TUI is a full-screen operator console for monitoring and controlling the financing platform. It renders live tabs for Dashboard, Positions, Orders, Alerts, Logs, Settings, and related instruments, and receives real-time data from the Rust backend via NATS JetStream snapshots.
 
-Large-terminal operational workspaces are composed in `ui/mod.rs`, but the tab modules now expose reusable section renderers so Alerts, Logs, and Settings can be combined without duplicating layout logic.
+Large-terminal operational workspaces are composed in `ui/mod.rs`. Shared workspace membership, focus cycling, and hint metadata now live in `workspace.rs`, while Settings-specific key handling lives in `input_settings.rs` and the Settings tab is split across `settings_*` section modules so composed layouts do not duplicate shell logic.
 
 ---
 
@@ -67,10 +67,12 @@ pub enum Tab {
 tui_service/src/
 ├── main.rs               # entry point, main loop, terminal lifecycle
 ├── app.rs                # App struct, Tab enum, tick(), event dispatch
+├── workspace.rs          # shared workspace/focus model and SettingsSection
 ├── events.rs             # AppEvent, ConnectionState, StrategyCommand
 ├── models.rs             # TuiSnapshot, display DTOs
 ├── config.rs             # TuiConfig (loaded from TOML)
 ├── config_watcher.rs     # hot-reload watcher
+├── input_settings.rs     # Settings-only key handling and action application
 ├── nats.rs               # NATS snapshot subscriber
 ├── circuit_breaker.rs    # reconnect backoff
 ├── expiry_buckets.rs     # options expiry bucketing
@@ -82,6 +84,11 @@ tui_service/src/
     ├── alerts.rs         # Alerts tab + reusable alert view builder
     ├── logs.rs           # Logs tab + reusable logger widget builder
     ├── settings.rs       # Settings tab + reusable section renderers
+    ├── settings_config.rs
+    ├── settings_health.rs
+    ├── settings_hint.rs
+    ├── settings_sources.rs
+    ├── settings_symbols.rs
     ├── yield_curve.rs    # Yield tab
     ├── loans.rs          # Loans tab
     └── discount_bank.rs  # Discount bank tab
@@ -157,7 +164,9 @@ if app.render_state.is_dirty() || force_render {
 
 Expected: 40–60% reduction in render calls (Longbridge measured 70–80%).
 
-### Phase 2 — Code Organization (low priority)
+### Phase 2 — Code Organization
+
+The workspace/settings split described above is already implemented. Keep future key handling and pane-specific behavior in the dedicated modules instead of reintroducing tab-local shell logic.
 
 **`src/input.rs`** (T-1773952110096607000) — extract keyboard handling from main loop:
 ```rust

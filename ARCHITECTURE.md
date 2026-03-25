@@ -11,7 +11,7 @@ across 21+ accounts and multiple brokers.
 - **Active runtime**: Rust backend (`backend_service` :8080) and Rust TUI (`tui_service`). C++ native build is **removed** (see root `CMakeLists.txt`).
 - **Broker connectivity**: Rust-owned; IBKR routes and adapter in `agents/backend/crates/ib_adapter` and API in `crates/api`.
 - **Credential/config modeling**: provider credential helpers in `crates/api` now distinguish Alpaca paper vs live identities and separate trading vs data endpoints, even though Alpaca is not part of the active runtime path.
-- **Daemons / long-lived Rust services**: `backend_service`, `tui_service`, and `tws_yield_curve_daemon`, plus `nats` (4222). Each active Rust service now publishes a `system.health` heartbeat with service identity and PID metadata.
+- **Daemons / long-lived Rust services**: `backend_service`, `tui_service`, and `tws_yield_curve_daemon`, plus `nats` (4222). Each active Rust service now publishes a `system.health` heartbeat with service identity and PID metadata. The active product path remains read-only; execution-era code is isolated and not part of the operator flow.
 
 ## System Overview
 
@@ -173,6 +173,11 @@ dependency on `ib_adapter`, `broker_engine`, or REST client code**. All state ar
 subjects (`snapshot.<backend_id>`, `system.health`, `api.*`). The `rest_fallback` config field
 exists in `tui_service/src/config.rs` but is unused in the runtime.
 
+Workspace composition and nested focus now live in `tui_service/src/workspace.rs`; Settings-only
+key handling lives in `tui_service/src/input_settings.rs`, and the Settings panel is split across
+`ui/settings_*.rs` sections. Keep future UI wording aligned with those module boundaries instead
+of treating the tab shell as a generic fallback layer.
+
 Provider-level `mock` market data remains a normal `market_data` source with priority `0`, and
 the TUI treats it like any other source label. Service-local demo/bootstrap seeding now lives in
 `backend_service`, separate from provider selection. `api::mock_data` is limited to legacy/domain
@@ -180,7 +185,8 @@ fixture helpers and is no longer the owner of backend startup seeding.
 
 ### Health ownership
 
-`system.health` is a transport-level heartbeat bus, not a backend_service-only concern.
+`system.health` is a transport-level heartbeat bus, not a backend_service-only concern. The
+aggregate health surface distinguishes between the service map and the NATS transport entry:
 
 - `nats_adapter` owns the shared heartbeat publisher helper used by all active Rust services
 - each long-lived service publishes its own `BackendHealth` message with a stable service id

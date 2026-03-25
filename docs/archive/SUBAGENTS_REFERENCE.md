@@ -70,4 +70,4 @@ Used in **Claude Code** (not Cursor). Same roles as the Cursor `mcp_task` specia
 - **”Write or update docs for a module”** → Claude **docs-writer** agent.
 - **”List/update Todo2 tasks, docs health, scorecard”** → **exarp-go** MCP tools (with workingDirectory = project root).
 
-See also: `docs/AI_EDITOR_SETUP.md`, `.cursor/rules/ai-editors-skills-subagents.mdc`, `.cursor/rules/ai-context-standards.mdc`.
+See also: `docs/archive/AI_EDITOR_SETUP.md`, `.cursor/rules/ai-editors-skills-subagents.mdc`, `.cursor/rules/ai-context-standards.mdc`.

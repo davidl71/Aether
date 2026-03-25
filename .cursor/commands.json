@@ -220,38 +220,38 @@
     },
     {
       "name": "run:tui",
-      "description": "Run TUI (dry-run). Apple Silicon path; on Intel use run:tui-intel.",
-      "command": "./build/macos-arm64-debug/bin/ib_box_spread_tui --dry-run",
+      "description": "Run the active Rust TUI service.",
+      "command": "cd agents/backend && cargo run -p tui_service",
       "category": "run"
     },
     {
       "name": "run:tui-intel",
-      "description": "Run TUI (dry-run) on Intel macOS",
-      "command": "./build/macos-x86_64-debug/bin/ib_box_spread_tui --dry-run",
+      "description": "Run the active Rust TUI service.",
+      "command": "cd agents/backend && cargo run -p tui_service",
       "category": "run"
     },
     {
       "name": "run:cli",
-      "description": "Run CLI (dry-run). Apple Silicon path; on Intel use run:cli-intel.",
-      "command": "./build/macos-arm64-debug/bin/ib_box_spread --dry-run",
+      "description": "Run the active Rust CLI.",
+      "command": "cd agents/backend && cargo run -p cli -- --help",
       "category": "run"
     },
     {
       "name": "run:cli-intel",
-      "description": "Run CLI (dry-run) on Intel macOS",
-      "command": "./build/macos-x86_64-debug/bin/ib_box_spread --dry-run",
+      "description": "Run the active Rust CLI.",
+      "command": "cd agents/backend && cargo run -p cli -- --help",
       "category": "run"
     },
     {
       "name": "run:cli-with-config",
-      "description": "Run CLI with config (dry-run). Apple Silicon path; on Intel use run:cli-with-config-intel.",
-      "command": "./build/macos-arm64-debug/bin/ib_box_spread --config config/config.json --dry-run",
+      "description": "Show active Rust CLI help from the backend workspace.",
+      "command": "cd agents/backend && cargo run -p cli -- --help",
       "category": "run"
     },
     {
       "name": "run:cli-with-config-intel",
-      "description": "Run CLI with config (dry-run) on Intel macOS",
-      "command": "./build/macos-x86_64-debug/bin/ib_box_spread --config config/config.json --dry-run",
+      "description": "Show active Rust CLI help from the backend workspace.",
+      "command": "cd agents/backend && cargo run -p cli -- --help",
       "category": "run"
     },
     {

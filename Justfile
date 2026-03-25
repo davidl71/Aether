@@ -223,41 +223,50 @@ check-yield:
 # Secure credential management using config file (~/.config/aether/) + keyring fallback
 # Usage: just cred-set <name> <value> | just cred-get <name> | just cred-delete <name>
 
-# Set a credential (fred, fmp, polygon, alpaca-key, alpaca-secret, tastytrade-key, tastytrade-account)
+# Set a named credential (see `just cred-list` for the full set)
 cred-set name value:
-    cd agents/backend && cargo run -p cli -- cred set {{name}} {{value}}
+    @cd agents/backend && cargo run -p cli -- cred set {{name}} {{value}}
 
 # Set FRED API key (prompts for value)
 cred-set-fred:
-    cd agents/backend && cargo run -p cli -- cred set fred
+    @cd agents/backend && cargo run -p cli -- cred set fred
 
 # Set FMP API key
 cred-set-fmp:
-    cd agents/backend && cargo run -p cli -- cred set fmp
+    @cd agents/backend && cargo run -p cli -- cred set fmp
 
 # Set Polygon API key
 cred-set-polygon:
-    cd agents/backend && cargo run -p cli -- cred set polygon
+    @cd agents/backend && cargo run -p cli -- cred set polygon
 
-# Set Alpaca API credentials
+# Set Alpaca paper credentials
+cred-set-alpaca-paper:
+    @cd agents/backend && cargo run -p cli -- cred set alpaca-paper-key && cargo run -p cli -- cred set alpaca-paper-secret
+
+# Set Alpaca live credentials
+cred-set-alpaca-live:
+    @cd agents/backend && cargo run -p cli -- cred set alpaca-live-key && cargo run -p cli -- cred set alpaca-live-secret
+
+# Set both Alpaca paper and live credentials
 cred-set-alpaca:
-    cd agents/backend && cargo run -p cli -- cred set alpaca-key && cargo run -p cli -- cred set alpaca-secret
+    @just cred-set-alpaca-paper
+    @just cred-set-alpaca-live
 
 # Set Tastytrade credentials
 cred-set-tastytrade:
-    cd agents/backend && cargo run -p cli -- cred set tastytrade-key && cargo run -p cli -- cred set tastytrade-account
+    @cd agents/backend && cargo run -p cli -- cred set tastytrade-key && cargo run -p cli -- cred set tastytrade-account
 
 # Get a credential value (shows masked output)
 cred-get name:
-    cd agents/backend && cargo run -p cli -- cred get {{name}}
+    @cd agents/backend && cargo run -p cli -- cred get {{name}}
 
 # Delete a stored credential
 cred-delete name:
-    cd agents/backend && cargo run -p cli -- cred delete {{name}}
+    @cd agents/backend && cargo run -p cli -- cred delete {{name}}
 
 # List available credentials
 cred-list:
-    cd agents/backend && cargo run -p cli -- cred list
+    @cd agents/backend && cargo run -p cli -- cred list
 
 # Check which credentials are configured
 cred-status:

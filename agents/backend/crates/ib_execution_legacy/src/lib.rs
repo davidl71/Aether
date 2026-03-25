@@ -101,7 +101,11 @@ fn is_index(symbol: &str) -> bool {
 }
 
 fn exchange_for_option(symbol: &str) -> &'static str {
-    if is_index(symbol) { "CBOE" } else { "SMART" }
+    if is_index(symbol) {
+        "CBOE"
+    } else {
+        "SMART"
+    }
 }
 
 async fn resolve_contract_details(
@@ -129,7 +133,9 @@ async fn resolve_contract_details(
     let details = client
         .contract_details(&ib_contract)
         .await
-        .map_err(|e: IbError| BrokerError::ContractError(format!("contract_details failed: {}", e)))?;
+        .map_err(|e: IbError| {
+            BrokerError::ContractError(format!("contract_details failed: {}", e))
+        })?;
 
     if details.is_empty() {
         return Err(BrokerError::ContractError(format!(
@@ -151,7 +157,9 @@ async fn resolve_con_id(client: &Arc<IbClient>, leg: &OptionContract) -> Result<
         .ok_or_else(|| BrokerError::ContractError("missing contract details".to_string()))?;
     let con_id = detail.contract.contract_id;
     if con_id == 0 {
-        return Err(BrokerError::ContractError("contract_details returned con_id=0".to_string()));
+        return Err(BrokerError::ContractError(
+            "contract_details returned con_id=0".to_string(),
+        ));
     }
     Ok(con_id)
 }
@@ -187,8 +195,22 @@ impl BrokerExecution for IbExecutionAdapter {
         let order_id = client.next_order_id();
         let qty = quantity as f64;
         let result = match action {
-            OrderAction::Buy => client.order(&ib_contract).buy(qty).limit(limit_price).submit().await,
-            OrderAction::Sell => client.order(&ib_contract).sell(qty).limit(limit_price).submit().await,
+            OrderAction::Buy => {
+                client
+                    .order(&ib_contract)
+                    .buy(qty)
+                    .limit(limit_price)
+                    .submit()
+                    .await
+            }
+            OrderAction::Sell => {
+                client
+                    .order(&ib_contract)
+                    .sell(qty)
+                    .limit(limit_price)
+                    .submit()
+                    .await
+            }
         };
         result.map_err(|e: IbError| BrokerError::OrderFailed(e.to_string()))?;
         Ok(order_id)
@@ -205,7 +227,9 @@ impl BrokerExecution for IbExecutionAdapter {
             ));
         }
         if request.legs.is_empty() {
-            return Err(BrokerError::OrderFailed("BAG order must have at least one leg".to_string()));
+            return Err(BrokerError::OrderFailed(
+                "BAG order must have at least one leg".to_string(),
+            ));
         }
 
         let client = self
@@ -232,7 +256,9 @@ impl BrokerExecution for IbExecutionAdapter {
         } else {
             &request.exchange
         };
-        let mut builder = Contract::spread().in_currency(&request.currency).on_exchange(exchange);
+        let mut builder = Contract::spread()
+            .in_currency(&request.currency)
+            .on_exchange(exchange);
         for (leg, con_id) in request.legs.iter().zip(&con_ids) {
             let action = match leg.action {
                 OrderAction::Buy => LegAction::Buy,
@@ -249,20 +275,24 @@ impl BrokerExecution for IbExecutionAdapter {
         let qty = request.quantity as f64;
         let limit_price = request.limit_price.unwrap_or(0.0);
         let result = match request.order_action {
-            OrderAction::Buy => client
-                .order(&bag_contract)
-                .buy(qty)
-                .limit(limit_price)
-                .time_in_force(to_ib_tif(request.tif))
-                .submit()
-                .await,
-            OrderAction::Sell => client
-                .order(&bag_contract)
-                .sell(qty)
-                .limit(limit_price)
-                .time_in_force(to_ib_tif(request.tif))
-                .submit()
-                .await,
+            OrderAction::Buy => {
+                client
+                    .order(&bag_contract)
+                    .buy(qty)
+                    .limit(limit_price)
+                    .time_in_force(to_ib_tif(request.tif))
+                    .submit()
+                    .await
+            }
+            OrderAction::Sell => {
+                client
+                    .order(&bag_contract)
+                    .sell(qty)
+                    .limit(limit_price)
+                    .time_in_force(to_ib_tif(request.tif))
+                    .submit()
+                    .await
+            }
         };
         result.map_err(|e: IbError| BrokerError::OrderFailed(e.to_string()))?;
         Ok(order_id)

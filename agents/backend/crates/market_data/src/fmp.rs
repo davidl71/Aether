@@ -32,8 +32,6 @@ use crate::{
 const DEFAULT_BASE_URL: &str = "https://financialmodelingprep.com/api";
 const CALL_DELAY_MS: u64 = 50;
 const DAILY_LIMIT_FREE: u32 = 250;
-const DAILY_LIMIT_PROFESSIONAL: u32 = 5000;
-const BANDWIDTH_LIMIT_PROFESSIONAL_MB: u32 = 10240;
 
 #[derive(Debug, Clone)]
 pub struct HistoricalCandle {

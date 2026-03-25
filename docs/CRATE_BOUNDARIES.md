@@ -83,6 +83,7 @@ belong in `crates/ib_execution_legacy`, not the active `ib_adapter` crate.
 - API-facing read models and endpoint-adjacent logic
 - projection logic from shared state into client-facing DTOs
 - calculations that are specifically exposed as API workflows
+- explicit fixture helpers only when they are API/domain-shaped data, not service bootstrap
 
 It should not quietly absorb:
 
@@ -91,10 +92,15 @@ It should not quietly absorb:
 - ledger internals
 - TUI-only state
 - generic market-data provider code
+- service-local demo seeding or mock runtime behavior
 
 Current problem: `api` has become a mixed crate for DTOs, runtime state,
 finance utilities, loans, config-ish behavior, and integration helpers. It is
 the main candidate for future segmentation.
+
+Current correction: startup demo snapshot seeding and mock strategy simulation
+belong in `backend_service`, while provider-level `mock` quotes remain in
+`market_data` and should appear to clients as just another data source.
 
 ### 5. `market_data` owns provider integration and quote selection
 

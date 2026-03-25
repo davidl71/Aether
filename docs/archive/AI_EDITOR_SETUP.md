@@ -17,6 +17,30 @@ This project is structured so **Codex**, **OpenCode**, **Claude Code**,
 `mcp_task`, exarp-go, Claude custom agents) all use the same canonical context
 and commands.
 
+## Product use case framing
+
+AI tools should treat Aether as a **relative-value financing console** for
+comparing and managing multiple financing instruments, not as a narrow box
+spread bot and not as a generic ticker/watchlist app.
+
+Primary operator workflow:
+
+- Explore opportunities across **bonds, T-bills, synthetic boxes, bond ETFs,
+  and bank loans**
+- Express one instrument in terms of another on a common financing basis
+- Explore specific synthetic instruments through instrument-level views and
+  **OHLCV candle bars** where a synthetic time series is meaningful
+- Inspect and manage configuration plus daemon/service health from the TUI
+- Support portfolio allocation and execution decisions using cross-instrument
+  comparison rather than isolated per-instrument screens
+
+This framing should shape product suggestions, TUI/CLI workflows, analytics,
+and naming. The "Ticker vs Console" distinction matters here: compact terminal
+patterns from tracking apps are useful, but Aether should be modeled as an
+operator console for financing alternatives, relative-value discovery, and
+synthetic instrument exploration. User-facing configuration and routine daemon
+health should be treated as first-class TUI workflows.
+
 ## Canonical context (single source of truth)
 
 | Priority | File | Purpose |
@@ -102,7 +126,7 @@ things (e.g. commands, MCP), not *what* the project rules are.
   - Build/test: "Build: `ninja -C build` or use CMake presets; tests:
     `ctest --test-dir build --output-on-failure`."
 - **Reference:** Full list of subagents and when to use each:
-  [docs/SUBAGENTS_REFERENCE.md](SUBAGENTS_REFERENCE.md). Project skill:
+  [docs/archive/SUBAGENTS_REFERENCE.md](SUBAGENTS_REFERENCE.md). Project skill:
   [.cursor/skills/when-to-use-subagents.md](../.cursor/skills/when-to-use-subagents.md).
 - **exarp-go:** Uses PROJECT_ROOT; session prime and other tools can attach
   task context. Same canonical context applies.
@@ -118,7 +142,7 @@ Use these so behavior is consistent across Codex, OpenCode, Claude, and Cursor:
 | Action | Codex | OpenCode | Cursor command | Shell |
 |--------|-------|----------|----------------|-------|
 | Prime context | Read `AGENTS.md`, `CODEX.md`, key docs | `ai-context` or `prime-context` | — | — |
-| **exarp-go: prime / handoff / tasks / scorecard** | **See [docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](EXARP_GO_CURSOR_CLAUDE_OPENCODE.md)** — same MCP tools in all three; OpenCode: handoff, tasks, scorecard; Claude: prime, handoff, tasks, scorecard; Cursor: session-prime hook + commands. |
+| **exarp-go: prime / handoff / tasks / scorecard** | **See [docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](EXARP_GO_CURSOR_CLAUDE_OPENCODE.md)** — same MCP tools in all three; OpenCode: handoff, tasks, scorecard; Claude: prime, handoff, tasks, scorecard; Cursor: session-prime hook + commands. |
 | Build | `cmake --build --preset <preset>` | `build` | `build:debug` | `ninja -C build` |
 | Test | `ctest --preset <preset> --output-on-failure` | `test` | `test:run` | `ctest --test-dir build --output-on-failure` |
 | Lint | `./scripts/run_linters.sh` | `lint` | `lint:run` | `./scripts/run_linters.sh` |

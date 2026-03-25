@@ -20,11 +20,9 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                         let mut health = state.write().await;
                         health.nats_connected = true;
                         health.transport =
-                            NatsTransportHealthState::connected(Some(nats_url.clone()), Utc::now());
-                        health
-                            .transport
-                            .extra
-                            .insert("subject".to_string(), topics::system::health().to_string());
+                            NatsTransportHealthState::connected(Some(nats_url.clone()), Utc::now())
+                                .with_subject(topics::system::health())
+                                .with_role("subscriber");
                     }
                     info!(
                         "health aggregation subscribed to {}",
@@ -42,11 +40,12 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                                     state.write().await.backends.insert(backend, mapped);
                                 }
                                 let mut health = state.write().await;
-                                health.transport = health.transport.observed(Utc::now());
-                                health.transport.extra.insert(
-                                    "subject".to_string(),
-                                    topics::system::health().to_string(),
-                                );
+                                let transport = health
+                                    .transport
+                                    .observed(Utc::now())
+                                    .with_subject(topics::system::health())
+                                    .with_role("subscriber");
+                                health.transport = transport;
                             }
                         }
                         Err(err) => {
@@ -57,11 +56,9 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                                 Utc::now(),
                                 Some(err.to_string()),
                                 Some("failed to subscribe to system.health".to_string()),
-                            );
-                            health.transport.extra.insert(
-                                "subject".to_string(),
-                                topics::system::health().to_string(),
-                            );
+                            )
+                            .with_subject(topics::system::health())
+                            .with_role("subscriber");
                             warn!(%err, "failed to subscribe to system.health");
                         }
                     }
@@ -74,11 +71,9 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                             Utc::now(),
                             None,
                             Some("system.health subscription ended".to_string()),
-                        );
-                        health
-                            .transport
-                            .extra
-                            .insert("subject".to_string(), topics::system::health().to_string());
+                        )
+                        .with_subject(topics::system::health())
+                        .with_role("subscriber");
                     }
                 }
                 Err(err) => {
@@ -89,11 +84,9 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                         Utc::now(),
                         Some(err.to_string()),
                         Some("failed to connect health aggregation to NATS".to_string()),
-                    );
-                    health
-                        .transport
-                        .extra
-                        .insert("subject".to_string(), topics::system::health().to_string());
+                    )
+                    .with_subject(topics::system::health())
+                    .with_role("subscriber");
                     warn!(%err, "failed to connect health aggregation to NATS");
                 }
             }

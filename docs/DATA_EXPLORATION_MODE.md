@@ -65,6 +65,8 @@ Practical implications:
 - Prioritize provider- and snapshot-truth work over OMS-like infrastructure
 - Treat external integrations skeptically; add providers only when they improve
   data validity or operator understanding
+- Prefer clean cuts over migration shims unless a real operator-facing or
+  shipped-client constraint requires compatibility
 
 ## Dependency Guidance
 
@@ -76,6 +78,8 @@ When choosing dependencies or integrations:
   abstraction experiments
 - Remove or de-emphasize integration layers that only support disabled
   execution flows
+- Do not preserve backward-compatibility layers by default; keep them only when
+  there is a concrete user or runtime dependency
 
 ## Backlog Guidance
 

@@ -4,11 +4,14 @@
 //! separate from application state mutation.
 
 use api::RuntimePositionDto;
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::KeyEvent;
 
-use crate::app::{App, DetailPopupContent, InputMode, Tab};
-use crate::input_settings::{apply_settings_action, settings_key_action};
+use crate::app::{App, DetailPopupContent, InputMode};
+use crate::input_loans::{apply_loan_action, loan_form_key_action};
+use crate::input_settings::apply_settings_action;
+use crate::input_shell::{apply_shell_action, global_key_action, shell_key_action};
 use crate::input_tabs::tab_key_action;
+use crate::input_views::apply_view_action;
 
 /// Actions that can result from key events.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -117,28 +120,6 @@ pub enum Action {
     NoOp,
 }
 
-fn workspace_focus_target(app: &App, forward: bool) -> Option<Tab> {
-    let tabs = app.visible_workspace_spec()?.tabs;
-    let index = tabs.iter().position(|tab| *tab == app.active_tab)?;
-    let next = if forward {
-        (index + 1) % tabs.len()
-    } else {
-        (index + tabs.len() - 1) % tabs.len()
-    };
-    tabs.get(next).copied()
-}
-
-fn set_active_tab(app: &mut App, tab: Tab) {
-    app.active_tab = tab;
-    if app.active_tab == Tab::Yield {
-        app.sync_yield_curve_from_cache();
-    } else if app.active_tab == Tab::Loans {
-        app.request_loans_fetch();
-    } else if app.active_tab == Tab::DiscountBank {
-        app.request_discount_bank_fetch();
-    }
-}
-
 /// Converts a key event to an action, or None if the key is not handled.
 pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
     // Only handle Press events (crossterm 0.27+)
@@ -148,36 +129,14 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
 
     let input_mode = app.input_mode();
 
-    // Global actions that work even with overlays
-    match key.code {
-        KeyCode::Char('q') | KeyCode::Char('Q') => return Some(Action::Quit),
-        KeyCode::Char('?') => return Some(Action::ShowHelp),
-        KeyCode::Char('`') | KeyCode::Char('~') => return Some(Action::ToggleLogPanel),
-        KeyCode::Esc if matches!(input_mode, InputMode::Normal | InputMode::LogPanel) => {
-            return Some(Action::ToggleLogPanel)
-        }
-        _ => {}
+    if let Some(action) = global_key_action(input_mode.clone(), key.code) {
+        return Some(action);
     }
 
     match input_mode {
         InputMode::Help | InputMode::DetailPopup => return Some(Action::NoOp),
         InputMode::SettingsEditConfig | InputMode::SettingsAddSymbol => return Some(Action::NoOp),
-        InputMode::LoanForm => {
-            return match key.code {
-                KeyCode::Esc => Some(Action::LoansInputEscape),
-                KeyCode::Enter => Some(Action::LoansInputEnter),
-                KeyCode::Tab => Some(Action::LoansInputNavDown),
-                KeyCode::BackTab => Some(Action::LoansInputNavUp),
-                KeyCode::Up => Some(Action::LoansInputNavUp),
-                KeyCode::Down => Some(Action::LoansInputNavDown),
-                KeyCode::Backspace => Some(Action::LoansInputBackspace),
-                KeyCode::Char(c) if c.is_ascii_digit() || c == '-' || c == '.' => {
-                    Some(Action::LoansInputChar(c))
-                }
-                KeyCode::Char(c) if c.is_alphabetic() => Some(Action::LoansInputChar(c)),
-                _ => Some(Action::NoOp),
-            };
-        }
+        InputMode::LoanForm => return loan_form_key_action(key.code),
         _ => {}
     }
 
@@ -185,42 +144,7 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         return Some(action);
     }
 
-    match key.code {
-        KeyCode::Tab if workspace_focus_target(app, true).is_some() => Some(Action::WorkspaceFocusNext),
-        KeyCode::BackTab if workspace_focus_target(app, false).is_some() => {
-            Some(Action::WorkspaceFocusPrev)
-        }
-        KeyCode::Tab | KeyCode::Right => Some(Action::TabNext),
-        KeyCode::BackTab | KeyCode::Left => Some(Action::TabPrev),
-        KeyCode::Char('1') => Some(Action::JumpToTab(1)),
-        KeyCode::Char('2') => Some(Action::JumpToTab(2)),
-        KeyCode::Char('3') => Some(Action::JumpToTab(3)),
-        KeyCode::Char('4') => Some(Action::JumpToTab(4)),
-        KeyCode::Char('5') => Some(Action::JumpToTab(5)),
-        KeyCode::Char('6') => Some(Action::JumpToTab(6)),
-        KeyCode::Char('7') => Some(Action::JumpToTab(7)),
-        KeyCode::Char('8') => Some(Action::JumpToTab(8)),
-        KeyCode::Char('9') => Some(Action::JumpToTab(9)),
-        KeyCode::Char('0') => Some(Action::JumpToTab(0)),
-        KeyCode::Char('m') | KeyCode::Char('M') => Some(Action::ModeCycle),
-        KeyCode::Char('s') | KeyCode::Char('S') if app.active_tab != Tab::Orders => {
-            Some(Action::StrategyStart)
-        }
-        KeyCode::Char('t') | KeyCode::Char('T') if app.active_tab != Tab::Orders => {
-            Some(Action::StrategyStop)
-        }
-        KeyCode::Char('k') | KeyCode::Char('K') if app.active_tab != Tab::Orders => {
-            Some(Action::StrategyCancelAll)
-        }
-        KeyCode::Char('f') | KeyCode::Char('F')
-            if matches!(app.active_tab, Tab::Dashboard | Tab::Positions) =>
-        {
-            Some(Action::FmpDetail)
-        }
-        KeyCode::Char('f') | KeyCode::Char('F') => Some(Action::ForceSnapshot),
-        KeyCode::Char('p') | KeyCode::Char('P') => Some(Action::SplitPaneToggle),
-        _ => None,
-    }
+    shell_key_action(app, key.code)
 }
 
 /// Applies an action to the app state.
@@ -228,38 +152,16 @@ pub fn apply_action(app: &mut App, action: Action) {
     if apply_settings_action(app, action) {
         return;
     }
+    if apply_shell_action(app, action) {
+        return;
+    }
+    if apply_loan_action(app, action) {
+        return;
+    }
+    if apply_view_action(app, action) {
+        return;
+    }
     match action {
-        Action::Quit => {
-            app.should_quit = true;
-        }
-        Action::ShowHelp => {
-            app.show_help = true;
-        }
-        Action::ToggleLogPanel => {
-            app.show_log_panel = !app.show_log_panel;
-        }
-        Action::TabNext => {
-            set_active_tab(app, app.active_tab.next());
-        }
-        Action::TabPrev => {
-            set_active_tab(app, app.active_tab.prev());
-        }
-        Action::JumpToTab(n) => {
-            let target = match n {
-                1 => Tab::Dashboard,
-                2 => Tab::Positions,
-                3 => Tab::Charts,
-                4 => Tab::Orders,
-                5 => Tab::Alerts,
-                6 => Tab::Yield,
-                7 => Tab::Loans,
-                8 => Tab::DiscountBank,
-                9 => Tab::Scenarios,
-                0 => Tab::Settings,
-                _ => app.active_tab,
-            };
-            set_active_tab(app, target);
-        }
         Action::YieldRefresh => {
             let watchlist = app.watchlist();
             let symbol = watchlist
@@ -394,414 +296,6 @@ pub fn apply_action(app: &mut App, action: Action) {
                 None => {}
             }
         }
-        Action::OrdersScrollUp => {
-            app.orders_scroll = app.orders_scroll.saturating_sub(1);
-        }
-        Action::OrdersScrollDown => {
-            let len = app.filtered_orders_len();
-            if len > 0 {
-                app.orders_scroll = (app.orders_scroll + 1).min(len - 1);
-            }
-        }
-        Action::OrdersScrollPageUp => {
-            app.orders_scroll = app.orders_scroll.saturating_sub(10);
-        }
-        Action::OrdersScrollPageDown => {
-            let len = app.filtered_orders_len();
-            if len > 0 {
-                app.orders_scroll = (app.orders_scroll + 10).min(len - 1);
-            }
-        }
-        Action::OrdersDetail => {
-            if let Some(ref snap) = app.snapshot() {
-                let filtered = app.filtered_orders(snap);
-                let idx = app.orders_scroll.min(filtered.len().saturating_sub(1));
-                if let Some(order) = filtered.get(idx) {
-                    app.detail_popup = Some(DetailPopupContent::Order(order.clone()));
-                }
-            }
-        }
-        Action::OrdersFilterFocus => {
-            app.order_filter_active = true;
-            app.set_command_status(crate::app::CommandStatusView::success(
-                "orders_filter",
-                "Filter mode active: type symbol, status, or side; Esc to exit.",
-            ));
-        }
-        Action::OrdersFilterChar(c) => {
-            app.order_filter_active = true;
-            app.order_filter.push(c);
-        }
-        Action::OrdersFilterBackspace => {
-            app.order_filter.pop();
-        }
-        Action::OrdersFilterClear => {
-            app.order_filter.clear();
-            app.order_filter_active = false;
-            app.set_command_status(crate::app::CommandStatusView::success(
-                "orders_filter",
-                "Filter cleared.",
-            ));
-        }
-        Action::OrdersCancel => {
-            app.set_command_status(crate::app::CommandStatusView::disabled("cancel_all"));
-        }
-        Action::LoansScrollUp => {
-            app.loans_scroll = app.loans_scroll.saturating_sub(1);
-        }
-        Action::LoansScrollDown => {
-            let len = app
-                .loans_list
-                .as_ref()
-                .and_then(|r| r.as_ref().ok())
-                .map(|l| l.len())
-                .unwrap_or(0);
-            if len > 0 {
-                app.loans_scroll = (app.loans_scroll + 1).min(len - 1);
-            }
-        }
-        Action::LoansScrollPageUp => {
-            app.loans_scroll = app.loans_scroll.saturating_sub(10);
-        }
-        Action::LoansScrollPageDown => {
-            let len = app
-                .loans_list
-                .as_ref()
-                .and_then(|r| r.as_ref().ok())
-                .map(|l| l.len())
-                .unwrap_or(0);
-            if len > 0 {
-                app.loans_scroll = (app.loans_scroll + 10).min(len - 1);
-            }
-        }
-        Action::LoansNewLoan => {
-            app.loan_entry = Some(crate::app::LoanEntryState::new());
-        }
-        Action::LoansInputEscape => {
-            app.loan_entry = None;
-        }
-        Action::LoansInputEnter => {
-            if let Some(ref mut entry) = app.loan_entry {
-                if entry.current_field == 2 {
-                    entry.toggle_loan_type();
-                    entry.validation_error = None;
-                } else {
-                    entry.calculate_maturity();
-                    entry.calculate_monthly_payment();
-                    if entry.is_complete() {
-                        if let Some(loan_record) = entry.to_loan_record() {
-                            if let Some(ref tx) = app.loan_create_tx {
-                                let _ = tx.send(loan_record);
-                            }
-                            app.loan_entry = None;
-                        }
-                    } else {
-                        entry.validation_error =
-                            Some("Missing or invalid required fields".to_string());
-                    }
-                }
-            }
-        }
-        Action::LoansInputNavUp => {
-            if let Some(ref mut entry) = app.loan_entry {
-                entry.validation_error = None;
-                loop {
-                    if entry.current_field > 0 {
-                        entry.current_field -= 1;
-                    } else {
-                        entry.current_field = 9; // max editable field
-                    }
-                    // Skip fields 10/11 (monthly_payment, maturity - read-only)
-                    if entry.current_field < 10 {
-                        break;
-                    }
-                }
-            }
-        }
-        Action::LoansInputNavDown => {
-            if let Some(ref mut entry) = app.loan_entry {
-                entry.validation_error = None;
-                loop {
-                    if entry.current_field < 9 {
-                        entry.current_field += 1;
-                    } else {
-                        entry.current_field = 0;
-                    }
-                    // Skip fields 10/11 (monthly_payment, maturity - read-only)
-                    if entry.current_field < 10 {
-                        break;
-                    }
-                }
-            }
-        }
-        Action::LoansInputChar(c) => {
-            if let Some(ref mut entry) = app.loan_entry {
-                let field = entry.current_field;
-                let max_len = match field {
-                    0 => 50, // bank_name
-                    1 => 20, // account_number
-                    2 => 3,  // type (SHIR/CPI - no input)
-                    3 => 15, // principal
-                    4 => 6,  // interest_rate
-                    5 => 6,  // spread
-                    6 => 10, // origination_date
-                    7 => 10, // first_payment_date
-                    8 => 5,  // num_payments
-                    9 => 5,  // currency
-                    _ => 20, // read-only fields 10/11
-                };
-                let target = match field {
-                    0 => &mut entry.bank_name,
-                    1 => &mut entry.account_number,
-                    2 => return, // Type is toggled with Enter
-                    3 => &mut entry.principal,
-                    4 => &mut entry.interest_rate,
-                    5 => &mut entry.spread,
-                    6 => &mut entry.origination_date,
-                    7 => &mut entry.first_payment_date,
-                    8 => &mut entry.num_payments,
-                    9 => &mut entry.currency,
-                    _ => return, // monthly_payment / maturity are calculated
-                };
-                if target.len() < max_len {
-                    target.push(c);
-                }
-                // Auto-calculate when relevant fields change
-                entry.calculate_maturity();
-                entry.calculate_monthly_payment();
-            }
-        }
-        Action::LoansInputBackspace => {
-            if let Some(ref mut entry) = app.loan_entry {
-                let field = entry.current_field;
-                let target = match field {
-                    0 => &mut entry.bank_name,
-                    1 => &mut entry.account_number,
-                    2 => return, // Type is toggled
-                    3 => &mut entry.principal,
-                    4 => &mut entry.interest_rate,
-                    5 => &mut entry.spread,
-                    6 => &mut entry.origination_date,
-                    7 => &mut entry.first_payment_date,
-                    8 => &mut entry.num_payments,
-                    9 => &mut entry.currency,
-                    _ => return, // monthly_payment / maturity are read-only
-                };
-                target.pop();
-                entry.calculate_maturity();
-                entry.calculate_monthly_payment();
-            }
-        }
-        Action::DiscountBankScrollUp => {
-            app.discount_bank_scroll = app.discount_bank_scroll.saturating_sub(1);
-        }
-        Action::DiscountBankScrollDown => {
-            let len = app
-                .discount_bank_transactions
-                .as_ref()
-                .and_then(|r| r.as_ref().ok())
-                .map(|t| t.transactions.len())
-                .unwrap_or(0);
-            if len > 0 {
-                app.discount_bank_scroll = (app.discount_bank_scroll + 1).min(len - 1);
-            }
-        }
-        Action::DiscountBankScrollPageUp => {
-            app.discount_bank_scroll = app.discount_bank_scroll.saturating_sub(10);
-        }
-        Action::DiscountBankScrollPageDown => {
-            let len = app
-                .discount_bank_transactions
-                .as_ref()
-                .and_then(|r| r.as_ref().ok())
-                .map(|t| t.transactions.len())
-                .unwrap_or(0);
-            if len > 0 {
-                app.discount_bank_scroll = (app.discount_bank_scroll + 10).min(len - 1);
-            }
-        }
-        Action::DiscountBankRefresh => {
-            app.request_discount_bank_fetch();
-        }
-        Action::AlertsScrollUp => {
-            app.alerts_scroll = app.alerts_scroll.saturating_sub(1);
-        }
-        Action::AlertsScrollDown => {
-            let len = app
-                .snapshot()
-                .as_ref()
-                .map(|s| s.dto().alerts.len())
-                .unwrap_or(0);
-            if len > 0 {
-                app.alerts_scroll = (app.alerts_scroll + 1).min(len - 1);
-            }
-        }
-        Action::AlertsScrollPageUp => {
-            app.alerts_scroll = app.alerts_scroll.saturating_sub(10);
-        }
-        Action::AlertsScrollPageDown => {
-            let len = app
-                .snapshot()
-                .as_ref()
-                .map(|s| s.dto().alerts.len())
-                .unwrap_or(0);
-            if len > 0 {
-                app.alerts_scroll = (app.alerts_scroll + 10).min(len - 1);
-            }
-        }
-        Action::DashboardScrollUp => {
-            app.dashboard_scroll = app.dashboard_scroll.saturating_sub(1);
-        }
-        Action::DashboardScrollDown => {
-            let len = app
-                .snapshot()
-                .as_ref()
-                .map(|s| s.inner.symbols.len())
-                .unwrap_or(0);
-            if len > 0 {
-                app.dashboard_scroll = (app.dashboard_scroll + 1).min(len - 1);
-            }
-        }
-        Action::DashboardNavigateToChart => {
-            let symbol = app.snapshot().as_ref().and_then(|snap| {
-                let idx = app
-                    .dashboard_scroll
-                    .min(snap.inner.symbols.len().saturating_sub(1));
-                snap.inner.symbols.get(idx).map(|s| s.symbol.clone())
-            });
-            if let Some(symbol) = symbol {
-                app.active_tab = Tab::Charts;
-                app.symbol_for_chart = symbol;
-                app.chart_search_visible = false;
-                app.chart_search_input.clear();
-            }
-        }
-        Action::ScenariosScrollUp => {
-            app.scenarios_scroll = app.scenarios_scroll.saturating_sub(1);
-        }
-        Action::ScenariosScrollDown => {
-            let filtered = crate::ui::filtered_scenarios(app);
-            if !filtered.is_empty() {
-                app.scenarios_scroll =
-                    (app.scenarios_scroll + 1).min(filtered.len().saturating_sub(1));
-            }
-        }
-        Action::ScenariosScrollPageUp => {
-            app.scenarios_scroll = app.scenarios_scroll.saturating_sub(10);
-        }
-        Action::ScenariosScrollPageDown => {
-            let filtered = crate::ui::filtered_scenarios(app);
-            if !filtered.is_empty() {
-                app.scenarios_scroll =
-                    (app.scenarios_scroll + 10).min(filtered.len().saturating_sub(1));
-            }
-        }
-        Action::ScenariosDetail => {
-            let filtered = crate::ui::filtered_scenarios(app);
-            let idx = app.scenarios_scroll.min(filtered.len().saturating_sub(1));
-            if let Some(scenario) = filtered.get(idx) {
-                app.detail_popup = Some(DetailPopupContent::Scenario(scenario.clone()));
-            }
-        }
-        Action::ScenariosDteContract => {
-            app.scenarios_dte_half_width = (app.scenarios_dte_half_width - 1).max(0);
-        }
-        Action::ScenariosDteExpand => {
-            app.scenarios_dte_half_width = (app.scenarios_dte_half_width + 1).min(60);
-        }
-        Action::ScenariosExecute => {
-            app.set_command_status(crate::app::CommandStatusView::disabled("execute_scenario"));
-        }
-        Action::ScenariosCycleStrikeWidth => {
-            app.scenarios_strike_width_filter = match app.scenarios_strike_width_filter {
-                None => Some(25),
-                Some(25) => Some(50),
-                Some(50) => Some(100),
-                Some(_) => None,
-            };
-        }
-        Action::ChartSearchFocus => {
-            app.chart_search_visible = true;
-            app.chart_search_input.clear();
-            app.chart_search_results.clear();
-            app.chart_search_selected = 0;
-            crate::ui::charts::update_search_results(app);
-        }
-        Action::ChartSearchChar(c) => {
-            app.chart_search_input.push(c);
-            app.chart_search_selected = 0;
-            crate::ui::charts::update_search_results(app);
-        }
-        Action::ChartSearchBackspace => {
-            app.chart_search_input.pop();
-            app.chart_search_selected = 0;
-            crate::ui::charts::update_search_results(app);
-        }
-        Action::ChartSearchUp => {
-            if !app.chart_search_results.is_empty() {
-                app.chart_search_selected = app.chart_search_selected.saturating_sub(1);
-            }
-        }
-        Action::ChartSearchDown => {
-            app.chart_search_selected = (app.chart_search_selected + 1)
-                .min(app.chart_search_results.len().saturating_sub(1));
-        }
-        Action::ChartSearchEnter => {
-            if app.chart_search_input.is_empty() && !app.chart_search_results.is_empty() {
-                if let Some(selected) = app.chart_search_results.get(app.chart_search_selected) {
-                    app.symbol_for_chart = selected.clone();
-                    if !app.chart_search_history.contains(selected) {
-                        app.chart_search_history.push_front(selected.clone());
-                        if app.chart_search_history.len() > 10 {
-                            app.chart_search_history.pop_back();
-                        }
-                    }
-                }
-            } else if !app.chart_search_input.is_empty() {
-                app.symbol_for_chart = app.chart_search_input.clone();
-                if !app.chart_search_history.contains(&app.chart_search_input) {
-                    app.chart_search_history
-                        .push_front(app.chart_search_input.clone());
-                    if app.chart_search_history.len() > 10 {
-                        app.chart_search_history.pop_back();
-                    }
-                }
-            }
-            app.chart_search_visible = false;
-            app.chart_search_input.clear();
-        }
-        Action::ChartSearchEscape => {
-            app.chart_search_visible = false;
-            app.chart_search_input.clear();
-            app.chart_search_results.clear();
-        }
-        Action::ChartPillLeft => {
-            if app.chart_pill_row == 0 {
-                app.chart_expiry_index = app.chart_expiry_index.saturating_sub(1);
-            }
-        }
-        Action::ChartPillRight => {
-            if app.chart_pill_row == 0 {
-                app.chart_expiry_index += 1;
-            }
-        }
-        Action::ChartPillUp => {
-            if app.chart_pill_row > 0 {
-                app.chart_pill_row -= 1;
-            } else {
-                app.chart_pill_row = 1;
-            }
-        }
-        Action::ChartPillDown => {
-            if app.chart_pill_row < 1 {
-                app.chart_pill_row += 1;
-            }
-        }
-        Action::ChartPillSelect => {
-            if app.chart_pill_row == 1 {
-                app.chart_strike_index = (app.chart_strike_index + 1) % 5;
-            }
-        }
         Action::SettingsEditConfig => {
             if let Some((key, value)) = app.config_key_value_at(app.settings_config_key_index) {
                 app.settings_edit_config_key = Some(key);
@@ -812,162 +306,12 @@ pub fn apply_action(app: &mut App, action: Action) {
                 ));
             }
         }
-        Action::SettingsDelete => {
-            let wl = app.watchlist();
-            if !wl.is_empty() && app.settings_symbol_index < wl.len() {
-                let mut list = app
-                    .watchlist_override
-                    .clone()
-                    .unwrap_or_else(|| app.config.watchlist.clone());
-                list.remove(app.settings_symbol_index);
-                let new_len = list.len();
-                app.watchlist_override = Some(list);
-                app.settings_symbol_index =
-                    app.settings_symbol_index.min(new_len.saturating_sub(1));
-                app.push_toast(
-                    "Symbol removed from watchlist.",
-                    crate::app::ToastLevel::Info,
-                );
-            }
-        }
-        Action::SettingsReset => {
-            app.watchlist_override = None;
-            app.push_toast("Watchlist reset to config.", crate::app::ToastLevel::Info);
-        }
-        Action::LogScrollUp => {
-            app.log_state.transition(tui_logger::TuiWidgetEvent::UpKey);
-        }
-        Action::LogScrollDown => {
-            app.log_state
-                .transition(tui_logger::TuiWidgetEvent::DownKey);
-        }
-        Action::LogPageUp => {
-            app.log_state
-                .transition(tui_logger::TuiWidgetEvent::PrevPageKey);
-        }
-        Action::LogPageDown => {
-            app.log_state
-                .transition(tui_logger::TuiWidgetEvent::NextPageKey);
-        }
-        Action::LogLevelUp => {
-            app.log_state
-                .transition(tui_logger::TuiWidgetEvent::PlusKey);
-            app.log_display_level = match app.log_display_level {
-                log::LevelFilter::Trace => log::LevelFilter::Debug,
-                log::LevelFilter::Debug => log::LevelFilter::Info,
-                log::LevelFilter::Info => log::LevelFilter::Warn,
-                log::LevelFilter::Warn => log::LevelFilter::Error,
-                log::LevelFilter::Error => log::LevelFilter::Error,
-                _ => app.log_display_level,
-            };
-            tui_logger::set_default_level(app.log_display_level);
-        }
-        Action::LogLevelDown => {
-            app.log_state
-                .transition(tui_logger::TuiWidgetEvent::MinusKey);
-            app.log_display_level = match app.log_display_level {
-                log::LevelFilter::Error => log::LevelFilter::Warn,
-                log::LevelFilter::Warn => log::LevelFilter::Info,
-                log::LevelFilter::Info => log::LevelFilter::Debug,
-                log::LevelFilter::Debug => log::LevelFilter::Trace,
-                log::LevelFilter::Trace => log::LevelFilter::Trace,
-                _ => app.log_display_level,
-            };
-            tui_logger::set_default_level(app.log_display_level);
-        }
-        Action::LogHide => {
-            app.log_state
-                .transition(tui_logger::TuiWidgetEvent::HideKey);
-        }
-        Action::LogEscape => {
-            app.log_state
-                .transition(tui_logger::TuiWidgetEvent::EscapeKey);
-        }
-        Action::LogLevelError => {
-            app.log_display_level = log::LevelFilter::Error;
-            tui_logger::set_default_level(log::LevelFilter::Error);
-        }
-        Action::LogLevelWarn => {
-            app.log_display_level = log::LevelFilter::Warn;
-            tui_logger::set_default_level(log::LevelFilter::Warn);
-        }
-        Action::LogLevelInfo => {
-            app.log_display_level = log::LevelFilter::Info;
-            tui_logger::set_default_level(log::LevelFilter::Info);
-        }
-        Action::LogLevelDebug => {
-            app.log_display_level = log::LevelFilter::Debug;
-            tui_logger::set_default_level(log::LevelFilter::Debug);
-        }
-        Action::ModeCycle => {
-            app.set_command_status(crate::app::CommandStatusView::disabled("set_mode"));
-        }
-        Action::StrategyStart => {
-            app.set_command_status(crate::app::CommandStatusView::disabled("start"));
-        }
-        Action::StrategyStop => {
-            app.set_command_status(crate::app::CommandStatusView::disabled("stop"));
-        }
-        Action::StrategyCancelAll => {
-            app.set_command_status(crate::app::CommandStatusView::disabled("cancel_all"));
-        }
-        Action::ForceSnapshot => {
-            app.set_command_status(crate::app::CommandStatusView::disabled("publish_snapshot"));
-        }
-        Action::FmpDetail => {
-            // Get symbol from selected row depending on active tab
-            let symbol = if app.active_tab == Tab::Dashboard {
-                app.snapshot().as_ref().and_then(|snap| {
-                    snap.inner
-                        .symbols
-                        .get(app.dashboard_scroll)
-                        .map(|s| s.symbol.clone())
-                })
-            } else {
-                // Positions tab — use root symbol (first whitespace-delimited token)
-                app.snapshot().as_ref().and_then(|snap| {
-                    let (_display_len, index_map, _combo_key_per_row) =
-                        crate::ui::positions_display_info(
-                            &snap.dto().positions,
-                            app.positions_combo_view,
-                            &app.positions_expanded_combos,
-                        );
-                    if let Some(Some(pos_idx)) = index_map.get(app.positions_scroll) {
-                        snap.dto().positions.get(*pos_idx).map(|p| {
-                            p.symbol
-                                .split_whitespace()
-                                .next()
-                                .unwrap_or(&p.symbol)
-                                .to_string()
-                        })
-                    } else {
-                        None
-                    }
-                })
-            };
-            if let Some(sym) = symbol {
-                app.fetch_fmp(sym);
-            }
-        }
-        Action::SplitPaneToggle => {
-            app.split_pane = !app.split_pane;
-            app.positions_scroll = 0;
-        }
-        Action::WorkspaceFocusPrev => {
-            if let Some(target) = workspace_focus_target(app, false) {
-                set_active_tab(app, target);
-            }
-        }
-        Action::WorkspaceFocusNext => {
-            if let Some(target) = workspace_focus_target(app, true) {
-                set_active_tab(app, target);
-            }
-        }
         Action::SettingsScrollUp
         | Action::SettingsScrollDown
         | Action::SettingsAddSymbol
         | Action::SettingsSectionPrev
         | Action::SettingsSectionNext
         | Action::NoOp => {}
+        _ => {}
     }
 }

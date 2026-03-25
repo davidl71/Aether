@@ -9,7 +9,7 @@
 //! parsing; when inference cannot determine type (e.g. BAG with no parseable leg symbols), we
 //! fall back to the broker's `strategy` field (e.g. "Box") so the UI shows "Box" correctly.
 
-use crate::runtime_state::RuntimePositionDto;
+use crate::snapshot_view::RuntimePositionDto;
 
 /// Inferred combo/option strategy type for a group of legs.
 #[derive(Clone, Debug, PartialEq, Eq)]

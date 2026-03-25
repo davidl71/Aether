@@ -8,7 +8,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use nats_adapter::proto::v1 as pb;
 use prost_types::Timestamp;
 
-use crate::runtime_state::{
+use crate::snapshot_view::{
     RuntimeDecisionDto, RuntimeHistoricPositionDto, RuntimeOrderDto, RuntimePositionDto,
     RuntimeSnapshotDto,
 };

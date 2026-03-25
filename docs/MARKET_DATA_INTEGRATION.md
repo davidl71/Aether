@@ -118,6 +118,21 @@ into the aggregator used by the backend.
 - the active provider is `IbAdapter`
 - the remaining gap is service-side event-consumer wiring
 
+### 4. Yield Curve Source Labels
+
+The backend-service yield curve writer now stores source-annotated JSON
+opportunities for the common fallback paths:
+
+- `tws`
+- `url`
+- `yahoo`
+- `synthetic`
+
+The API read model preserves those labels so the TUI can explain whether the
+current curve came from a live TWS pull, a Yahoo fallback, or synthetic data.
+Proto KV entries from older writers are still accepted, but they do not carry
+the same source fidelity yet.
+
 ---
 
 ## Data Flow

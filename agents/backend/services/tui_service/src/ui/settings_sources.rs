@@ -126,12 +126,12 @@ fn settings_source_rows(app: &App) -> Vec<Row<'static>> {
                 ("disabled", Color::DarkGray)
             };
 
-            let cred_color =
-                if has_cred || s.name == "yahoo" || s.name == "tws" || s.name == "mock" {
-                    Color::Green
-                } else {
-                    Color::Red
-                };
+            let cred_color = if has_cred || s.name == "yahoo" || s.name == "tws" || s.name == "mock"
+            {
+                Color::Green
+            } else {
+                Color::Red
+            };
 
             Row::new([
                 Cell::from(s.name),

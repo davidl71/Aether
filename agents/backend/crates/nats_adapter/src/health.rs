@@ -26,6 +26,19 @@ pub struct NatsTransportHealthState {
 }
 
 impl NatsTransportHealthState {
+    pub fn with_extra(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        self.extra.insert(key.into(), value.into());
+        self
+    }
+
+    pub fn with_subject(self, subject: impl Into<String>) -> Self {
+        self.with_extra("subject", subject)
+    }
+
+    pub fn with_role(self, role: impl Into<String>) -> Self {
+        self.with_extra("role", role)
+    }
+
     pub fn connected(url: Option<String>, updated_at: DateTime<Utc>) -> Self {
         Self {
             connected: true,
@@ -70,22 +83,35 @@ impl NatsTransportHealthState {
         observed
     }
 
+    pub fn subject(&self) -> Option<&str> {
+        self.extra.get("subject").map(String::as_str)
+    }
+
+    pub fn role(&self) -> Option<&str> {
+        self.extra.get("role").map(String::as_str)
+    }
+
+    pub fn is_stale_at(&self, now: DateTime<Utc>, stale_after: TimeDelta) -> bool {
+        self.connected
+            && self
+                .age_secs_at(now)
+                .is_some_and(|age_secs| age_secs > stale_after.num_seconds())
+    }
+
     pub fn effective_at(&self, now: DateTime<Utc>, stale_after: TimeDelta) -> Self {
         let mut effective = self.clone();
-        if self.connected {
+        if self.is_stale_at(now, stale_after) {
             if let Some(age_secs) = self.age_secs_at(now) {
-                if age_secs > stale_after.num_seconds() {
-                    effective.status = "degraded".to_string();
-                    if effective.hint.is_none() {
-                        effective.hint = Some(format!("stale NATS transport ({}s old)", age_secs));
-                    }
-                    effective
-                        .extra
-                        .insert("stale".to_string(), "true".to_string());
-                    effective
-                        .extra
-                        .insert("age_secs".to_string(), age_secs.to_string());
+                effective.status = "degraded".to_string();
+                if effective.hint.is_none() {
+                    effective.hint = Some(format!("stale NATS transport ({}s old)", age_secs));
                 }
+                effective
+                    .extra
+                    .insert("stale".to_string(), "true".to_string());
+                effective
+                    .extra
+                    .insert("age_secs".to_string(), age_secs.to_string());
             }
         }
         effective
@@ -110,6 +136,13 @@ pub fn spawn_health_publisher(
     }
 
     let subject = topics::system::health().to_string();
+    let mut extra = extra;
+    extra
+        .entry("subject".to_string())
+        .or_insert_with(|| subject.clone());
+    extra
+        .entry("role".to_string())
+        .or_insert_with(|| "publisher".to_string());
     tokio::spawn(async move {
         let mut ticker = time::interval(Duration::from_secs(interval_secs));
         ticker.tick().await;

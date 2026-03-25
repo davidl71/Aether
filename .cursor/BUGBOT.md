@@ -43,8 +43,7 @@ Multi-asset synthetic financing platform; **Rust-first**. Rust backend (`agents/
 ## Testing Requirements
 
 - **All tests must pass** before merging
-- Tests mirror source file names (use Catch2 framework)
-- Run: `ctest --output-on-failure`
+- Run the relevant active Rust test commands (`just test` or `cargo test` in `agents/backend/`)
 - New features require corresponding tests
 - Critical trading logic requires comprehensive test coverage
 

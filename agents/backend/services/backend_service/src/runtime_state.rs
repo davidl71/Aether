@@ -713,6 +713,9 @@ pub fn apply_market_event(snapshot: &mut SystemSnapshot, event: &MarketDataEvent
     market_state.project_into_snapshot(snapshot);
 }
 
+/// Projects a legacy strategy decision snapshot into the read-only runtime
+/// model for demo/testing flows. This updates snapshot-visible positions and
+/// orders only; it does not place live broker orders.
 pub fn apply_strategy_execution(
     snapshot: &mut SystemSnapshot,
     decision: StrategyDecisionSnapshot,
@@ -758,7 +761,7 @@ mod tests {
     }
 
     #[test]
-    fn strategy_execution_updates_positions() {
+    fn legacy_strategy_projection_updates_positions() {
         let mut snapshot = SystemSnapshot::default();
         let update = apply_strategy_execution(
             &mut snapshot,

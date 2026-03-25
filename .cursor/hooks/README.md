@@ -14,4 +14,4 @@ Hooks in this directory run at specific Cursor lifecycle events (e.g. when a new
 ## Reference
 
 - exarp-go (same pattern): `.cursor/hooks/session-prime.sh` in the exarp-go repo.
-- This repo: `docs/EXARP_GO_SCRIPTS_AND_PATTERNS.md`, `docs/SUBAGENTS_REFERENCE.md`.
+- This repo: `docs/archive/EXARP_GO_SCRIPTS_AND_PATTERNS.md`, `docs/archive/SUBAGENTS_REFERENCE.md`.

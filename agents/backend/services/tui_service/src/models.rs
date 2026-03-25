@@ -12,14 +12,6 @@ pub enum SnapshotSource {
     Nats,
 }
 
-impl SnapshotSource {
-    pub fn label(&self) -> &'static str {
-        match self {
-            Self::Nats => "NATS",
-        }
-    }
-}
-
 /// Latest snapshot received by the TUI (unified api::SystemSnapshot) plus display DTO and metadata.
 #[derive(Clone)]
 pub struct TuiSnapshot {
@@ -55,6 +47,11 @@ impl TuiSnapshot {
     #[inline]
     pub fn dto(&self) -> &RuntimeSnapshotDto {
         &self.display_dto
+    }
+
+    #[inline]
+    pub fn refresh_display_dto(&mut self) {
+        self.display_dto = RuntimeSnapshotDto::from(&self.inner);
     }
 
     /// Seconds since this snapshot was received.

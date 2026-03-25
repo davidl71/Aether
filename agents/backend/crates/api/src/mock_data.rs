@@ -1,9 +1,9 @@
-//! Centralized mock data generation for all backends.
-//! Used by backend_service for snapshot seeding and by NATS handlers when real data is unavailable
-//! (no Discount Bank file, no loan DB, no FRED API key, no FMP API key).
+//! Legacy fixture helpers for API-adjacent domains.
+//! These helpers are suitable for tests, manual tooling, or future explicit demo endpoints.
+//! Service-local bootstrap/demo seeding now lives in `backend_service`.
 //!
-//! **Mock data sources:** Snapshot (positions, orders, historic, symbols), Loans, Discount Bank,
-//! Finance rates (SOFR, Treasury), FMP (income statement, balance sheet, cash flow, quote).
+//! **Fixture areas:** Loans, Discount Bank, Finance rates (SOFR, Treasury),
+//! FMP (income statement, balance sheet, cash flow, quote), and scenario placeholders.
 //!
 //! **Market data:** Yahoo Finance (`yahoo`) is the default provider (free, no API key).
 //! Fallback to `mock` or `polygon` (requires API key) via `market_data.provider` config.
@@ -20,178 +20,18 @@ use crate::finance_rates::{
     TreasuryBenchmarksResponse,
 };
 use crate::loans::{LoanRecord, LoanStatus, LoanType};
-use crate::state::{
-    Alert, CandleSnapshot, HistoricPosition, OrderSnapshot, PositionSnapshot, SymbolSnapshot,
-    SystemSnapshot,
-};
-
-/// Default symbols used when none provided (European-style indices).
-pub const DEFAULT_MOCK_SYMBOLS: &[&str] = &["SPX", "XSP", "NDX"];
-
-/// Seeds a snapshot with mock positions, orders, historic positions, symbol quotes, and alerts.
-/// Only fills empty vecs; does not clear existing data. Symbols default to DEFAULT_MOCK_SYMBOLS.
-pub fn seed_snapshot(snapshot: &mut SystemSnapshot, symbols: &[String]) {
-    let symbols_slice: &[String] = if symbols.is_empty() {
-        &DEFAULT_MOCK_SYMBOLS
-            .iter()
-            .map(|s| (*s).to_string())
-            .collect::<Vec<_>>()
-    } else {
-        symbols
-    };
-
-    if snapshot.positions.is_empty() {
-        snapshot
-            .positions
-            .extend(mock_positions(&snapshot.account_id));
-    }
-    if snapshot.orders.is_empty() {
-        snapshot.orders.extend(mock_orders());
-    }
-    if snapshot.historic.is_empty() {
-        snapshot.historic.extend(mock_historic());
-    }
-    if snapshot.symbols.is_empty() {
-        snapshot
-            .symbols
-            .extend(mock_symbol_snapshots(symbols_slice));
-    }
-    snapshot.metrics.portal_ok = true;
-    snapshot.metrics.tws_ok = true;
-    snapshot.metrics.questdb_ok = true;
-    snapshot.metrics.nats_ok = true;
-
-    snapshot
-        .alerts
-        .push(Alert::info("Mock runtime initialised"));
-    snapshot
-        .alerts
-        .push(Alert::info("Waiting for market data updates"));
-    while snapshot.alerts.len() > 32 {
-        snapshot.alerts.remove(0);
-    }
-}
+use crate::state::SymbolSnapshot;
 
 /// Mock box-spread scenarios per calendar day, DTE +4 around the money, for TUI scenario explorer.
 /// One or two scenarios per symbol with expiration = today + 4 days, strike_center near symbol last.
 ///
-/// NOTE: Stubbed out because `ScenarioDto` does not exist in `runtime_state.rs`.
+/// NOTE: Stubbed out because no active producer populates `ScenarioDto` yet.
 /// The proto-generated `BoxSpreadScenario` type exists in `nats_adapter::proto::v1` but the domain
 /// `ScenarioDto` was never defined. See T-1773933296882755000.
 #[allow(dead_code)]
 pub fn mock_scenarios(_symbols: &[SymbolSnapshot]) -> Vec<String> {
     // TODO: Re-implement once ScenarioDto is properly defined (T-1773933296882755000)
     Vec::new()
-}
-
-fn mock_positions(account_id: &str) -> Vec<PositionSnapshot> {
-    vec![
-        PositionSnapshot {
-            id: "POS-1".into(),
-            symbol: "XSP".into(),
-            quantity: 2,
-            cost_basis: 98.75,
-            mark: 101.10,
-            unrealized_pnl: 4.7,
-            account_id: Some(account_id.to_string()),
-            source: None,
-        },
-        PositionSnapshot {
-            id: "POS-2".into(),
-            symbol: "SPX".into(),
-            quantity: 1,
-            cost_basis: 5850.0,
-            mark: 5862.50,
-            unrealized_pnl: 12.50,
-            account_id: Some(account_id.to_string()),
-            source: None,
-        },
-    ]
-}
-
-fn mock_orders() -> Vec<OrderSnapshot> {
-    let now = Utc::now();
-    vec![
-        OrderSnapshot {
-            id: "ORD-1".into(),
-            symbol: "XSP".into(),
-            side: "BUY".into(),
-            quantity: 2,
-            status: "FILLED".into(),
-            submitted_at: now - TimeDelta::minutes(30),
-        },
-        OrderSnapshot {
-            id: "ORD-2".into(),
-            symbol: "NDX".into(),
-            side: "SELL".into(),
-            quantity: 1,
-            status: "SUBMITTED".into(),
-            submitted_at: now - TimeDelta::minutes(5),
-        },
-    ]
-}
-
-fn mock_historic() -> Vec<HistoricPosition> {
-    let now = Utc::now();
-    vec![
-        HistoricPosition {
-            id: "POS-0".into(),
-            symbol: "SPY".into(),
-            quantity: 2,
-            realized_pnl: 6.2,
-            closed_at: now - TimeDelta::hours(5),
-        },
-        HistoricPosition {
-            id: "POS-3".into(),
-            symbol: "QQQ".into(),
-            quantity: 1,
-            realized_pnl: -2.1,
-            closed_at: now - TimeDelta::hours(24),
-        },
-    ]
-}
-
-fn mock_symbol_snapshots(symbols: &[String]) -> Vec<SymbolSnapshot> {
-    let now = Utc::now();
-    let baselines: std::collections::HashMap<&str, f64> = [
-        ("SPX", 5860.0),
-        ("XSP", 101.0),
-        ("NDX", 20850.0),
-        ("SPY", 509.0),
-        ("QQQ", 445.0),
-    ]
-    .into_iter()
-    .collect();
-
-    symbols
-        .iter()
-        .map(|s| {
-            let last = baselines.get(s.as_str()).copied().unwrap_or(100.0);
-            let spread = 0.05;
-            let bid = last - spread / 2.0;
-            let ask = last + spread / 2.0;
-            SymbolSnapshot {
-                symbol: s.clone(),
-                last,
-                bid,
-                ask,
-                spread,
-                roi: 0.5,
-                maker_count: 1,
-                taker_count: 0,
-                volume: 1000,
-                candle: CandleSnapshot {
-                    open: last - 0.2,
-                    high: last + 0.3,
-                    low: last - 0.4,
-                    close: last,
-                    volume: 5000,
-                    entry: last - 0.1,
-                    updated: now,
-                },
-            }
-        })
-        .collect()
 }
 
 // ---- Loans ----
@@ -230,6 +70,7 @@ pub fn mock_loan_shir(
         payment_frequency_months: 1,
         status: LoanStatus::Active,
         last_update: Utc::now().to_rfc3339(),
+        currency: "ILS".into(),
     }
 }
 
@@ -259,6 +100,7 @@ pub fn mock_loan_cpi(
         payment_frequency_months: 1,
         status: LoanStatus::Active,
         last_update: Utc::now().to_rfc3339(),
+        currency: "ILS".into(),
     }
 }
 

@@ -362,7 +362,10 @@ mod tests {
 
         match expirations {
             Ok(timestamps) => {
-                assert!(!timestamps.is_empty(), "should have at least one expiration");
+                assert!(
+                    !timestamps.is_empty(),
+                    "should have at least one expiration"
+                );
                 eprintln!("SPY has {} expiration dates", timestamps.len());
                 for ts in timestamps.iter().take(3) {
                     let date = Utc.timestamp_opt(*ts, 0).single().map(|dt| dt.date_naive());

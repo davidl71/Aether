@@ -6,6 +6,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use api::{Alert, AlertLevel, CandleSnapshot};
 use market_data::MarketDataEvent;
 use nats_adapter::proto::v1 as pb;
 use nats_adapter::{topics, DlqService, NatsClient, Publisher};
@@ -17,6 +18,8 @@ use tracing::{error, info, warn};
 pub struct NatsIntegration {
     client: Option<Arc<NatsClient>>,
     market_data_publishers: Arc<RwLock<HashMap<String, Arc<Publisher<pb::MarketDataEvent>>>>>,
+    candle_publishers: Arc<RwLock<HashMap<String, Arc<Publisher<pb::CandleSnapshot>>>>>,
+    alert_publisher: Arc<RwLock<Option<Arc<Publisher<pb::Alert>>>>>,
     strategy_signal_publishers: Arc<RwLock<HashMap<String, Arc<Publisher<pb::StrategySignal>>>>>,
     strategy_decision_publishers:
         Arc<RwLock<HashMap<String, Arc<Publisher<pb::StrategyDecision>>>>>,
@@ -44,6 +47,8 @@ impl NatsIntegration {
         Some(Self {
             client: Some(client),
             market_data_publishers: Arc::new(RwLock::new(HashMap::new())),
+            candle_publishers: Arc::new(RwLock::new(HashMap::new())),
+            alert_publisher: Arc::new(RwLock::new(None)),
             strategy_signal_publishers: Arc::new(RwLock::new(HashMap::new())),
             strategy_decision_publishers: Arc::new(RwLock::new(HashMap::new())),
         })
@@ -86,6 +91,79 @@ impl NatsIntegration {
 
             if let Err(e) = publisher.publish(&proto_event).await {
                 error!(error = %e, symbol = %event.symbol, "Failed to publish market data to NATS");
+            }
+        }
+    }
+
+    /// Publish current OHLCV candle snapshot for a symbol.
+    pub async fn publish_candle(&self, symbol: &str, candle: &CandleSnapshot) {
+        if let Some(ref client) = self.client {
+            let publisher = {
+                let mut publishers = self.candle_publishers.write().await;
+                publishers
+                    .entry(symbol.to_string())
+                    .or_insert_with(|| {
+                        Arc::new(Publisher::new(
+                            client.as_ref().clone(),
+                            topics::market_data::candle(symbol),
+                            "backend",
+                            "CandleSnapshot",
+                        ))
+                    })
+                    .clone()
+            };
+
+            let proto_candle = pb::CandleSnapshot {
+                open: candle.open,
+                high: candle.high,
+                low: candle.low,
+                close: candle.close,
+                volume: candle.volume,
+                entry: candle.entry,
+                updated: Some(prost_types::Timestamp {
+                    seconds: candle.updated.timestamp(),
+                    nanos: candle.updated.timestamp_subsec_nanos() as i32,
+                }),
+            };
+
+            if let Err(e) = publisher.publish(&proto_candle).await {
+                error!(error = %e, symbol, "Failed to publish candle snapshot to NATS");
+            }
+        }
+    }
+
+    pub async fn publish_alert(&self, alert: &Alert) {
+        if let Some(ref client) = self.client {
+            let publisher = {
+                let mut publisher_guard = self.alert_publisher.write().await;
+                publisher_guard
+                    .get_or_insert_with(|| {
+                        Arc::new(Publisher::new(
+                            client.as_ref().clone(),
+                            topics::system::alerts(),
+                            "backend",
+                            "Alert",
+                        ))
+                    })
+                    .clone()
+            };
+
+            let level = match alert.level {
+                AlertLevel::Info => pb::AlertLevel::Info as i32,
+                AlertLevel::Warning => pb::AlertLevel::Warning as i32,
+                AlertLevel::Error => pb::AlertLevel::Error as i32,
+            };
+            let proto_alert = pb::Alert {
+                level,
+                message: alert.message.clone(),
+                timestamp: Some(prost_types::Timestamp {
+                    seconds: alert.timestamp.timestamp(),
+                    nanos: alert.timestamp.timestamp_subsec_nanos() as i32,
+                }),
+            };
+
+            if let Err(e) = publisher.publish(&proto_alert).await {
+                error!(error = %e, "Failed to publish alert to NATS");
             }
         }
     }
@@ -208,6 +286,8 @@ impl Default for NatsIntegration {
         Self {
             client: None,
             market_data_publishers: Arc::new(RwLock::new(HashMap::new())),
+            candle_publishers: Arc::new(RwLock::new(HashMap::new())),
+            alert_publisher: Arc::new(RwLock::new(None)),
             strategy_signal_publishers: Arc::new(RwLock::new(HashMap::new())),
             strategy_decision_publishers: Arc::new(RwLock::new(HashMap::new())),
         }

@@ -38,6 +38,9 @@ or stale states even when a provider is configured.
   is available.
 - Alerts can arrive live over `system.alerts` and be rendered from the active
   snapshot state.
+- Yield curves written by the backend-service writer now preserve source labels
+  for `tws`, `yahoo`, `url`, and `synthetic`, so the Yield tab can explain the
+  current curve source instead of guessing from the storage format.
 
 ## Remaining Gaps
 
@@ -46,6 +49,9 @@ or stale states even when a provider is configured.
   provider lost or whether a source was rejected for quality reasons.
 - The backend still emits some strategy/execution-oriented comments and logs in
   active code paths, which can weaken operator trust in read-only mode.
+- The standalone TWS daemon still writes proto-backed yield curves, so that
+  path does not yet preserve the same source labels as the backend-service JSON
+  writer.
 - Yield-curve live validation still requires a running backend/provider stack;
   it is not verifiable from static repo inspection alone.
 

@@ -19,9 +19,9 @@ It should not be treated as:
 - a synthetic-financing engine
 - a generic fallback for unrelated data providers
 
-If Alpaca ever becomes an execution path again, that should be a separate
-adapter boundary with explicit broker-engine ownership. The active codebase
-should not blur source resolution with order placement.
+If Alpaca execution is ever reintroduced, that should be a separate adapter
+boundary with explicit broker-engine ownership. The active codebase should not
+blur source resolution with order placement.
 
 ## 2. Current Rust Shape
 
@@ -83,4 +83,5 @@ The promising Rust/native libraries in the repo for later work are:
 ## 6. Practical Rule
 
 Use Alpaca as a source of truth for market data and identity, not as a
-placeholder for broker execution logic or yield-curve fallback behavior.
+placeholder for broker execution logic or yield-curve fallback behavior. In
+the current read-only product direction, Alpaca should remain source-only.

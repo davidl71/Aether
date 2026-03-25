@@ -1,14 +1,17 @@
 # Background-task lifecycle: current state and suggested improvements
 
-This document describes how background work (threads, asyncio tasks, timers) is started and stopped across the Python TUI, FastAPI backend services, and standalone scripts. It then suggests a clearer lifecycle so shutdown is predictable and testable.
+This document describes background-task lifecycle patterns across the project.
+The active terminal/runtime stack is now **Rust-first** (`agents/backend/`),
+including the live TUI service. Historical Python/Textual and FastAPI details
+are retained here only as migration context where explicitly marked.
 
 ---
 
 ## 1. Current state
 
-### 1.1 TUI (Textual app)
+### 1.1 Historical TUI (Textual app, retired)
 
-**Location:** `python/tui/app.py`, `python/tui/providers/`
+**Location:** historical `python/tui/app.py`, `python/tui/providers/`
 
 | Component | How it runs | Start | Stop | Notes |
 |-----------|-------------|--------|------|--------|
@@ -16,17 +19,30 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 | **BackendHealthAggregator** | Same: `Thread(target=_poll_loop, daemon=True)` | `on_mount`: `aggregator.start()` (if ports configured) | `on_unmount`: `aggregator.stop()`; also stopped/restarted in `_apply_config_reload` | Polls dashboard or per-backend `/api/health` every 2.5s. |
 | **Timers** | Textual `set_interval(callback)` | `on_mount`: 5 intervals (0.5s snapshot, 0.25s logs, 2s box spread, 30s bank accounts, 3s config reload) | Implicit when app exits | No explicit cancel; Textual cleans up with the app. |
 
-**Lifecycle:** Start order in `on_mount`: log handler → provider.start() → backend health aggregator.start() → set_interval(×5). Stop order in `on_unmount`: backend health aggregator.stop() → provider.stop(). No single “task registry”; each component manages its own thread.
+**Lifecycle:** Historical start order in `on_mount`: log handler →
+provider.start() → backend health aggregator.start() → set_interval(×5). Stop
+order in `on_unmount`: backend health aggregator.stop() → provider.stop(). No
+single “task registry”; each component managed its own thread.
 
 **Gaps:**
 
-- Intervals are not named or tracked; can’t cancel one without touching the app.
-- If `on_unmount` is skipped (e.g. hard kill), daemon threads exit with the process but in-flight work may not finish cleanly.
-- Config reload creates a new aggregator and starts it without a formal “replace previous” protocol beyond stop-then-start.
+- Historical note only. Do not use this section as guidance for the active Rust
+  TUI runtime.
+
+### 1.2 Active Rust TUI
+
+**Location:** `agents/backend/services/tui_service`
+
+- The active TUI is a Rust `ratatui` service driven by async/background tasks
+  in the Rust runtime, not a Python/Textual app.
+- Current architecture and planned improvements live in
+  [TUI_ARCHITECTURE.md](./TUI_ARCHITECTURE.md).
+- UX/runtime gaps for the active TUI live in
+  [TUI_AUDIT_2026_03_24.md](./TUI_AUDIT_2026_03_24.md).
 
 ---
 
-### 1.2 FastAPI backend services
+### 1.3 Historical FastAPI backend services
 
 **Locations:** Historical service locations included `python/integration/ib_service.py`,
 `alpaca_service.py`, `tastytrade_service.py`, `discount_bank_service.py`, and

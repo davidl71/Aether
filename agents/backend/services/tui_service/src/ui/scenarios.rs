@@ -236,7 +236,11 @@ pub fn render_scenarios(f: &mut Frame, app: &App, area: Rect) {
             .collect()
     };
 
-    let window: Vec<Row> = rows.into_iter().skip(scroll).take(visible_height.max(1)).collect();
+    let window: Vec<Row> = rows
+        .into_iter()
+        .skip(scroll)
+        .take(visible_height.max(1))
+        .collect();
 
     let table = Table::new(
         window,

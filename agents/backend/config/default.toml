@@ -10,8 +10,8 @@ max_position = 8
 max_notional = 250000.0
 
 [market_data]
-provider = "mock"
-# Options: "mock" | "polygon" | "tws"
+provider = "yahoo"
+# Options: "yahoo" | "fmp" | "polygon" | "tws" | "all" | "mock" (mock only for CI/offline testing)
 # For "tws": ensure TWS or IB Gateway is running (paper: 7497, live: 7496).
 # Env: TWS_HOST (default 127.0.0.1), TWS_PORT (optional; if unset, tries 7497, 4002, 7496, 4001), TWS_CLIENT_ID (default 0 for market data; positions use +1; yield-curve uses 10+2=12).
 # Default to European-style symbols: SPX, XSP, NDX (European exercise style)

@@ -4,7 +4,7 @@ How to implement the `BrokerEngine` trait for a new broker.
 
 ## Overview
 
-The `broker_engine` crate defines a broker-agnostic `BrokerEngine` trait. Each adapter (e.g., `IbAdapter`, `YatWSEngine`) implements this trait, allowing the backend to work with any broker through a unified interface.
+The `broker_engine` crate defines a broker-agnostic `BrokerEngine` trait. Each adapter (for example `IbAdapter`) implements this trait, allowing the backend to work with any broker through a unified interface.
 
 **Key files:**
 - Trait definition: `agents/backend/crates/broker_engine/src/traits.rs`
@@ -81,7 +81,7 @@ fn place_bag_order(&self, legs: &[ComboLeg], price: f64) -> ... {
     // Box spread = 4 legs:
     // Buy call lower strike, sell call upper strike
     // Buy put upper strike, sell put lower strike
-    let order = OptionsStrategyBuilder::box_spread(legs, price);
+    let order = build_combo_order(legs, price);
     self.place_order(order)
 }
 ```
@@ -162,6 +162,5 @@ mod tests {
 | Adapter | Key Features |
 |---------|--------------|
 | `ib_adapter` | TWS socket via ibapi, Box spreads, rate limiting |
-| `yatws_adapter` | TWS socket via yatws crate, similar to ib_adapter |
 
 See `docs/BACKEND_TYPE_COMPARISON.md` for detailed method coverage comparison.

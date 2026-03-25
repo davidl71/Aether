@@ -15,11 +15,6 @@ use api::finance_rates::{
     CurveResponse, YieldCurveComparisonRequest,
 };
 use api::loans::loans_response_proto;
-use api::mock_data::{
-    mock_discount_bank_accounts, mock_discount_bank_balance, mock_discount_bank_transactions,
-    mock_fmp_balance_sheet, mock_fmp_cash_flow, mock_fmp_income_statement, mock_fmp_quote,
-    mock_loans_list, mock_sofr_benchmarks, mock_treasury_benchmarks,
-};
 use api::quant::{
     calculate_box_spread, calculate_greeks, calculate_historical_volatility, calculate_iv,
     calculate_jelly_roll, calculate_ratio_spread, calculate_risk_metrics, calculate_strategy,
@@ -33,7 +28,6 @@ use api::{
 use broker_engine::BrokerEngine;
 use bytes::Bytes;
 use futures::StreamExt;
-use market_data::yield_curve::YahooYieldCurveSource;
 use market_data::FmpClient;
 use nats_adapter::async_nats::Client;
 use nats_adapter::{encode_envelope, topics, NatsClient};
@@ -89,67 +83,6 @@ const SUBJECT_CALCULATE_RATIO_SPREAD: &str = "api.calculate.ratio_spread";
 
 const SUBJECT_SNAPSHOT_PUBLISH_NOW: &str = "api.snapshot.publish_now";
 
-/// Sources for yield curve data with configurable fallback order.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum YieldCurveSource {
-    /// Live TWS option chain (requires TWS/Gateway running)
-    Tws,
-    /// Yahoo Finance options chain (live, internet-accessible)
-    Yahoo,
-    /// Synthetic curve (no live data, for testing/offline)
-    Synthetic,
-    /// Pre-cached from NATS KV (written by yield_curve_writer)
-    Kv,
-}
-
-impl YieldCurveSource {
-    /// Parse from string: "tws", "synthetic", "kv"
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s.trim().to_lowercase().as_str() {
-            "tws" => Some(Self::Tws),
-            "yahoo" | "yfinance" => Some(Self::Yahoo),
-            "synthetic" | "synth" => Some(Self::Synthetic),
-            "kv" | "cache" | "cached" => Some(Self::Kv),
-            _ => None,
-        }
-    }
-
-    pub fn default_fallback_order() -> Vec<Self> {
-        vec![Self::Kv, Self::Yahoo, Self::Synthetic, Self::Tws]
-    }
-
-    pub fn tws_first_order() -> Vec<Self> {
-        vec![Self::Tws, Self::Yahoo, Self::Synthetic, Self::Kv]
-    }
-
-    /// Synthetic-only fallback (no live data, for testing)
-    pub fn synthetic_only_order() -> Vec<Self> {
-        vec![Self::Synthetic]
-    }
-
-    /// Parse fallback order from env var YIELD_CURVE_FALLBACK (comma-separated, e.g. "kv,synthetic,tws")
-    pub fn from_env_fallback_order() -> Vec<Self> {
-        let fallback_str = std::env::var("YIELD_CURVE_FALLBACK").unwrap_or_default();
-        if fallback_str.is_empty() {
-            return Self::default_fallback_order();
-        }
-        fallback_str
-            .split(',')
-            .filter_map(|s| Self::from_str(s))
-            .collect()
-    }
-
-    /// Source label for logging/display
-    pub fn label(&self) -> &'static str {
-        match self {
-            Self::Tws => "TWS",
-            Self::Yahoo => "yahoo",
-            Self::Synthetic => "synthetic",
-            Self::Kv => "KV",
-        }
-    }
-}
-
 /// Default queue group for api.* request/reply when scaling multiple backends. Override with NATS_API_QUEUE_GROUP.
 const DEFAULT_API_QUEUE_GROUP: &str = "api";
 
@@ -181,14 +114,16 @@ pub fn spawn(
     state: SharedSnapshot,
     yield_curve_refresh_tx: Option<tokio::sync::mpsc::Sender<()>>,
     _broker_engine: Option<Arc<dyn BrokerEngine>>,
+    backend_id: String,
 ) {
     let nc = nats_client.client().clone();
     let nc_loans = nc.clone();
     let nc_strategy = nats_client.client().clone();
     let nc_snapshot = nats_client.client().clone();
     let state_snapshot = state.clone();
+    let snapshot_backend_id = backend_id.clone();
     tokio::spawn(async move {
-        run_snapshot_publish_now(nc_snapshot, state_snapshot).await;
+        run_snapshot_publish_now(nc_snapshot, state_snapshot, snapshot_backend_id).await;
     });
     tokio::spawn(async move {
         run_discount_bank(nc).await;
@@ -223,9 +158,9 @@ pub fn spawn(
     } else {
         let nc_fmp = nats_client.client().clone();
         tokio::spawn(async move {
-            run_fmp_mock(nc_fmp).await;
+            run_fmp_unconfigured(nc_fmp).await;
         });
-        info!("NATS API handlers spawned (discount_bank, loans, fmp_mock, finance_rates, calculate, strategy, ib.positions)");
+        info!("NATS API handlers spawned (discount_bank, loans, fmp_unconfigured, finance_rates, calculate, strategy, ib.positions)");
     }
     let nc_ib = nats_client.client().clone();
     tokio::spawn(async move {
@@ -423,7 +358,7 @@ async fn run_admin_set_mode(nc: Client, _state: SharedSnapshot) {
 
 /// Force-write current snapshot to NATS (point-in-time). Subscribes to api.snapshot.publish_now;
 /// on request, publishes current SystemSnapshot to snapshot.{backend_id} and replies with ok + generated_at.
-async fn run_snapshot_publish_now(nc: Client, state: SharedSnapshot) {
+async fn run_snapshot_publish_now(nc: Client, state: SharedSnapshot, backend_id: String) {
     let mut sub = match nc
         .queue_subscribe(SUBJECT_SNAPSHOT_PUBLISH_NOW.to_string(), api_queue_group())
         .await
@@ -435,7 +370,6 @@ async fn run_snapshot_publish_now(nc: Client, state: SharedSnapshot) {
         }
     };
     info!("subscribed to api.snapshot.publish_now (force snapshot write)");
-    let backend_id = std::env::var("BACKEND_ID").unwrap_or_else(|_| "backend".to_string());
     let subject = topics::snapshot::backend(&backend_id);
     let nc_events = nc.clone();
     while let Some(msg) = sub.next().await {
@@ -665,86 +599,54 @@ async fn run_finance_rates(
                     CurveRequest::Opportunities(_) => query.as_ref().and_then(|q| q.symbol.clone()),
                 };
 
-                // Granular fallback: try sources in configurable order until one succeeds
-                let fallback_order = YieldCurveSource::from_env_fallback_order();
+                // Serve yield curve from KV (written by yield_curve_writer) or TWS.
+                // HTTP fetches (Yahoo, Synthetic) are intentionally excluded here — they
+                // block a tokio worker for up to 20 s per call. The yield_curve_writer
+                // background task is the sole fetcher; this handler is read-only.
                 let is_empty = symbol.as_ref().map_or(false, |_sym| match &request {
                     CurveRequest::Opportunities(opps) => opps.is_empty(),
                     CurveRequest::Named { opportunities, .. } => opportunities.is_empty(),
                 });
 
-                let mut used_source: Option<YieldCurveSource> = None;
+                let mut used_tws = false;
 
                 if is_empty {
-                    for source in &fallback_order {
-                        match source {
-                            YieldCurveSource::Tws => {
-                                if let Some(ref sym) = symbol {
-                                    if let Ok(opportunities) =
-                                        tws_yield_curve::fetch_yield_curve_from_tws(sym).await
-                                    {
-                                        if !opportunities.is_empty() {
-                                            request = CurveRequest::Named {
-                                                opportunities,
-                                                symbol: Some(sym.clone()),
-                                            };
-                                            used_source = Some(YieldCurveSource::Tws);
-                                            debug!(symbol = %sym, "Using TWS yield curve");
-                                            break;
-                                        }
-                                    }
-                                }
+                    if let Some(ref sym) = symbol {
+                        // 1. KV cache (populated by yield_curve_writer every ~60 s)
+                        if let Some(curve_from_kv) =
+                            load_yield_curve_from_kv(&nc_build, sym, query.as_ref()).await
+                        {
+                            let spot = reference_spot_for_report(sym);
+                            let mut curve = curve_from_kv;
+                            curve.underlying_price = Some(spot);
+                            fill_missing_strikes(&mut curve, spot);
+                            for p in curve.points.iter_mut() {
+                                p.data_source = Some("KV".to_string());
                             }
-                            YieldCurveSource::Synthetic => {
-                                if let Some(ref sym) = symbol {
-                                    let live_rate = fetch_live_base_rate(&nc_build).await;
-                                    let opportunities =
-                                        crate::yield_curve_writer::synthetic_opportunities(
-                                            sym, live_rate,
-                                        );
-                                    if !opportunities.is_empty() {
-                                        request = CurveRequest::Named {
-                                            opportunities,
-                                            symbol: Some(sym.clone()),
-                                        };
-                                        used_source = Some(YieldCurveSource::Synthetic);
-                                        debug!(symbol = %sym, live_rate, "Using synthetic yield curve with benchmark rate");
-                                        break;
-                                    }
-                                }
+                            debug!(symbol = %sym, "Using KV yield curve");
+                            return finance_rates_result(Ok(curve));
+                        }
+
+                        // 2. TWS live data (fast, no HTTP round-trip)
+                        if let Ok(opportunities) =
+                            tws_yield_curve::fetch_yield_curve_from_tws(sym).await
+                        {
+                            if !opportunities.is_empty() {
+                                request = CurveRequest::Named {
+                                    opportunities,
+                                    symbol: Some(sym.clone()),
+                                };
+                                used_tws = true;
+                                debug!(symbol = %sym, "Using TWS yield curve");
                             }
-                            YieldCurveSource::Yahoo => {
-                                if let Some(ref sym) = symbol {
-                                    let source = YahooYieldCurveSource::new();
-                                    match source.fetch_yield_curve(sym).await {
-                                        Ok(ycurve) => {
-                                            let curve = yahoo_curve_to_response(ycurve);
-                                            debug!(symbol = %sym, points = curve.point_count, "Using Yahoo yield curve");
-                                            return finance_rates_result(Ok(curve));
-                                        }
-                                        Err(e) => {
-                                            debug!(symbol = %sym, error = %e, "Yahoo yield curve failed");
-                                        }
-                                    }
-                                }
-                            }
-                            YieldCurveSource::Kv => {
-                                if let Some(ref sym) = symbol {
-                                    if let Some(curve_from_kv) =
-                                        load_yield_curve_from_kv(&nc_build, sym, query.as_ref())
-                                            .await
-                                    {
-                                        let spot = reference_spot_for_report(sym);
-                                        let mut curve = curve_from_kv;
-                                        curve.underlying_price = Some(spot);
-                                        fill_missing_strikes(&mut curve, spot);
-                                        for p in curve.points.iter_mut() {
-                                            p.data_source = Some("KV".to_string());
-                                        }
-                                        debug!(symbol = %sym, "Using KV yield curve");
-                                        return finance_rates_result(Ok(curve));
-                                    }
-                                }
-                            }
+                        }
+
+                        // If neither KV nor TWS has data, return an error so the TUI
+                        // can display "waiting for yield_curve_writer" rather than hanging.
+                        if !used_tws {
+                            return finance_rates_result::<api::finance_rates::CurveResponse>(Err(
+                                format!("no yield curve data for {sym} — yield_curve_writer has not populated KV yet")
+                            ));
                         }
                     }
                 }
@@ -763,7 +665,7 @@ async fn run_finance_rates(
                     curve.underlying_price = Some(spot);
                 }
                 fill_missing_strikes(&mut curve, spot);
-                let source_label = used_source.as_ref().map(|s| s.label()).unwrap_or("request");
+                let source_label = if used_tws { "TWS" } else { "request" };
                 for p in curve.points.iter_mut() {
                     p.data_source = Some(source_label.to_string());
                 }
@@ -814,14 +716,8 @@ async fn run_finance_rates(
         move |_body: Option<Vec<u8>>| {
             let client = client_bench.clone();
             async move {
-                let mut sofr = get_sofr_rates(&client).await;
-                let mut treasury = get_treasury_rates(&client).await;
-                if sofr.term_rates.is_empty() && sofr.overnight.rate.is_none() {
-                    sofr = mock_sofr_benchmarks();
-                }
-                if treasury.rates.is_empty() {
-                    treasury = mock_treasury_benchmarks();
-                }
+                let sofr = get_sofr_rates(&client).await;
+                let treasury = get_treasury_rates(&client).await;
                 let response = serde_json::json!({
                     "sofr": sofr,
                     "treasury": treasury,
@@ -839,10 +735,7 @@ async fn run_finance_rates(
         move |_body: Option<Vec<u8>>| {
             let client = client_sofr.clone();
             async move {
-                let mut response = get_sofr_rates(&client).await;
-                if response.term_rates.is_empty() && response.overnight.rate.is_none() {
-                    response = mock_sofr_benchmarks();
-                }
+                let response = get_sofr_rates(&client).await;
                 serde_json::to_vec(&response).unwrap_or_else(|_| b"{}".to_vec())
             }
         },
@@ -854,10 +747,7 @@ async fn run_finance_rates(
         move |_body: Option<Vec<u8>>| {
             let client = client.clone();
             async move {
-                let mut response = get_treasury_rates(&client).await;
-                if response.rates.is_empty() {
-                    response = mock_treasury_benchmarks();
-                }
+                let response = get_treasury_rates(&client).await;
                 serde_json::to_vec(&response).unwrap_or_else(|_| b"{}".to_vec())
             }
         },
@@ -1178,42 +1068,6 @@ async fn load_yield_curve_from_kv(
     build_curve(request, query.cloned()).ok()
 }
 
-fn yahoo_curve_to_response(ycurve: market_data::yield_curve::YieldCurve) -> CurveResponse {
-    use market_data::yield_curve::YieldCurvePoint;
-    let points: Vec<api::finance_rates::RatePointResponse> = ycurve
-        .points
-        .into_iter()
-        .map(|p: YieldCurvePoint| api::finance_rates::RatePointResponse {
-            symbol: ycurve.symbol.clone(),
-            expiry: p.expiry.format("%Y-%m-%d").to_string(),
-            days_to_expiry: p.dte,
-            strike_width: p.strike_width,
-            buy_implied_rate: p.buy_implied_rate,
-            sell_implied_rate: p.sell_implied_rate,
-            mid_rate: p.mid_rate,
-            net_debit: p.net_debit,
-            net_credit: p.net_credit,
-            liquidity_score: p.liquidity_score,
-            timestamp: ycurve.timestamp.to_rfc3339(),
-            spread_id: None,
-            data_source: Some("yahoo".to_string()),
-            strike_low: Some(p.strike_low),
-            strike_high: Some(p.strike_high),
-            convenience_yield: None,
-        })
-        .collect();
-    let point_count = points.len();
-    let strike_width = points.first().map(|p| p.strike_width);
-    CurveResponse {
-        symbol: ycurve.symbol,
-        points,
-        timestamp: ycurve.timestamp.to_rfc3339(),
-        strike_width,
-        point_count,
-        underlying_price: Some(ycurve.underlying_price),
-    }
-}
-
 fn parse_curve_body(body: Option<&[u8]>) -> (CurveRequest, Option<CurveQuery>) {
     let (request, query) = body
         .and_then(|b| serde_json::from_slice::<Value>(b).ok())
@@ -1355,9 +1209,7 @@ async fn run_discount_bank(nc: Client) {
         nc.clone(),
         sub_balance,
         |_body: Option<Vec<u8>>| async {
-            let r: Result<api::discount_bank::DiscountBankBalanceDto, String> = get_balance()
-                .await
-                .or_else(|_| Ok(mock_discount_bank_balance()));
+            let r: Result<api::discount_bank::DiscountBankBalanceDto, String> = get_balance().await;
             serde_json::to_vec(&r).unwrap_or_else(|_| b"{}".to_vec())
         },
     ));
@@ -1371,9 +1223,7 @@ async fn run_discount_bank(nc: Client) {
                 .and_then(|v| v.get("limit").and_then(Value::as_u64))
                 .unwrap_or(100) as usize;
             let r: Result<api::discount_bank::DiscountBankTransactionsListDto, String> =
-                get_transactions(limit)
-                    .await
-                    .or_else(|_| Ok(mock_discount_bank_transactions(limit)));
+                get_transactions(limit).await;
             serde_json::to_vec(&r).unwrap_or_else(|_| b"{}".to_vec())
         },
     ));
@@ -1381,9 +1231,8 @@ async fn run_discount_bank(nc: Client) {
         nc.clone(),
         sub_accounts,
         |_body: Option<Vec<u8>>| async {
-            let r: Result<api::discount_bank::BankAccountsListDto, String> = get_bank_accounts()
-                .await
-                .or_else(|_| Ok(mock_discount_bank_accounts()));
+            let r: Result<api::discount_bank::BankAccountsListDto, String> =
+                get_bank_accounts().await;
             serde_json::to_vec(&r).unwrap_or_else(|_| b"{}".to_vec())
         },
     ));
@@ -1490,14 +1339,14 @@ fn fmp_response<T: serde::Serialize>(r: anyhow::Result<T>) -> Vec<u8> {
     }
 }
 
-async fn run_fmp_mock(nc: Client) {
+async fn run_fmp_unconfigured(nc: Client) {
     let sub_income = match nc
         .queue_subscribe(SUBJECT_FMP_INCOME_STATEMENT.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
         Err(e) => {
-            warn!(error = %e, "subscribe api.fmp.income_statement (mock) failed");
+            warn!(error = %e, "subscribe api.fmp.income_statement (unconfigured) failed");
             return;
         }
     };
@@ -1507,7 +1356,7 @@ async fn run_fmp_mock(nc: Client) {
     {
         Ok(s) => s,
         Err(e) => {
-            warn!(error = %e, "subscribe api.fmp.balance_sheet (mock) failed");
+            warn!(error = %e, "subscribe api.fmp.balance_sheet (unconfigured) failed");
             return;
         }
     };
@@ -1517,7 +1366,7 @@ async fn run_fmp_mock(nc: Client) {
     {
         Ok(s) => s,
         Err(e) => {
-            warn!(error = %e, "subscribe api.fmp.cash_flow (mock) failed");
+            warn!(error = %e, "subscribe api.fmp.cash_flow (unconfigured) failed");
             return;
         }
     };
@@ -1527,47 +1376,31 @@ async fn run_fmp_mock(nc: Client) {
     {
         Ok(s) => s,
         Err(e) => {
-            warn!(error = %e, "subscribe api.fmp.quote (mock) failed");
+            warn!(error = %e, "subscribe api.fmp.quote (unconfigured) failed");
             return;
         }
     };
 
-    tokio::spawn(handle_sub(
-        nc.clone(),
-        sub_income,
-        |body: Option<Vec<u8>>| async move {
-            let (symbol, limit) = parse_fmp_request(body.as_deref());
-            let r = mock_fmp_income_statement(&symbol, limit);
-            fmp_response(Ok(r))
-        },
-    ));
-    tokio::spawn(handle_sub(
-        nc.clone(),
-        sub_balance,
-        |body: Option<Vec<u8>>| async move {
-            let (symbol, limit) = parse_fmp_request(body.as_deref());
-            let r = mock_fmp_balance_sheet(&symbol, limit);
-            fmp_response(Ok(r))
-        },
-    ));
-    tokio::spawn(handle_sub(
-        nc.clone(),
-        sub_cash,
-        |body: Option<Vec<u8>>| async move {
-            let (symbol, limit) = parse_fmp_request(body.as_deref());
-            let r = mock_fmp_cash_flow(&symbol, limit);
-            fmp_response(Ok(r))
-        },
-    ));
-    tokio::spawn(handle_sub(
-        nc,
-        sub_quote,
-        |body: Option<Vec<u8>>| async move {
-            let (symbol, _) = parse_fmp_request(body.as_deref());
-            let r = mock_fmp_quote(&symbol);
-            fmp_response(Ok(r))
-        },
-    ));
+    let err = b"{\"error\":\"FMP API key not configured\"}".to_vec();
+    tokio::spawn(handle_sub(nc.clone(), sub_income, move |_| {
+        let e = err.clone();
+        async move { e }
+    }));
+    let err = b"{\"error\":\"FMP API key not configured\"}".to_vec();
+    tokio::spawn(handle_sub(nc.clone(), sub_balance, move |_| {
+        let e = err.clone();
+        async move { e }
+    }));
+    let err = b"{\"error\":\"FMP API key not configured\"}".to_vec();
+    tokio::spawn(handle_sub(nc.clone(), sub_cash, move |_| {
+        let e = err.clone();
+        async move { e }
+    }));
+    let err = b"{\"error\":\"FMP API key not configured\"}".to_vec();
+    tokio::spawn(handle_sub(nc, sub_quote, move |_| {
+        let e = err.clone();
+        async move { e }
+    }));
 }
 
 fn parse_fmp_request(body: Option<&[u8]>) -> (String, u32) {
@@ -1642,13 +1475,13 @@ async fn run_loans(nc: Client, loan_repo: Option<Arc<LoanRepository>>) {
     match loan_repo {
         Some(repo) => run_loans_with_repo(nc, repo).await,
         None => {
-            info!("LoanRepository not configured, loans API using mock data");
-            run_loans_mock(nc).await;
+            info!("LoanRepository not configured, loans API returning unconfigured replies");
+            run_loans_unconfigured(nc).await;
         }
     }
 }
 
-async fn run_loans_mock(nc: Client) {
+async fn run_loans_unconfigured(nc: Client) {
     let sub_list = match nc
         .queue_subscribe(SUBJECT_LOANS_LIST.to_string(), api_queue_group())
         .await
@@ -1683,31 +1516,22 @@ async fn run_loans_mock(nc: Client) {
         nc.clone(),
         sub_list,
         move |_body: Option<Vec<u8>>| async move {
-            let list = mock_loans_list();
-            let r: Result<Vec<LoanRecord>, String> = Ok(list);
+            let r: Result<Vec<LoanRecord>, String> =
+                Err("Loan database not configured".to_string());
             serde_json::to_vec(&r).unwrap_or_else(|_| b"{}".to_vec())
         },
     ));
     tokio::spawn(handle_sub(
         nc.clone(),
         sub_list_proto,
-        move |_body: Option<Vec<u8>>| async move {
-            let list = mock_loans_list();
-            let resp = loans_response_proto(&list);
-            resp.encode_to_vec()
-        },
+        move |_body: Option<Vec<u8>>| async move { loans_response_proto(&[]).encode_to_vec() },
     ));
     tokio::spawn(handle_sub(
         nc.clone(),
         sub_get,
-        move |body: Option<Vec<u8>>| async move {
-            let list = mock_loans_list();
-            let loan_id = body
-                .as_deref()
-                .and_then(|b| serde_json::from_slice::<Value>(b).ok())
-                .and_then(|v| v.get("loan_id").and_then(Value::as_str).map(String::from));
+        move |_body: Option<Vec<u8>>| async move {
             let r: Result<Option<LoanRecord>, String> =
-                Ok(loan_id.and_then(|id| list.into_iter().find(|l| l.loan_id == id)));
+                Err("Loan database not configured".to_string());
             serde_json::to_vec(&r).unwrap_or_else(|_| b"{}".to_vec())
         },
     ));
@@ -1877,30 +1701,6 @@ async fn run_loans_with_repo(nc: Client, repo: Arc<LoanRepository>) {
             serde_json::to_vec(&r).unwrap_or_else(|_| b"{}".to_vec())
         }
     }));
-}
-
-async fn fetch_live_base_rate(_nc: &Client) -> Option<f64> {
-    let client = match reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(5))
-        .build()
-    {
-        Ok(c) => c,
-        Err(_) => return None,
-    };
-
-    let sofr = api::finance_rates::get_sofr_rates(&client).await;
-    if let Some(overnight) = sofr.overnight.rate {
-        if overnight > 0.0 {
-            return Some(overnight / 100.0);
-        }
-    }
-    let treasury = api::finance_rates::get_treasury_rates(&client).await;
-    if let Some(treas) = treasury.rates.first() {
-        if treas.rate > 0.0 {
-            return Some(treas.rate / 100.0);
-        }
-    }
-    None
 }
 
 #[cfg(test)]

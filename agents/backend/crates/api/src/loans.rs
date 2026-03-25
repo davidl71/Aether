@@ -34,6 +34,10 @@ pub enum LoanStatus {
     Defaulted,
 }
 
+fn default_ils() -> String {
+    "ILS".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct LoanRecord {
@@ -54,6 +58,8 @@ pub struct LoanRecord {
     pub payment_frequency_months: i32,
     pub status: LoanStatus,
     pub last_update: String,
+    #[serde(default = "default_ils")]
+    pub currency: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -264,7 +270,8 @@ impl LoanRepository {
                 monthly_payment REAL NOT NULL,
                 payment_frequency_months INTEGER NOT NULL,
                 status TEXT NOT NULL,
-                last_update TEXT NOT NULL
+                last_update TEXT NOT NULL,
+                currency TEXT NOT NULL DEFAULT 'ILS'
             )
             "#,
         )
@@ -313,7 +320,8 @@ impl LoanRepository {
             r#"
             SELECT loan_id, bank_name, account_number, loan_type, principal, original_principal,
                    interest_rate, spread, base_cpi, current_cpi, origination_date, maturity_date,
-                   next_payment_date, monthly_payment, payment_frequency_months, status, last_update
+                   next_payment_date, monthly_payment, payment_frequency_months, status, last_update,
+                   currency
             FROM loans
             ORDER BY loan_id
             "#,
@@ -332,7 +340,8 @@ impl LoanRepository {
             r#"
             SELECT loan_id, bank_name, account_number, loan_type, principal, original_principal,
                    interest_rate, spread, base_cpi, current_cpi, origination_date, maturity_date,
-                   next_payment_date, monthly_payment, payment_frequency_months, status, last_update
+                   next_payment_date, monthly_payment, payment_frequency_months, status, last_update,
+                   currency
             FROM loans
             WHERE loan_id = ?
             "#,
@@ -387,8 +396,9 @@ impl LoanRepository {
             INSERT INTO loans (
                 loan_id, bank_name, account_number, loan_type, principal, original_principal,
                 interest_rate, spread, base_cpi, current_cpi, origination_date, maturity_date,
-                next_payment_date, monthly_payment, payment_frequency_months, status, last_update
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                next_payment_date, monthly_payment, payment_frequency_months, status, last_update,
+                currency
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(loan_id) DO UPDATE SET
                 bank_name = excluded.bank_name,
                 account_number = excluded.account_number,
@@ -405,7 +415,8 @@ impl LoanRepository {
                 monthly_payment = excluded.monthly_payment,
                 payment_frequency_months = excluded.payment_frequency_months,
                 status = excluded.status,
-                last_update = excluded.last_update
+                last_update = excluded.last_update,
+                currency = excluded.currency
             "#,
         )
         .bind(&loan.loan_id)
@@ -425,6 +436,7 @@ impl LoanRepository {
         .bind(loan.payment_frequency_months)
         .bind(loan_status_to_str(&loan.status))
         .bind(&loan.last_update)
+        .bind(&loan.currency)
         .execute(&self.pool)
         .await
         .context("failed to upsert loan")?;
@@ -584,6 +596,9 @@ fn loan_from_row(row: &sqlx::sqlite::SqliteRow) -> anyhow::Result<LoanRecord> {
         payment_frequency_months: row.try_get("payment_frequency_months")?,
         status: loan_status_from_str(row.try_get::<&str, _>("status")?)?,
         last_update: row.try_get("last_update")?,
+        currency: row
+            .try_get("currency")
+            .unwrap_or_else(|_| "ILS".to_string()),
     })
 }
 
@@ -610,6 +625,7 @@ mod tests {
             payment_frequency_months: 1,
             status: LoanStatus::Active,
             last_update: "2025-01-15T00:00:00Z".into(),
+            currency: "ILS".into(),
         }
     }
 
@@ -770,7 +786,8 @@ mod tests {
                 monthly_payment REAL NOT NULL,
                 payment_frequency_months INTEGER NOT NULL,
                 status TEXT NOT NULL,
-                last_update TEXT NOT NULL
+                last_update TEXT NOT NULL,
+                currency TEXT NOT NULL DEFAULT 'ILS'
             )
             "#,
         )
@@ -798,6 +815,7 @@ mod tests {
             payment_frequency_months: 1,
             status: LoanStatus::Active,
             last_update: "2025-01-15T00:00:00Z".into(),
+            currency: "ILS".into(),
         };
 
         repo.create(loan.clone()).await.expect("insert loan");
@@ -844,7 +862,8 @@ mod tests {
                 monthly_payment REAL NOT NULL,
                 payment_frequency_months INTEGER NOT NULL,
                 status TEXT NOT NULL,
-                last_update TEXT NOT NULL
+                last_update TEXT NOT NULL,
+                currency TEXT NOT NULL DEFAULT 'ILS'
             )
             "#,
         )
@@ -873,6 +892,7 @@ mod tests {
                 payment_frequency_months: 1,
                 status: LoanStatus::Active,
                 last_update: "2025-01-15T00:00:00Z".into(),
+                currency: "ILS".into(),
             };
             repo.create(loan).await.expect("insert loan");
         }
@@ -912,7 +932,8 @@ mod tests {
                 monthly_payment REAL NOT NULL,
                 payment_frequency_months INTEGER NOT NULL,
                 status TEXT NOT NULL,
-                last_update TEXT NOT NULL
+                last_update TEXT NOT NULL,
+                currency TEXT NOT NULL DEFAULT 'ILS'
             )
             "#,
         )
@@ -940,6 +961,7 @@ mod tests {
             payment_frequency_months: 1,
             status: LoanStatus::Active,
             last_update: "2025-01-15T00:00:00Z".into(),
+            currency: "ILS".into(),
         };
 
         repo.create(loan.clone()).await.expect("insert loan");
@@ -990,7 +1012,8 @@ mod tests {
                 monthly_payment REAL NOT NULL,
                 payment_frequency_months INTEGER NOT NULL,
                 status TEXT NOT NULL,
-                last_update TEXT NOT NULL
+                last_update TEXT NOT NULL,
+                currency TEXT NOT NULL DEFAULT 'ILS'
             )
             "#,
         )
@@ -1086,6 +1109,7 @@ mod tests {
             payment_frequency_months: 1,
             status: LoanStatus::Active,
             last_update: "2025-01-15T00:00:00Z".into(),
+            currency: "ILS".into(),
         };
 
         let rate_with_shir = loan.effective_rate(Some(0.035));
@@ -1115,6 +1139,7 @@ mod tests {
             payment_frequency_months: 1,
             status: LoanStatus::Active,
             last_update: "2025-01-15T00:00:00Z".into(),
+            currency: "ILS".into(),
         };
 
         let rate = loan.effective_rate(None);

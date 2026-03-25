@@ -47,6 +47,8 @@ After any non-trivial implementation pass:
 - Prioritize market-data truth and yield validity over execution plumbing
 - Keep real positions visible, but do not restore execution paths casually
 - Minimize new external integrations unless they improve data validity
+- Prefer clean replacements over migration-heavy or compatibility-heavy plans
+  unless a concrete constraint requires the old surface to survive
 
 ## exarp Usage In Aether
 

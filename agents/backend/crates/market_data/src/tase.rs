@@ -61,10 +61,17 @@ impl TaseClient {
             .context("TASE quote request failed")?;
 
         if !response.status().is_success() {
-            anyhow::bail!("TASE API error: {} for symbol {}", response.status(), symbol);
+            anyhow::bail!(
+                "TASE API error: {} for symbol {}",
+                response.status(),
+                symbol
+            );
         }
 
-        let quote: TaseQuote = response.json().await.context("failed to parse TASE quote")?;
+        let quote: TaseQuote = response
+            .json()
+            .await
+            .context("failed to parse TASE quote")?;
         Ok(quote)
     }
 

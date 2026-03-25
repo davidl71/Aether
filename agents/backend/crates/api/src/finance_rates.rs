@@ -1,5 +1,8 @@
 //! Finance rates / yield curve / benchmarks exposed via NATS `api.finance_rates.*`.
 //! Curve sources are layered as cached KV, Yahoo option-chain data, then synthetic placeholders.
+//! Source labels are preserved when available so the TUI can explain whether a curve came from
+//! `tws`, `yahoo`, `synthetic`, or an explicit URL fallback. Proto KV entries remain supported
+//! for older writers, but the read model should stay source-first rather than engine-first.
 //! Benchmark rates are resolved independently through FMP, FRED, and New York Fed endpoints.
 //! Keep this module read-model oriented; it is not an execution or broker-engine boundary.
 
@@ -8,7 +11,7 @@ use market_data::FmpClient;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 const DEFAULT_MIN_LIQUIDITY_SCORE: f64 = 50.0;
 const FRED_BASE_URL: &str = "https://api.stlouisfed.org/fred";
@@ -561,9 +564,10 @@ fn aggregate_opportunities(
     symbol: &str,
     min_liquidity_score: f64,
 ) -> Vec<RatePointResponse> {
-    let mut grouped: BTreeMap<i32, Vec<RatePointResponse>> = BTreeMap::new();
+    let mut grouped: BTreeMap<i32, Vec<(RatePointResponse, Option<String>)>> = BTreeMap::new();
 
     for opportunity in opportunities {
+        let source = opportunity_data_source(opportunity);
         let Some(spread) = opportunity.get("spread") else {
             continue;
         };
@@ -571,7 +575,10 @@ fn aggregate_opportunities(
             continue;
         };
         if let Some(point) = build_rate_point(input, min_liquidity_score) {
-            grouped.entry(point.days_to_expiry).or_default().push(point);
+            grouped
+                .entry(point.days_to_expiry)
+                .or_default()
+                .push((point, source));
         }
     }
 
@@ -579,9 +586,12 @@ fn aggregate_opportunities(
         .into_iter()
         .filter_map(|(_dte, mut points)| {
             if points.len() == 1 {
-                return points.pop();
+                return points.pop().map(|(mut point, source)| {
+                    point.data_source = source;
+                    point
+                });
             }
-            let total_weight: f64 = points.iter().map(|point| point.liquidity_score).sum();
+            let total_weight: f64 = points.iter().map(|(point, _)| point.liquidity_score).sum();
             let divisor = if total_weight > 0.0 {
                 total_weight
             } else {
@@ -591,39 +601,63 @@ fn aggregate_opportunities(
                 if total_weight > 0.0 {
                     points
                         .iter()
-                        .map(|point| accessor(point) * point.liquidity_score)
+                        .map(|(point, _)| accessor(point) * point.liquidity_score)
                         .sum::<f64>()
                         / divisor
                 } else {
-                    points.iter().map(accessor).sum::<f64>() / divisor
+                    points.iter().map(|(point, _)| accessor(point)).sum::<f64>() / divisor
                 }
             };
             let template = points.first()?;
+            let source = source_label(points.iter().filter_map(|(_, source)| source.clone()));
             Some(RatePointResponse {
                 symbol: symbol.to_string(),
-                expiry: template.expiry.clone(),
-                days_to_expiry: template.days_to_expiry,
-                strike_width: template.strike_width,
+                expiry: template.0.expiry.clone(),
+                days_to_expiry: template.0.days_to_expiry,
+                strike_width: template.0.strike_width,
                 buy_implied_rate: weighted(|point| point.buy_implied_rate),
                 sell_implied_rate: weighted(|point| point.sell_implied_rate),
                 mid_rate: weighted(|point| point.mid_rate),
-                net_debit: points.iter().map(|point| point.net_debit).sum::<f64>()
+                net_debit: points.iter().map(|(point, _)| point.net_debit).sum::<f64>()
                     / points.len() as f64,
-                net_credit: points.iter().map(|point| point.net_credit).sum::<f64>()
+                net_credit: points
+                    .iter()
+                    .map(|(point, _)| point.net_credit)
+                    .sum::<f64>()
                     / points.len() as f64,
                 liquidity_score: points
                     .iter()
-                    .map(|point| point.liquidity_score)
+                    .map(|(point, _)| point.liquidity_score)
                     .fold(0.0_f64, f64::max),
                 timestamp: Utc::now().to_rfc3339(),
                 spread_id: None,
-                data_source: None,
+                data_source: source,
                 strike_low: None,
                 strike_high: None,
                 convenience_yield: None,
             })
         })
         .collect()
+}
+
+fn opportunity_data_source(opportunity: &Value) -> Option<String> {
+    opportunity
+        .get("data_source")
+        .and_then(|value| value.as_str())
+        .map(|value| value.trim().to_lowercase())
+        .filter(|value| !value.is_empty())
+}
+
+fn source_label<I>(sources: I) -> Option<String>
+where
+    I: IntoIterator<Item = String>,
+{
+    let set = sources.into_iter().collect::<BTreeSet<_>>();
+    match set.len() {
+        0 => None,
+        1 => set.into_iter().next(),
+        _ => Some("mixed".to_string()),
+    }
 }
 
 fn build_rate_point(input: BoxSpreadInput, min_liquidity_score: f64) -> Option<RatePointResponse> {
@@ -1119,6 +1153,31 @@ mod tests {
         assert_eq!(curve.point_count, 1);
         assert_eq!(curve.points[0].days_to_expiry, 30);
         assert!(curve.points[0].mid_rate > 4.9);
+    }
+
+    #[test]
+    fn build_curve_preserves_source_label() {
+        let request = CurveRequest::Named {
+            symbol: Some("XSP".into()),
+            opportunities: vec![json!({
+                "spread": {
+                    "symbol": "XSP",
+                    "expiry": "20261218",
+                    "days_to_expiry": 30,
+                    "strike_width": 100.0,
+                    "buy_implied_rate": 4.8,
+                    "sell_implied_rate": 5.0,
+                    "net_debit": 95.0,
+                    "net_credit": 105.0,
+                    "liquidity_score": 70.0
+                },
+                "data_source": "yahoo"
+            })],
+        };
+
+        let curve = build_curve(request, None).expect("curve");
+        assert_eq!(curve.point_count, 1);
+        assert_eq!(curve.points[0].data_source.as_deref(), Some("yahoo"));
     }
 
     #[test]

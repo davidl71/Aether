@@ -1,7 +1,8 @@
-//! tui_service — Ratatui terminal UI for the ib-platform.
+//! tui_service — Ratatui terminal UI for Aether.
 //!
-//! Subscribes to NATS snapshot subject and renders read-only portfolio and
-//! market state for exploration. Replaces the retired Python/Textual TUI.
+//! Subscribes to the NATS snapshot subject and renders read-only portfolio,
+//! market, and operational state for exploration. Replaces the retired
+//! Python/Textual TUI.
 //!
 //! # Usage
 //!
@@ -69,8 +70,11 @@ mod config_watcher;
 mod events;
 mod expiry_buckets;
 mod input;
+mod input_loans;
 mod input_settings;
+mod input_shell;
 mod input_tabs;
+mod input_views;
 mod models;
 mod nats;
 mod option_symbol;

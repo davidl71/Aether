@@ -47,5 +47,5 @@ exarp-go has `sanity-check` (binary that verifies tools/resources counts) and `m
 ## References
 
 - exarp-go: `Makefile`, `Taskfile.yml`, `.cursor/rules/make-shortcuts.mdc`, `skills/README.md`, `skills/*/SKILL.md`
-- This repo: `Justfile`, `.cursor/commands.json`, `.cursor/skills/README.md`, `docs/AI_EDITOR_SETUP.md`
+- This repo: `Justfile`, `.cursor/commands.json`, `.cursor/skills/README.md`, `docs/archive/AI_EDITOR_SETUP.md`
 - **Shell scripts and patterns:** See `docs/EXARP_GO_SCRIPTS_AND_PATTERNS.md` for dev.sh, run-dev-setup.sh (SSL fix), sanity-check, MCP stdio smoke test, and lint patterns.

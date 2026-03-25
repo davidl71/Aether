@@ -12,7 +12,6 @@
 //!
 //! Backward compatibility: --init-config and --validate flags still work.
 
-use std::io::Write;
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
@@ -184,19 +183,19 @@ enum Commands {
 enum CredCmd {
     /// Set a credential value (prompts for input if not provided)
     Set {
-        /// Credential name: fred, fmp, polygon, alpaca-key, alpaca-secret, tastytrade-key, tastytrade-account
+        /// Credential name: fred, fmp, polygon, alpaca-paper-key, alpaca-paper-secret, alpaca-live-key, alpaca-live-secret, tastytrade-key, tastytrade-account
         name: String,
-        /// Value to store (reads from stdin if not provided)
+        /// Value to store (uses a hidden prompt if not provided)
         value: Option<String>,
     },
     /// Get a credential value (shows masked for security)
     Get {
-        /// Credential name: fred, fmp, polygon, alpaca-key, alpaca-secret, tastytrade-key, tastytrade-account
+        /// Credential name: fred, fmp, polygon, alpaca-paper-key, alpaca-paper-secret, alpaca-live-key, alpaca-live-secret, tastytrade-key, tastytrade-account
         name: String,
     },
     /// Delete a stored credential
     Delete {
-        /// Credential name: fred, fmp, polygon, alpaca-key, alpaca-secret, tastytrade-key, tastytrade-account
+        /// Credential name: fred, fmp, polygon, alpaca-paper-key, alpaca-paper-secret, alpaca-live-key, alpaca-live-secret, tastytrade-key, tastytrade-account
         name: String,
     },
     /// List available credential names
@@ -497,6 +496,7 @@ fn run_benchmarks(format: OutputFormat, json: bool) -> Result<()> {
         BenchmarksResponse {
             sofr,
             treasury,
+            shir: None,
             timestamp: Utc::now().to_rfc3339(),
         }
     });
@@ -741,13 +741,9 @@ fn run_cred(sub: CredCmd) -> Result<()> {
 
             let value = match value {
                 Some(v) => v,
-                None => {
-                    eprint!("Enter {}: ", display_name);
-                    std::io::stderr().flush().ok();
-                    let mut input = String::new();
-                    std::io::stdin().read_line(&mut input).ok();
-                    input.trim().to_string()
-                }
+                None => rpassword::prompt_password(format!("Enter {}: ", display_name))
+                    .map(|input| input.trim().to_string())
+                    .map_err(|e| anyhow::anyhow!("failed to read credential: {}", e))?,
             };
 
             if value.is_empty() {
@@ -946,7 +942,6 @@ fn run_loans_import_csv(path: &PathBuf, format: OutputFormat, json: bool) -> Res
     let idx_spread = col("spread");
     let idx_start = col("origination_date");
     let idx_first = col("first_payment_date");
-    let idx_num = col("num_payments");
     let idx_monthly = col("monthly_payment");
 
     let mut loans: Vec<LoanRecord> = Vec::new();
@@ -1004,7 +999,6 @@ fn run_loans_import_csv(path: &PathBuf, format: OutputFormat, json: bool) -> Res
             }
         };
         let spread: f64 = get(idx_spread).parse().unwrap_or(0.0);
-        let num_payments: i32 = get(idx_num).parse().unwrap_or(12);
 
         let now = chrono::Utc::now();
         let last_update = now.to_rfc3339();

@@ -2,7 +2,7 @@
 name = "tui_service"
 edition.workspace = true
 version.workspace = true
-description = "Ratatui terminal UI — subscribes to NATS and renders live trading state"
+description = "Ratatui terminal UI — subscribes to NATS and renders read-only portfolio and market state"
 
 [[bin]]
 name = "tui_service"

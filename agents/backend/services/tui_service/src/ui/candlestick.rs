@@ -5,8 +5,6 @@ use ratatui::{
     Frame,
 };
 
-use api::finance_rates::CurveResponse;
-
 #[derive(Debug, Clone)]
 pub struct Candle {
     pub open: f64,
@@ -17,15 +15,6 @@ pub struct Candle {
 }
 
 impl Candle {
-    pub fn new(open: f64, high: f64, low: f64, close: f64) -> Self {
-        Self {
-            open,
-            high,
-            low,
-            close,
-            volume: None,
-        }
-    }
     pub fn bullish(&self) -> bool {
         self.close >= self.open
     }
@@ -34,28 +23,11 @@ impl Candle {
 pub struct CandlestickChart {
     candles: Vec<Candle>,
     symbol: String,
-    scroll_offset: usize,
 }
 
 impl CandlestickChart {
     pub fn new(symbol: String, candles: Vec<Candle>) -> Self {
-        Self {
-            candles,
-            symbol,
-            scroll_offset: 0,
-        }
-    }
-
-    pub fn scroll_left(&mut self) {
-        if self.scroll_offset > 0 {
-            self.scroll_offset -= 1;
-        }
-    }
-
-    pub fn scroll_right(&mut self) {
-        if self.scroll_offset < self.candles.len().saturating_sub(10) {
-            self.scroll_offset += 1;
-        }
+        Self { candles, symbol }
     }
 }
 
@@ -76,7 +48,6 @@ impl Widget for CandlestickChart {
         }
 
         let chart_width = inner.width as usize;
-        let chart_height = inner.height as usize;
         let visible_candles = chart_width / 6;
 
         if self.candles.is_empty() {
@@ -91,7 +62,7 @@ impl Widget for CandlestickChart {
             return;
         }
 
-        let start = self.scroll_offset.min(self.candles.len().saturating_sub(1));
+        let start = self.candles.len().saturating_sub(visible_candles.max(1));
         let end = (start + visible_candles).min(self.candles.len());
         let visible: Vec<_> = self.candles[start..end].iter().collect();
 
@@ -188,7 +159,6 @@ pub fn render_volume(f: &mut Frame, candles: &[Candle], area: Rect) {
     }
 
     let chart_width = inner.width as usize;
-    let chart_height = inner.height as usize;
     let candle_width = 6;
     let visible_candles = chart_width / candle_width;
 
@@ -252,146 +222,5 @@ pub fn render_volume(f: &mut Frame, candles: &[Candle], area: Rect) {
                 cell.set_char(c).set_style(block_style);
             }
         }
-    }
-}
-
-pub fn generate_synthetic_candles(
-    curve: &CurveResponse,
-    num_candles: usize,
-    volatility_bps: f64,
-) -> Vec<Candle> {
-    if curve.points.is_empty() {
-        return Vec::new();
-    }
-
-    let base_rate = curve
-        .points
-        .iter()
-        .find(|p| p.days_to_expiry == 30)
-        .or_else(|| curve.points.first())
-        .map(|p| p.mid_rate)
-        .unwrap_or(0.05);
-
-    let vol = volatility_bps / 10000.0;
-    let mut candles = Vec::with_capacity(num_candles);
-    let mut current_rate = base_rate;
-
-    for i in 0..num_candles {
-        let trend = ((i as f64 / num_candles as f64) - 0.5) * 0.01;
-        let noise = (rand_simple(i as u64) - 0.5) * vol;
-
-        let open = current_rate;
-        let high_in_day = (rand_simple(i as u64 + 1000) - 0.5) * vol * 0.5;
-        let low_in_day = (rand_simple(i as u64 + 2000) - 0.5) * vol * 0.5;
-
-        let close = open * (1.0 + trend + noise);
-        let high = open.max(close) * (1.0 + high_in_day.abs());
-        let low = open.min(close) * (1.0 - low_in_day.abs());
-
-        let liquidity = curve
-            .points
-            .iter()
-            .find(|p| p.days_to_expiry == 30)
-            .map(|p| p.liquidity_score)
-            .unwrap_or(70.0);
-        let volume = Some((liquidity * 1000.0 * (0.5 + rand_simple(i as u64 + 3000))).max(1000.0));
-
-        candles.push(Candle {
-            open,
-            high,
-            low,
-            close,
-            volume,
-        });
-
-        current_rate = close;
-    }
-
-    candles
-}
-
-fn rand_simple(seed: u64) -> f64 {
-    let x = seed.wrapping_mul(1103515245).wrapping_add(12345);
-    ((x >> 16) as f64 / 65535.0) * 2.0 - 1.0
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use api::finance_rates::{CurveResponse, RatePointResponse};
-
-    #[test]
-    fn synthetic_candles_from_curve() {
-        let curve = CurveResponse {
-            symbol: "SPX".to_string(),
-            points: vec![
-                RatePointResponse {
-                    symbol: "SPX".to_string(),
-                    expiry: "2026-03-20".to_string(),
-                    days_to_expiry: 30,
-                    strike_width: 5.0,
-                    buy_implied_rate: 0.048,
-                    sell_implied_rate: 0.052,
-                    mid_rate: 0.050,
-                    net_debit: 4.8,
-                    net_credit: 5.2,
-                    liquidity_score: 70.0,
-                    timestamp: String::new(),
-                    spread_id: None,
-                    data_source: None,
-                    strike_low: Some(5998.0),
-                    strike_high: Some(6002.0),
-                    convenience_yield: None,
-                },
-                RatePointResponse {
-                    symbol: "SPX".to_string(),
-                    expiry: "2026-04-17".to_string(),
-                    days_to_expiry: 60,
-                    strike_width: 5.0,
-                    buy_implied_rate: 0.049,
-                    sell_implied_rate: 0.053,
-                    mid_rate: 0.051,
-                    net_debit: 9.5,
-                    net_credit: 10.5,
-                    liquidity_score: 75.0,
-                    timestamp: String::new(),
-                    spread_id: None,
-                    data_source: None,
-                    strike_low: None,
-                    strike_high: None,
-                    convenience_yield: None,
-                },
-            ],
-            timestamp: String::new(),
-            strike_width: Some(5.0),
-            point_count: 2,
-            underlying_price: Some(6000.0),
-        };
-
-        let candles = generate_synthetic_candles(&curve, 10, 50.0);
-
-        assert_eq!(candles.len(), 10);
-        for candle in &candles {
-            assert!(candle.high >= candle.open);
-            assert!(candle.high >= candle.close);
-            assert!(candle.low <= candle.open);
-            assert!(candle.low <= candle.close);
-            assert!(candle.volume.is_some());
-        }
-    }
-
-    #[test]
-    fn synthetic_candles_empty_curve() {
-        let curve = CurveResponse {
-            symbol: "SPX".to_string(),
-            points: vec![],
-            timestamp: String::new(),
-            strike_width: None,
-            point_count: 0,
-            underlying_price: None,
-        };
-
-        let candles = generate_synthetic_candles(&curve, 10, 50.0);
-        assert!(candles.is_empty());
     }
 }

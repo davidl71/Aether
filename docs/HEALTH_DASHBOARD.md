@@ -20,6 +20,11 @@ Unified health JSON now lives on the Rust backend and is driven directly by NATS
 - `tui_service` subscribes to the same stream and renders the component map in Settings
 - There is no separate Python `health_dashboard` daemon in the active runtime
 
+The active health surface has two distinct layers:
+
+- service health entries, which come from each long-lived Rust service publishing its own heartbeat
+- transport health, which is synthesized by `backend_service` from the `system.health` subscription itself
+
 ## Active component publishers
 
 The active runtime should normally expose at least these service ids on `system.health`:
@@ -33,6 +38,9 @@ such as `pid` and service identity in `extra`.
 The aggregate response also carries a first-class `transport` object for the NATS subscription
 itself. That transport entry is marked stale/degraded when the last observed health message ages
 past `HEALTH_STALE_AFTER_SECS` (default 45s).
+Service payloads keep their source severity (`ok` / `degraded` / `error`) and add stale metadata
+separately when the heartbeat ages out. That lets the TUI show freshness and failure state as
+distinct signals instead of collapsing them into one label.
 
 ## Notes
 
@@ -43,3 +51,6 @@ past `HEALTH_STALE_AFTER_SECS` (default 45s).
   It should not be overloaded with provider selection, mock/demo mode, or snapshot-derived metrics that
   already belong to the snapshot/read-model path.
 - NATS transport health belongs in the aggregate health DTO, not in the TUI or snapshot read model.
+  The TUI should render both service health and transport health, but not derive them itself.
+- Freshness is a separate concern from status. The TUI should read service severity from the health
+  payload and stale age from the aggregate annotations instead of inferring one from the other.

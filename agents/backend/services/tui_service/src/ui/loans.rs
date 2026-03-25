@@ -70,7 +70,7 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
         return;
     }
 
-    if let None = app.loans_list {
+    if app.loans_list.is_none() {
         let p = Paragraph::new("No data. Press 'n' to add a loan manually.")
             .style(Style::default().fg(Color::DarkGray));
         f.render_widget(p, inner);
@@ -188,12 +188,13 @@ fn render_loan_entry_form(f: &mut Frame, _app: &App, area: Rect, entry: &LoanEnt
         ("Start Date *", entry.origination_date.as_str()),
         ("First Pmt", entry.first_payment_date.as_str()),
         ("# Payments *", entry.num_payments.as_str()),
+        ("Currency", entry.currency.as_str()),
         ("[calc] Monthly $", entry.monthly_payment.as_str()),
         ("[calc] Maturity", entry.maturity_date.as_str()),
     ];
 
-    // Fields 9+ (monthly_payment, maturity) are read-only/calculated
-    let readonly_from = 9;
+    // Fields 10+ (monthly_payment, maturity) are read-only/calculated
+    let readonly_from = 10;
     let max_field_len_usize: usize = 40;
     let field_rows: Vec<Line> = fields
         .iter()

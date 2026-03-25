@@ -317,7 +317,10 @@ impl PolygonOptionsSource {
         expiration_date: Option<&str>,
     ) -> anyhow::Result<Vec<OptionSnapshotResult>> {
         let mut url = self.base_url.clone();
-        url.set_path(&format!("/v3/snapshot/options/{}", underlying.to_uppercase()));
+        url.set_path(&format!(
+            "/v3/snapshot/options/{}",
+            underlying.to_uppercase()
+        ));
 
         let mut query: Vec<(&str, String)> = vec![
             ("apiKey", self.api_key.clone()),
@@ -380,7 +383,11 @@ impl OptionsDataSource for PolygonOptionsSource {
                 let ts = Utc
                     .from_utc_datetime(&date.and_hms_opt(0, 0, 0)?)
                     .timestamp();
-                if seen.insert(ts) { Some(ts) } else { None }
+                if seen.insert(ts) {
+                    Some(ts)
+                } else {
+                    None
+                }
             })
             .collect();
 
@@ -612,11 +619,7 @@ mod tests {
 
         if let Some(&ts) = valid.first() {
             let date = Utc.timestamp_opt(ts, 0).single().map(|dt| dt.date_naive());
-            eprintln!(
-                "First valid expiry: {:?} (ts={})",
-                date,
-                ts
-            );
+            eprintln!("First valid expiry: {:?} (ts={})", date, ts);
 
             let chain = source.get_chain("SPY", ts).await;
             match chain {

@@ -8,7 +8,7 @@ pub mod domain;
 pub mod traits;
 
 pub use domain::{
-    construct_box_spread_order, BagOrderLeg, Order, OrderAction, OrderStatus,
-    PlaceBagOrderRequest, ResolvedOptionContract, TimeInForce,
+    construct_box_spread_order, BagOrderLeg, Order, OrderAction, OrderStatus, PlaceBagOrderRequest,
+    ResolvedOptionContract, TimeInForce,
 };
 pub use traits::{BrokerExecution, OptionChainProvider};

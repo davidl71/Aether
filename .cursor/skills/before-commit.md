@@ -5,11 +5,11 @@
 **Checklist:**
 
 1. **Lint:** Run `lint:run` or `./scripts/run_linters.sh`.
-2. **Tests:** Run `test:run` or `ctest --test-dir build --output-on-failure`.
-3. **Build:** Ensure build succeeds (`build:debug` or `ninja -C build`). For quiet + JSON result: `build:ai-friendly` or `build:ai-friendly-json`.
+2. **Tests:** Run `just test` or `cargo test` in `agents/backend/`.
+3. **Build:** Ensure the active Rust build succeeds (`just build-rust` or `cargo build` in `agents/backend/`).
 4. **Secrets:** Confirm no credentials, API keys, or secrets are in the commit (manual check).
-5. **Docs:** If you changed behavior or APIs, update docs and optionally run docs health (exarp-go `health` with `action=docs` and workingDirectory = project root).
+5. **Docs:** If you changed behavior or APIs, update docs and optionally run docs health via the repo wrapper (for example `./scripts/run_exarp_go.sh -tool health -args '{\"action\":\"docs\"}'` or `./scripts/run_exarp_go_tool.sh -tool health -args '{\"action\":\"docs\"}'`) so `PROJECT_ROOT` stays correct.
 
-**Proto:** C++ is generated at build by CMake; run `./proto/generate.sh` only if you need Python/Go/TypeScript codegen.
+**Proto:** Rust/protobuf generation is handled by the active Rust build where applicable; run `./proto/generate.sh` only if you explicitly need non-Rust codegen.
 
 **Reference:** .cursorrules "Before Committing", AGENTS.md "Commit & Pull Request Guidelines".

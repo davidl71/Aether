@@ -2,9 +2,9 @@
 //!
 //! When `REST_SNAPSHOT_PORT` is set, serves:
 //! - `GET /api/v1/snapshot`: snapshot (Accept: application/x-protobuf → protobuf; else JSON).
-//! - `GET /health`: health aggregate (transport, backends) plus optional LIVE_STATE KV bucket
-//!   reachability check (see NATS_KV_USAGE_AND_RECOMMENDATIONS.md). KV check is optional so health
-//!   still reports OK when KV is down if that is acceptable.
+//! - `GET /health`: health aggregate with explicit backend counts, transport role/subject/staleness,
+//!   plus optional LIVE_STATE KV bucket reachability check (see NATS_KV_USAGE_AND_RECOMMENDATIONS.md).
+//!   KV check is optional so health still reports OK when KV is down if that is acceptable.
 //! See docs/platform/PROTO_OPPORTUNITIES_AND_BUF_CONFIG.md.
 
 use std::sync::Arc;

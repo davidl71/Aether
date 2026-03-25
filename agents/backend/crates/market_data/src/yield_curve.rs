@@ -378,7 +378,7 @@ impl YahooYieldCurveSource {
                 continue;
             };
 
-            let strike_low = c_low.strike;   // all four legs share same two strikes
+            let strike_low = c_low.strike; // all four legs share same two strikes
             let strike_high = c_high.strike;
             let actual_width = strike_high - strike_low;
 
@@ -484,8 +484,12 @@ impl YahooYieldCurveSource {
         puts: &[OptionContractData],
         spot: f64,
         width: f64,
-    ) -> Option<(OptionContractData, OptionContractData, OptionContractData, OptionContractData)>
-    {
+    ) -> Option<(
+        OptionContractData,
+        OptionContractData,
+        OptionContractData,
+        OptionContractData,
+    )> {
         use std::collections::HashMap;
 
         // Build maps: strike → option, for liquid legs only.
@@ -715,7 +719,12 @@ mod tests {
                     // Try fetching the first chain
                     if let Ok(chain) = source_raw.get_chain(sym, ts[0]).await {
                         let date = Utc.timestamp_opt(ts[0], 0).single().map(|d| d.date_naive());
-                        eprintln!("  First expiry: {:?}  calls={} puts={}", date, chain.calls.len(), chain.puts.len());
+                        eprintln!(
+                            "  First expiry: {:?}  calls={} puts={}",
+                            date,
+                            chain.calls.len(),
+                            chain.puts.len()
+                        );
                         let liquid_calls = chain.calls.iter().filter(|o| o.bid > 0.0).count();
                         eprintln!("  Liquid calls (bid>0): {liquid_calls}");
                     }
@@ -723,7 +732,11 @@ mod tests {
                     let source = YahooYieldCurveSource::new();
                     match source.fetch_yield_curve(sym).await {
                         Ok(curve) => {
-                            eprintln!("{sym} yield curve: {} points, spot: {:.2}", curve.points.len(), curve.underlying_price);
+                            eprintln!(
+                                "{sym} yield curve: {} points, spot: {:.2}",
+                                curve.points.len(),
+                                curve.underlying_price
+                            );
                             for point in curve.points.iter().take(5) {
                                 eprintln!(
                                     "  DTE {:3}: K={:.0}/{:.0} width={:.0}  sell={:.2}% buy={:.2}% mid={:.2}%",
@@ -753,7 +766,11 @@ mod tests {
             let result = source.fetch_yield_curve(sym).await;
             match result {
                 Ok(curve) => {
-                    eprintln!("{sym} yield curve: {} points, spot: {:.2}", curve.points.len(), curve.underlying_price);
+                    eprintln!(
+                        "{sym} yield curve: {} points, spot: {:.2}",
+                        curve.points.len(),
+                        curve.underlying_price
+                    );
                     for point in curve.points.iter().take(5) {
                         eprintln!(
                             "  DTE {:3}: K={:.0}/{:.0} width={:.0}  sell={:.2}% buy={:.2}% mid={:.2}%",

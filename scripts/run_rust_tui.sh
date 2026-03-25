@@ -57,11 +57,9 @@ check_nats() {
   return 0
 }
 
-# Build the TUI service if needed
+# Build the TUI service (always; cargo is incremental and only rebuilds changed crates)
 build_tui() {
-  if [[ ! -f "${BACKEND_DIR}/target/debug/tui_service" ]]; then
-    (cd "${BACKEND_DIR}" && cargo build -q -p tui_service)
-  fi
+  (cd "${BACKEND_DIR}" && cargo build -q -p tui_service)
 }
 
 # Run the Rust TUI

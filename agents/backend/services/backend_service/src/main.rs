@@ -3,6 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use anyhow::Context;
 use api::{
     credentials::{get_credential, CredentialKey},
+    shared_config::load_shared_config,
     Alert, HealthAggregateState, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
 };
 use async_trait::async_trait;
@@ -44,8 +45,8 @@ mod snapshot_publisher;
 mod swiftness;
 mod yield_curve_writer;
 
-use crate::shared_state::SharedSnapshot;
 use crate::demo_seed::{seed_demo_market_data, seed_demo_positions};
+use crate::shared_state::SharedSnapshot;
 
 #[derive(Debug, Default, Deserialize, Clone)]
 struct BackendConfig {
@@ -55,7 +56,8 @@ struct BackendConfig {
     broker: BrokerSettings,
     #[serde(default)]
     yield_curve: YieldCurveSettings,
-    /// Seed demo positions/orders/historic trades on startup and spawn demo strategy signals.
+    /// Seed demo positions/orders/historic trades on startup and project
+    /// synthetic decision snapshots into the read-only runtime model.
     /// Off by default; enable with `mock_positions = true` in config or `MOCK_POSITIONS=true` env.
     /// Intended for CI/QA and local smoke-testing only.
     #[serde(default)]
@@ -217,6 +219,7 @@ async fn main() -> anyhow::Result<()> {
     init_tracing();
     bootstrap_credentials();
     let config = load_config().context("failed to load backend config")?;
+    let backend_id = resolve_backend_id();
 
     let state: SharedSnapshot = Arc::new(RwLock::new(SystemSnapshot::default()));
     let (strategy_ctrl_tx, strategy_ctrl_rx) = watch::channel(false);
@@ -375,7 +378,6 @@ async fn main() -> anyhow::Result<()> {
                 info!("Broker order placement disabled (enable with IB_BROKER_ENABLED or set paper_trading=true)");
                 None
             };
-            let backend_id = std::env::var("BACKEND_ID").unwrap_or_else(|_| "backend".into());
             let interval_ms: u64 = std::env::var("SNAPSHOT_PUBLISH_INTERVAL_MS")
                 .ok()
                 .and_then(|v| v.parse().ok())
@@ -405,7 +407,7 @@ async fn main() -> anyhow::Result<()> {
             snapshot_publisher::spawn(
                 state.clone(),
                 client.clone(),
-                backend_id,
+                backend_id.clone(),
                 interval_ms,
                 use_jetstream,
             );
@@ -417,6 +419,7 @@ async fn main() -> anyhow::Result<()> {
                 state.clone(),
                 None,
                 broker_engine.clone(),
+                backend_id.clone(),
             );
 
             if config.yield_curve.enabled {
@@ -520,6 +523,38 @@ fn load_config() -> anyhow::Result<BackendConfig> {
         toml::from_str(&toml::to_string(&base_value).context("serialize merged config")?)
             .context("invalid merged backend config")?;
     Ok(cfg)
+}
+
+fn resolve_backend_id() -> String {
+    if let Ok(value) = std::env::var("BACKEND_ID") {
+        let normalized = value.trim().to_lowercase();
+        if !normalized.is_empty() {
+            return normalized;
+        }
+    }
+
+    if let Ok(Some(loaded)) = load_shared_config() {
+        let shared_backend_id = loaded
+            .value
+            .get("dataSources")
+            .and_then(|d| d.get("primary"))
+            .and_then(|v| v.as_str())
+            .or_else(|| {
+                loaded
+                    .value
+                    .get("broker")
+                    .and_then(|b| b.get("primary"))
+                    .and_then(|v| v.as_str())
+            })
+            .unwrap_or("")
+            .trim()
+            .to_lowercase();
+        if !shared_backend_id.is_empty() {
+            return shared_backend_id;
+        }
+    }
+
+    "ib".to_string()
 }
 
 /// Merge `overlay` into `base` in place (overlay keys take precedence).
