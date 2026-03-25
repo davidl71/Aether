@@ -672,7 +672,8 @@ ticker print --format=json
 
 ## Related Documentation
 
-- [TUI Design](research/architecture/TUI_DESIGN.md) - Current TUI design document
+- [../TUI_ARCHITECTURE.md](../TUI_ARCHITECTURE.md) - Active Rust TUI architecture
+- [platform/TUI_LEGACY_DESIGN_LEARNINGS.md](platform/TUI_LEGACY_DESIGN_LEARNINGS.md) - Consolidated archive TUI learnings
 - TUI testing — historical Python/Textual guide (archived; doc removed)
 - [API Documentation Index](API_DOCUMENTATION_INDEX.md) - Complete API reference
 

@@ -216,7 +216,6 @@ Code analysis, framework evaluations, and comparison documents.
 - **[STATIC_ANALYSIS.md](research/analysis/STATIC_ANALYSIS.md)** - Static analysis results
 - **[STATIC_ANALYSIS_ANNOTATIONS.md](research/analysis/STATIC_ANALYSIS_ANNOTATIONS.md)** - Analysis annotations
 - **[TEST_COVERAGE_ANALYSIS.md](research/analysis/TEST_COVERAGE_ANALYSIS.md)** - Test coverage
-- **[TUI_TEST_COVERAGE_ANALYSIS.md](research/analysis/TUI_TEST_COVERAGE_ANALYSIS.md)** - TUI test coverage
 - **SECURITY_VULNERABILITIES_REVIEW** (doc removed)
 - **[FOSSOLOGY_ANALYSIS.md](research/analysis/FOSSOLOGY_ANALYSIS.md)** - License analysis
 
@@ -289,9 +288,7 @@ How-to guides, setup instructions, and implementation documentation.
 
 ### TUI & UI Implementation
 
-- **[TUI_DESIGN.md](research/architecture/TUI_DESIGN.md)** - TUI design guide
 - **[TUI_SCENARIO_EXPLORER_DESIGN.md](research/architecture/TUI_SCENARIO_EXPLORER_DESIGN.md)** - Scenario explorer
-- **[TUI_MULTISCREEN_RESEARCH.md](research/architecture/TUI_MULTISCREEN_RESEARCH.md)** - Multi-screen research
 - **TUI_PYTHON_MIGRATION** — Historical Python/Textual TUI migration (archived; doc removed)
 - **[IPAD_APP_DESIGN.md](research/architecture/IPAD_APP_DESIGN.md)** - iPad app design
 - **[PWA_PATTERNS_APPLICABILITY.md](research/architecture/PWA_PATTERNS_APPLICABILITY.md)** - PWA patterns

@@ -1,7 +1,7 @@
 # TUI Legacy Design Learnings
 
-**Purpose:** Features and design patterns from legacy TUI docs that the current Rust/Ratatui TUI can learn from.  
-**Sources:** `docs/research/architecture/TUI_DESIGN.md`, `TUI_SCENARIO_EXPLORER_DESIGN.md`, `TUI_MULTISCREEN_RESEARCH.md`, `docs/TICKER_TUI_ANALYSIS.md`, `docs/platform/TUI_RUST_READ_PATH_AUDIT.md`, `docs/CACHE_AND_INTERVAL_DEFAULTS.md`.  
+**Purpose:** Features and design patterns distilled from older TUI design notes that the current Rust/Ratatui TUI can still learn from. This file is the consolidated archive entry point for legacy TUI guidance.  
+**Sources:** historical top/htop-style TUI sketches, scenario explorer notes, split-pane experiments, external terminal UI comparisons, `docs/TICKER_TUI_ANALYSIS.md`, `docs/platform/TUI_RUST_READ_PATH_AUDIT.md`, and `docs/CACHE_AND_INTERVAL_DEFAULTS.md`.  
 **Current TUI:** `agents/backend/services/tui_service` (Ratatui + crossterm).  
 **TUI data path:** NATS only (api.*); no direct database or backend HTTP.
 
@@ -74,7 +74,7 @@
 
 ---
 
-## 6. Multiscreen / split panes (from TUI_MULTISCREEN_RESEARCH.md)
+## 6. Multiscreen / split panes
 
 - **Idea:** Show multiple tabs at once (e.g. Dashboard | Positions, or 2×2) instead of single-tab view.
 - **References:** Zellij, lazygit, k9s, btop, lazydocker.
@@ -108,9 +108,7 @@
 
 | Document | Main takeaways |
 |----------|----------------|
-| **TUI_DESIGN.md** | top/htop layout, header (mode/strategy/account), status pills, S/T/K/D/B/Shift+S, Enter popup, color rules, modular views, config palette. |
 | **TUI_SCENARIO_EXPLORER_DESIGN.md** | Scenarios tab/section: summary stats + sortable table, filters, keyboard nav, data source options. |
-| **TUI_MULTISCREEN_RESEARCH.md** | Split panes (2 or 4), resizable, focus management; reference apps (lazygit, k9s, btop). |
 | **TICKER_TUI_ANALYSIS.md** | Config and display options, position/cost basis, summary stats, polling vs push. |
 | **TUI_RUST_READ_PATH_AUDIT.md** | Which reads are Rust vs legacy; no revival of Python TUI. |
 | **CACHE_AND_INTERVAL_DEFAULTS.md** | Legacy TUI intervals as reference only; Rust TUI uses snapshot TTL / NATS. |
@@ -157,7 +155,7 @@ Below are patterns and decisions inferred from **Done** Todo2 tasks tagged or re
 | **Shared read models in Rust** | T-1773174764827468000, T-1773174378092953000, T-1773172060167170000, T-1773172054316351000 | Unified positions, bank normalization, relationship inference live in Rust; TUI consumes snapshot that already reflects them. |
 | **Snapshot contract aligned** | T-1773172068617486000 | Web and TUI share same snapshot shape; keep one contract (e.g. proto or shared JSON). |
 | **Config validation = hint only** | Parity doc | Don’t block startup; show warning in status bar. Full schema validation optional. |
-| **Multiscreen research done, split layout optional** | T-53, T-54, T-55, T-56, T-203 | Multiscreen patterns documented (TUI_MULTISCREEN_RESEARCH.md); 2-pane split was implemented then possibly simplified. Use layout splits when we want multiple panes visible; not required for MVP. |
+| **Multiscreen research done, split layout optional** | T-53, T-54, T-55, T-56, T-203 | Split-pane patterns were researched and partially implemented, then simplified. Use layout splits when we want multiple panes visible; not required for MVP. |
 | **Bubble Tea as reference only** | T-1773180671128897000 | Evaluated as future Go option; no Go TUI in this repo. Patterns (e.g. from TICKER_TUI_ANALYSIS) still useful. |
 
 ### 11.3 Deferred or optional (revisit when scope allows)

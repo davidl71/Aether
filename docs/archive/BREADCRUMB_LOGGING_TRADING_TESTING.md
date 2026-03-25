@@ -7,7 +7,7 @@
 **Reference**:
 
 - [OpenAlgo API Analyzer](https://github.com/marketcalls/openalgo) - Comprehensive testing and validation tool
-- [TUI Breadcrumb Logging Guide](./TUI_BREADCRUMB_LOGGING.md) - General breadcrumb logging documentation
+- Breadcrumb logging for the current Rust TUI remains a possible future debugging aid, but the older dedicated guide was removed because it was C++-specific and stale for the active runtime.
 
 ---
 
@@ -537,7 +537,7 @@ Use consistent naming for similar operations:
 
 ## References
 
-- [TUI Breadcrumb Logging Guide](./TUI_BREADCRUMB_LOGGING.md)
+- Active TUI structure: [../TUI_ARCHITECTURE.md](../TUI_ARCHITECTURE.md)
 - [OpenAlgo API Analyzer](https://github.com/marketcalls/openalgo)
 - [OpenAlgo Integration Patterns](OPENALGO_INTEGRATION_PATTERNS.md)
 
