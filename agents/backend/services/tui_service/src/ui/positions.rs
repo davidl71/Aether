@@ -112,9 +112,8 @@ pub fn position_type_label(typ: Option<&str>) -> &'static str {
     }
 }
 
-pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
-    render_positions_panel(f, app, area);
-}
+#[allow(unused_imports)]
+pub use render_positions_panel as render_positions;
 
 pub fn render_positions_panel(f: &mut Frame, app: &App, area: Rect) {
     render_positions_table(f, app, area);

@@ -33,9 +33,8 @@ fn roi_history_to_sparkline_data(history: &std::collections::VecDeque<f64>) -> V
         .collect()
 }
 
-pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
-    render_dashboard_panel(f, app, area);
-}
+#[allow(unused_imports)]
+pub use render_dashboard_panel as render_dashboard;
 
 pub fn render_dashboard_panel(f: &mut Frame, app: &App, area: Rect) {
     let chunks = Layout::default()

@@ -1,5 +1,6 @@
 //! Application state and event dispatch.
 
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Instant;
 
@@ -58,7 +59,7 @@ pub enum ToastLevel {
     Error,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tab {
     Dashboard,
     Positions,
@@ -71,6 +72,75 @@ pub enum Tab {
     Scenarios,
     Logs,
     Settings,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VisibleWorkspace {
+    None,
+    SplitPane,
+    Market,
+    Operations,
+    Credit,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WorkspaceSpec {
+    pub kind: VisibleWorkspace,
+    pub title: &'static str,
+    pub summary: &'static str,
+    pub tabs: &'static [Tab],
+    pub min_width: u16,
+    pub min_height: u16,
+    pub hint_label: &'static str,
+}
+
+const MARKET_WORKSPACE_TABS: [Tab; 4] = [Tab::Dashboard, Tab::Positions, Tab::Orders, Tab::Yield];
+const OPERATIONS_WORKSPACE_TABS: [Tab; 3] = [Tab::Alerts, Tab::Logs, Tab::Settings];
+const CREDIT_WORKSPACE_TABS: [Tab; 2] = [Tab::Loans, Tab::DiscountBank];
+const SPLIT_PANE_TABS: [Tab; 2] = [Tab::Dashboard, Tab::Positions];
+
+impl VisibleWorkspace {
+    pub fn spec(self) -> Option<WorkspaceSpec> {
+        match self {
+            VisibleWorkspace::None => None,
+            VisibleWorkspace::SplitPane => Some(WorkspaceSpec {
+                kind: self,
+                title: "Split pane",
+                summary: "Dashboard + Positions",
+                tabs: &SPLIT_PANE_TABS,
+                min_width: 0,
+                min_height: 0,
+                hint_label: "split",
+            }),
+            VisibleWorkspace::Market => Some(WorkspaceSpec {
+                kind: self,
+                title: "Market Workspace",
+                summary: "Dash + Pos + Orders + Yield visible",
+                tabs: &MARKET_WORKSPACE_TABS,
+                min_width: 170,
+                min_height: 22,
+                hint_label: "workspace",
+            }),
+            VisibleWorkspace::Operations => Some(WorkspaceSpec {
+                kind: self,
+                title: "Operations Workspace",
+                summary: "Alerts + Logs + Settings visible",
+                tabs: &OPERATIONS_WORKSPACE_TABS,
+                min_width: 170,
+                min_height: 20,
+                hint_label: "ops",
+            }),
+            VisibleWorkspace::Credit => Some(WorkspaceSpec {
+                kind: self,
+                title: "Credit Workspace",
+                summary: "Loans + Bank visible",
+                tabs: &CREDIT_WORKSPACE_TABS,
+                min_width: 170,
+                min_height: 18,
+                hint_label: "credit",
+            }),
+        }
+    }
 }
 
 /// Display-ready greeks result for an option position.
@@ -353,7 +423,11 @@ impl LoanEntryState {
             payment_frequency_months: 1,
             status: api::loans::LoanStatus::Active,
             last_update: now,
-            currency: if self.currency.is_empty() { "ILS".to_string() } else { self.currency.clone() },
+            currency: if self.currency.is_empty() {
+                "ILS".to_string()
+            } else {
+                self.currency.clone()
+            },
         })
     }
 }
@@ -393,6 +467,22 @@ impl Tab {
         }
     }
 
+    pub fn title(&self) -> &'static str {
+        match self {
+            Tab::Dashboard => "Dashboard",
+            Tab::Positions => "Positions",
+            Tab::Charts => "Charts",
+            Tab::Orders => "Orders",
+            Tab::Alerts => "Alerts",
+            Tab::Yield => "Yield",
+            Tab::Loans => "Loans",
+            Tab::DiscountBank => "Bank",
+            Tab::Scenarios => "Scenarios",
+            Tab::Logs => "Logs",
+            Tab::Settings => "Settings",
+        }
+    }
+
     fn index(&self) -> usize {
         Tab::ALL.iter().position(|t| t == self).unwrap_or(0)
     }
@@ -413,6 +503,9 @@ pub struct App {
     /// Set true when state changes require redraw. Reset after each render.
     pub needs_redraw: bool,
     pub active_tab: Tab,
+    /// Last rendered main-content area size; input uses this to decide whether wide workspaces
+    /// are actually visible before hijacking focus navigation.
+    last_main_area_size: Cell<(u16, u16)>,
     /// Latest snapshot from periodic NATS publication. Updated via `snapshot_rx`.
     /// Access via `get_snapshot()` / `set_snapshot()` using UnsafeCell interior mutability.
     snapshot: std::cell::UnsafeCell<Option<TuiSnapshot>>,
@@ -504,7 +597,7 @@ pub struct App {
     pub settings_edit_config_key: Option<String>,
     /// In-memory config overrides (key = NATS_URL, BACKEND_ID, etc.). Applied on top of file/env config.
     pub config_overrides: HashMap<String, String>,
-    /// Selected config row in Settings (0..=4): NATS_URL, BACKEND_ID, TICK_MS, SNAPSHOT_TTL_SECS, SPLIT_PANE.
+    /// Selected config row in Settings (visible runtime config entries list).
     pub settings_config_key_index: usize,
     /// Last fetched box spread curve for the selected symbol.
     pub yield_curve: Option<CurveResponse>,
@@ -591,6 +684,7 @@ impl App {
             config,
             needs_redraw: true,
             active_tab: Tab::Dashboard,
+            last_main_area_size: Cell::new((0, 0)),
             snapshot: std::cell::UnsafeCell::new(None),
             roi_history: HashMap::new(),
             order_filter: String::new(),
@@ -692,6 +786,36 @@ impl App {
             *self.snapshot.get() = snap;
         }
         self.hydrate_chart_history_from_snapshot();
+    }
+
+    pub fn set_last_main_area_size(&self, width: u16, height: u16) {
+        self.last_main_area_size.set((width, height));
+    }
+
+    pub fn visible_workspace(&self) -> VisibleWorkspace {
+        let (width, height) = self.last_main_area_size.get();
+        if self.split_pane && SPLIT_PANE_TABS.contains(&self.active_tab) {
+            return VisibleWorkspace::SplitPane;
+        }
+        for mode in [
+            VisibleWorkspace::Market,
+            VisibleWorkspace::Operations,
+            VisibleWorkspace::Credit,
+        ] {
+            if let Some(spec) = mode.spec() {
+                if spec.tabs.contains(&self.active_tab)
+                    && width >= spec.min_width
+                    && height >= spec.min_height
+                {
+                    return mode;
+                }
+            }
+        }
+        VisibleWorkspace::None
+    }
+
+    pub fn visible_workspace_spec(&self) -> Option<WorkspaceSpec> {
+        self.visible_workspace().spec()
     }
 
     /// Applies a tick market data event to the current snapshot.
@@ -866,7 +990,6 @@ impl App {
         }
     }
 
-
     /// Legacy: set yield data from NATS request/reply fetch (curve + benchmarks).
     /// Kept for test compatibility; production path now uses KV watch + periodic benchmarks fetch.
     pub fn set_yield_data(
@@ -918,7 +1041,9 @@ impl App {
     /// Update `yield_curve` (detail view) to match `yield_symbol_index` from cached data.
     /// Called after navigation or after a KV update arrives for the selected symbol.
     pub fn sync_yield_curve_from_cache(&mut self) {
-        let idx = self.yield_symbol_index.min(self.config.watchlist.len().saturating_sub(1));
+        let idx = self
+            .yield_symbol_index
+            .min(self.config.watchlist.len().saturating_sub(1));
         self.yield_curve = self
             .config
             .watchlist
@@ -1206,12 +1331,17 @@ impl App {
             } => {
                 // Record when we last got fresh data for this symbol
                 if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&fetched_at) {
-                    self.yield_last_refreshed.insert(symbol.clone(), dt.with_timezone(&chrono::Utc));
+                    self.yield_last_refreshed
+                        .insert(symbol.clone(), dt.with_timezone(&chrono::Utc));
                 }
                 self.yield_curves_all.insert(symbol.clone(), curve);
                 self.sync_yield_curve_from_cache();
                 // Mark most recent pending task as done
-                if let Some(task) = self.yield_tasks.iter_mut().find(|t| t.status == RefreshTaskStatus::Pending) {
+                if let Some(task) = self
+                    .yield_tasks
+                    .iter_mut()
+                    .find(|t| t.status == RefreshTaskStatus::Pending)
+                {
                     task.status = RefreshTaskStatus::Done;
                     task.completed_at = Some(chrono::Utc::now());
                 }
@@ -1226,7 +1356,11 @@ impl App {
             AppEvent::YieldRefreshAck { ok } => {
                 if !ok {
                     // Mark most recent pending task as error
-                    if let Some(task) = self.yield_tasks.iter_mut().find(|t| t.status == RefreshTaskStatus::Pending) {
+                    if let Some(task) = self
+                        .yield_tasks
+                        .iter_mut()
+                        .find(|t| t.status == RefreshTaskStatus::Pending)
+                    {
                         task.status = RefreshTaskStatus::Error("backend rejected refresh".into());
                         task.completed_at = Some(chrono::Utc::now());
                     }
@@ -1336,6 +1470,21 @@ fn merge_config_overrides(base: TuiConfig, overrides: &HashMap<String, String>) 
             c.tick_ms = n.max(1);
         }
     }
+    if let Some(v) = overrides.get("REST_URL") {
+        let value = v.trim().to_string();
+        if !value.is_empty() {
+            c.rest_url = value;
+        }
+    }
+    if let Some(v) = overrides.get("REST_POLL_MS") {
+        if let Ok(n) = v.trim().parse::<u64>() {
+            c.rest_poll_ms = n.max(1);
+        }
+    }
+    if let Some(v) = overrides.get("REST_FALLBACK") {
+        let v = v.trim().to_lowercase();
+        c.rest_fallback = v == "1" || v == "true" || v == "yes";
+    }
     if let Some(v) = overrides.get("SNAPSHOT_TTL_SECS") {
         if let Ok(n) = v.trim().parse::<u64>() {
             c.snapshot_ttl_secs = n.max(1);
@@ -1345,17 +1494,36 @@ fn merge_config_overrides(base: TuiConfig, overrides: &HashMap<String, String>) 
         let v = v.trim().to_lowercase();
         c.split_pane = v == "1" || v == "true" || v == "yes";
     }
+    if let Some(v) = overrides.get("BENCHMARKS_REFRESH_SECS") {
+        if let Ok(n) = v.trim().parse::<u64>() {
+            c.benchmarks_refresh_secs = n.max(60);
+        }
+    }
+    if let Some(v) = overrides.get("NATS_KV_BUCKET") {
+        let value = v.trim().to_string();
+        if !value.is_empty() {
+            c.yield_kv_bucket = value;
+        }
+    }
     c
 }
 
-/// Config keys editable from Settings (index 0..=4).
+/// Config keys visible from Settings.
 fn config_key_value_at(config: &TuiConfig, index: usize) -> Option<(String, String)> {
     let (key, value) = match index {
         0 => ("NATS_URL", config.nats_url.clone()),
         1 => ("BACKEND_ID", config.backend_id.clone()),
         2 => ("TICK_MS", config.tick_ms.to_string()),
-        3 => ("SNAPSHOT_TTL_SECS", config.snapshot_ttl_secs.to_string()),
-        4 => ("SPLIT_PANE", config.split_pane.to_string()),
+        3 => ("REST_URL", config.rest_url.clone()),
+        4 => ("REST_POLL_MS", config.rest_poll_ms.to_string()),
+        5 => ("REST_FALLBACK", config.rest_fallback.to_string()),
+        6 => ("SNAPSHOT_TTL_SECS", config.snapshot_ttl_secs.to_string()),
+        7 => ("SPLIT_PANE", config.split_pane.to_string()),
+        8 => (
+            "BENCHMARKS_REFRESH_SECS",
+            config.benchmarks_refresh_secs.to_string(),
+        ),
+        9 => ("NATS_KV_BUCKET", config.yield_kv_bucket.clone()),
         _ => return None,
     };
     Some((key.to_string(), value))
@@ -1378,7 +1546,7 @@ fn validate_config_hint(config: &TuiConfig) -> Option<String> {
 }
 
 impl App {
-    /// Config key/value for Settings config list (index 0..=4).
+    /// Config key/value for Settings config list.
     pub fn config_key_value_at(&self, index: usize) -> Option<(String, String)> {
         config_key_value_at(&self.config, index)
     }
@@ -1688,7 +1856,8 @@ mod tests {
             point_count: 1,
             underlying_price: None,
         };
-        app.yield_curves_all.insert("SPX".to_string(), curve.clone());
+        app.yield_curves_all
+            .insert("SPX".to_string(), curve.clone());
         app.yield_curve = Some(curve);
         app.config.watchlist = vec!["SPX".to_string()];
         app.yield_benchmarks = None;
@@ -1747,7 +1916,9 @@ mod tests {
         // The comparison table shows "…" (waiting) when no data is in yield_curves_all.
         // The detail table shows "0 points returned" when yield_curve has an empty points vec.
         assert!(
-            content.contains("0 points") || content.contains("no data") || content.contains("waiting"),
+            content.contains("0 points")
+                || content.contains("no data")
+                || content.contains("waiting"),
             "Empty curve should show empty/waiting state; got:\n{}",
             content
         );
@@ -1856,6 +2027,89 @@ mod tests {
         assert!(content.contains("Split pane"));
         assert!(content.contains("Dashboard + Positions"));
         assert!(content.contains("PANE:DASH+POS"));
+    }
+
+    #[test]
+    fn split_pane_tab_cycles_focus_between_dashboard_and_positions() {
+        let (mut app, _, _) = make_app();
+        app.split_pane = true;
+        app.active_tab = Tab::Dashboard;
+        let backend = TestBackend::new(100, 28);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let _ = terminal.draw(|f| render(f, &app)).unwrap();
+
+        app.handle_key(KeyEvent::from(KeyCode::Tab));
+        assert_eq!(app.active_tab, Tab::Positions);
+
+        app.handle_key(KeyEvent::from(KeyCode::BackTab));
+        assert_eq!(app.active_tab, Tab::Dashboard);
+    }
+
+    #[test]
+    fn settings_left_right_escapes_nested_sections() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Settings;
+        app.settings_section_index = 1;
+        app.settings_config_key_index = 3;
+
+        app.handle_key(KeyEvent::from(KeyCode::Left));
+        assert_eq!(app.settings_section_index, 0);
+
+        app.handle_key(KeyEvent::from(KeyCode::Right));
+        assert_eq!(app.settings_section_index, 1);
+
+        app.handle_key(KeyEvent::from(KeyCode::Right));
+        assert_eq!(app.settings_section_index, 2);
+
+        app.handle_key(KeyEvent::from(KeyCode::Left));
+        assert_eq!(app.settings_section_index, 1);
+    }
+
+    #[test]
+    fn wide_terminal_renders_market_workspace() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Dashboard;
+
+        let backend = TestBackend::new(190, 32);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("Market Workspace"));
+        assert!(content.contains("Dash + Pos + Orders + Yield visible"));
+    }
+
+    #[test]
+    fn wide_terminal_renders_operations_workspace() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Alerts;
+
+        let backend = TestBackend::new(190, 32);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("Operations Workspace"));
+        assert!(content.contains("Alerts + Logs + Settings visible"));
+    }
+
+    #[test]
+    fn wide_operations_workspace_tab_cycles_focus_between_panes() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Alerts;
+
+        let backend = TestBackend::new(190, 32);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let _ = terminal.draw(|f| render(f, &app)).unwrap();
+
+        app.handle_key(KeyEvent::from(KeyCode::Tab));
+        assert_eq!(app.active_tab, Tab::Logs);
+
+        app.handle_key(KeyEvent::from(KeyCode::Tab));
+        assert_eq!(app.active_tab, Tab::Settings);
+
+        app.handle_key(KeyEvent::from(KeyCode::BackTab));
+        assert_eq!(app.active_tab, Tab::Logs);
     }
 
     #[test]

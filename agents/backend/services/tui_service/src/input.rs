@@ -107,8 +107,34 @@ pub enum Action {
     OrdersCancel,
     ForceSnapshot,
     SplitPaneToggle,
+    WorkspaceFocusPrev,
+    WorkspaceFocusNext,
+    SettingsSectionPrev,
+    SettingsSectionNext,
     FmpDetail,
     NoOp,
+}
+
+fn workspace_focus_target(app: &App, forward: bool) -> Option<Tab> {
+    let tabs = app.visible_workspace_spec()?.tabs;
+    let index = tabs.iter().position(|tab| *tab == app.active_tab)?;
+    let next = if forward {
+        (index + 1) % tabs.len()
+    } else {
+        (index + tabs.len() - 1) % tabs.len()
+    };
+    tabs.get(next).copied()
+}
+
+fn set_active_tab(app: &mut App, tab: Tab) {
+    app.active_tab = tab;
+    if app.active_tab == Tab::Yield {
+        app.sync_yield_curve_from_cache();
+    } else if app.active_tab == Tab::Loans {
+        app.request_loans_fetch();
+    } else if app.active_tab == Tab::DiscountBank {
+        app.request_discount_bank_fetch();
+    }
 }
 
 /// Converts a key event to an action, or None if the key is not handled.
@@ -160,7 +186,9 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         KeyCode::Up if app.active_tab == Tab::Yield => Some(Action::YieldCurveScrollUp),
         KeyCode::Down if app.active_tab == Tab::Yield => Some(Action::YieldCurveScrollDown),
         KeyCode::Enter if app.active_tab == Tab::Yield => Some(Action::YieldCurveDetail),
-        KeyCode::Char('r') | KeyCode::Char('R') if app.active_tab == Tab::Yield => Some(Action::YieldRefresh),
+        KeyCode::Char('r') | KeyCode::Char('R') if app.active_tab == Tab::Yield => {
+            Some(Action::YieldRefresh)
+        }
 
         // Charts pill navigation (before generic tab switch)
         KeyCode::Left
@@ -172,6 +200,14 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
             if app.active_tab == Tab::Charts && !matches!(input_mode, InputMode::ChartSearch) =>
         {
             Some(Action::ChartPillRight)
+        }
+        KeyCode::Left if app.active_tab == Tab::Settings => Some(Action::SettingsSectionPrev),
+        KeyCode::Right if app.active_tab == Tab::Settings => Some(Action::SettingsSectionNext),
+
+        // Workspace focus cycling takes precedence when a composed workspace is actually visible.
+        KeyCode::Tab if workspace_focus_target(app, true).is_some() => Some(Action::WorkspaceFocusNext),
+        KeyCode::BackTab if workspace_focus_target(app, false).is_some() => {
+            Some(Action::WorkspaceFocusPrev)
         }
 
         // Tab navigation
@@ -189,26 +225,16 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         KeyCode::Char('0') => Some(Action::JumpToTab(0)),
 
         // Positions
-        KeyCode::Char('c') | KeyCode::Char('C')
-            if app.active_tab == Tab::Positions || app.split_pane =>
-        {
+        KeyCode::Char('c') | KeyCode::Char('C') if app.active_tab == Tab::Positions => {
             Some(Action::PositionsToggleCombo)
         }
-        KeyCode::Up if app.active_tab == Tab::Positions || app.split_pane => {
-            Some(Action::PositionsScrollUp)
-        }
-        KeyCode::Down if app.active_tab == Tab::Positions || app.split_pane => {
-            Some(Action::PositionsScrollDown)
-        }
-        KeyCode::PageUp if app.active_tab == Tab::Positions || app.split_pane => {
-            Some(Action::PositionsScrollPageUp)
-        }
-        KeyCode::PageDown if app.active_tab == Tab::Positions || app.split_pane => {
+        KeyCode::Up if app.active_tab == Tab::Positions => Some(Action::PositionsScrollUp),
+        KeyCode::Down if app.active_tab == Tab::Positions => Some(Action::PositionsScrollDown),
+        KeyCode::PageUp if app.active_tab == Tab::Positions => Some(Action::PositionsScrollPageUp),
+        KeyCode::PageDown if app.active_tab == Tab::Positions => {
             Some(Action::PositionsScrollPageDown)
         }
-        KeyCode::Enter if app.active_tab == Tab::Positions || app.split_pane => {
-            Some(Action::PositionsDetail)
-        }
+        KeyCode::Enter if app.active_tab == Tab::Positions => Some(Action::PositionsDetail),
 
         // Orders
         KeyCode::Up if app.active_tab == Tab::Orders => Some(Action::OrdersScrollUp),
@@ -248,9 +274,7 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         }
 
         // Discount Bank
-        KeyCode::Up if app.active_tab == Tab::DiscountBank => {
-            Some(Action::DiscountBankScrollUp)
-        }
+        KeyCode::Up if app.active_tab == Tab::DiscountBank => Some(Action::DiscountBankScrollUp),
         KeyCode::Down if app.active_tab == Tab::DiscountBank => {
             Some(Action::DiscountBankScrollDown)
         }
@@ -424,13 +448,13 @@ pub fn apply_action(app: &mut App, action: Action) {
             app.show_log_panel = !app.show_log_panel;
         }
         Action::TabNext => {
-            app.active_tab = app.active_tab.next();
+            set_active_tab(app, app.active_tab.next());
         }
         Action::TabPrev => {
-            app.active_tab = app.active_tab.prev();
+            set_active_tab(app, app.active_tab.prev());
         }
         Action::JumpToTab(n) => {
-            app.active_tab = match n {
+            let target = match n {
                 1 => Tab::Dashboard,
                 2 => Tab::Positions,
                 3 => Tab::Charts,
@@ -441,21 +465,17 @@ pub fn apply_action(app: &mut App, action: Action) {
                 8 => Tab::DiscountBank,
                 9 => Tab::Scenarios,
                 0 => Tab::Settings,
-                _ => app.active_tab.clone(),
+                _ => app.active_tab,
             };
-            // When entering Yield tab, sync detail view from KV cache; no on-demand fetch.
-            if app.active_tab == Tab::Yield {
-                app.sync_yield_curve_from_cache();
-            } else if app.active_tab == Tab::Loans {
-                app.request_loans_fetch();
-            } else if app.active_tab == Tab::DiscountBank {
-                app.request_discount_bank_fetch();
-            }
+            set_active_tab(app, target);
         }
         Action::YieldRefresh => {
             let watchlist = app.watchlist();
             let symbol = watchlist
-                .get(app.yield_symbol_index.min(watchlist.len().saturating_sub(1)))
+                .get(
+                    app.yield_symbol_index
+                        .min(watchlist.len().saturating_sub(1)),
+                )
                 .cloned()
                 .unwrap_or_default();
             app.request_yield_fetch(&symbol);
@@ -488,7 +508,8 @@ pub fn apply_action(app: &mut App, action: Action) {
         Action::YieldCurveDetail => {
             if let Some(ref curve) = app.yield_curve {
                 if let Some(point) = curve.points.get(app.yield_curve_scroll) {
-                    app.detail_popup = Some(crate::app::DetailPopupContent::YieldPoint(point.clone()));
+                    app.detail_popup =
+                        Some(crate::app::DetailPopupContent::YieldPoint(point.clone()));
                 }
             }
         }
@@ -542,25 +563,24 @@ pub fn apply_action(app: &mut App, action: Action) {
                 ToggleCombo((String, String, String)),
                 ShowPosition(RuntimePositionDto),
             }
-            let detail_action: Option<PosDetailAction> =
-                app.snapshot().as_ref().and_then(|snap| {
-                    let (_display_len, index_map, combo_key_per_row) =
-                        crate::ui::positions_display_info(
-                            &snap.dto().positions,
-                            app.positions_combo_view,
-                            &app.positions_expanded_combos,
-                        );
-                    if let Some(Some(combo_key)) = combo_key_per_row.get(app.positions_scroll) {
-                        Some(PosDetailAction::ToggleCombo(combo_key.clone()))
-                    } else if let Some(Some(pos_idx)) = index_map.get(app.positions_scroll) {
-                        snap.dto()
-                            .positions
-                            .get(*pos_idx)
-                            .map(|pos| PosDetailAction::ShowPosition(pos.clone()))
-                    } else {
-                        None
-                    }
-                });
+            let detail_action: Option<PosDetailAction> = app.snapshot().as_ref().and_then(|snap| {
+                let (_display_len, index_map, combo_key_per_row) =
+                    crate::ui::positions_display_info(
+                        &snap.dto().positions,
+                        app.positions_combo_view,
+                        &app.positions_expanded_combos,
+                    );
+                if let Some(Some(combo_key)) = combo_key_per_row.get(app.positions_scroll) {
+                    Some(PosDetailAction::ToggleCombo(combo_key.clone()))
+                } else if let Some(Some(pos_idx)) = index_map.get(app.positions_scroll) {
+                    snap.dto()
+                        .positions
+                        .get(*pos_idx)
+                        .map(|pos| PosDetailAction::ShowPosition(pos.clone()))
+                } else {
+                    None
+                }
+            });
             match detail_action {
                 Some(PosDetailAction::ToggleCombo(combo_key)) => {
                     if app.positions_expanded_combos.contains(&combo_key) {
@@ -1008,7 +1028,7 @@ pub fn apply_action(app: &mut App, action: Action) {
                         (app.settings_symbol_index + 1).min(len.saturating_sub(1));
                 }
             } else if app.settings_section_index == 1 {
-                app.settings_config_key_index = (app.settings_config_key_index + 1).min(4);
+                app.settings_config_key_index = (app.settings_config_key_index + 1).min(9);
             } else {
                 app.settings_section_index = (app.settings_section_index + 1).min(3);
             }
@@ -1173,6 +1193,26 @@ pub fn apply_action(app: &mut App, action: Action) {
         Action::SplitPaneToggle => {
             app.split_pane = !app.split_pane;
             app.positions_scroll = 0;
+        }
+        Action::WorkspaceFocusPrev => {
+            if let Some(target) = workspace_focus_target(app, false) {
+                set_active_tab(app, target);
+            }
+        }
+        Action::WorkspaceFocusNext => {
+            if let Some(target) = workspace_focus_target(app, true) {
+                set_active_tab(app, target);
+            }
+        }
+        Action::SettingsSectionPrev => {
+            if app.active_tab == Tab::Settings {
+                app.settings_section_index = app.settings_section_index.saturating_sub(1);
+            }
+        }
+        Action::SettingsSectionNext => {
+            if app.active_tab == Tab::Settings {
+                app.settings_section_index = (app.settings_section_index + 1).min(3);
+            }
         }
         Action::NoOp => {}
     }

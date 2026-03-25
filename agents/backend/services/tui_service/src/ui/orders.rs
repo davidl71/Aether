@@ -9,9 +9,8 @@ use ratatui::{
 
 use crate::app::App;
 
-pub fn render_orders(f: &mut Frame, app: &App, area: Rect) {
-    render_orders_panel(f, app, area);
-}
+#[allow(unused_imports)]
+pub use render_orders_panel as render_orders;
 
 pub fn render_orders_panel(f: &mut Frame, app: &App, area: Rect) {
     let chunks = Layout::default()

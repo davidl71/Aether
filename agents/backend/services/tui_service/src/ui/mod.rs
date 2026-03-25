@@ -4,6 +4,7 @@ mod alerts;
 mod candlestick;
 pub mod charts;
 mod dashboard;
+mod discount_bank;
 mod loans;
 pub mod logs;
 mod orders;
@@ -14,6 +15,7 @@ pub use scenarios::filtered_scenarios;
 mod settings;
 mod yield_curve;
 pub use candlestick::Candle;
+#[cfg(test)]
 pub(crate) use yield_curve::render_yield_curve as render_yield_curve_tab;
 
 use ratatui::{
@@ -26,24 +28,24 @@ use ratatui::{
 
 use api::CommandStatus;
 
-use crate::app::{App, DetailPopupContent, InputMode, Tab};
+use crate::app::{App, DetailPopupContent, InputMode, Tab, VisibleWorkspace, WorkspaceSpec};
 use crate::events::{ConnectionState, ConnectionStatus, ConnectionTarget};
 
 pub fn render(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(1),
-            Constraint::Length(3),
-            Constraint::Min(0),
-            Constraint::Length(1),
+            Constraint::Length(3), // tab bar
+            Constraint::Min(0),    // main content
+            Constraint::Length(1), // hint bar
+            Constraint::Length(1), // status bar (moved to bottom)
         ])
         .split(f.area());
 
-    render_status_bar(f, app, chunks[0]);
-    render_tab_bar(f, app, chunks[1]);
-    render_main(f, app, chunks[2]);
-    render_hint_bar(f, app, chunks[3]);
+    render_tab_bar(f, app, chunks[0]);
+    render_main(f, app, chunks[1]);
+    render_hint_bar(f, app, chunks[2]);
+    render_status_bar(f, app, chunks[3]);
 
     if app.show_help {
         render_help_overlay(f, f.area());
@@ -115,7 +117,7 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         }
     }
 
-    if app.split_pane {
+    if matches!(app.visible_workspace(), VisibleWorkspace::SplitPane) {
         spans.push(Span::raw(" | "));
         spans.push(Span::styled(
             "PANE:DASH+POS",
@@ -125,35 +127,13 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         ));
     }
 
-    if let Some(meta) = app.live_market_data_source.as_ref() {
-        let age_secs = meta.age_secs();
-        let age_label = if age_secs <= 1 {
-            "now".to_string()
-        } else {
-            format!("{}s ago", age_secs)
-        };
-        let color = if age_secs <= 2 {
-            Color::Green
-        } else if age_secs <= 6 {
-            Color::Yellow
-        } else {
-            Color::Red
-        };
-        spans.push(Span::raw(" | "));
-        spans.push(Span::styled(
-            format!(
-                "{}@{} ({})",
-                meta.source.to_uppercase(),
-                meta.priority,
-                age_label
-            ),
-            Style::default().fg(color),
-        ));
-    }
+    // Market data source detail (source@priority, age) lives in the Settings → Data sources tab.
+    // We show only a compact [SOURCE] pill in the title bar to indicate which provider is active.
 
     spans.push(Span::raw("  "));
     let pill_color = match market_data_source.to_lowercase().as_str() {
         "yahoo" => Color::Magenta,
+        "mock" => Color::Cyan,
         "polygon" => Color::Blue,
         "ib" | "ibkr" => Color::Green,
         _ => source_color,
@@ -257,37 +237,25 @@ fn render_tab_bar(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_main(f: &mut Frame, app: &App, area: Rect) {
-    if app.split_pane {
-        let outer = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Length(1), Constraint::Min(0)])
-            .split(area);
-        let split_label = Paragraph::new(Line::from(vec![
-            Span::styled(
-                " Split pane ",
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::raw("Dashboard + Positions"),
-        ]));
-        f.render_widget(split_label, outer[0]);
-
-        let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-            .split(outer[1]);
-        dashboard::render_dashboard(f, app, chunks[0]);
-        positions::render_positions(f, app, chunks[1]);
+    app.set_last_main_area_size(area.width, area.height);
+    if let Some(spec) = app.visible_workspace_spec() {
+        match spec.kind {
+            VisibleWorkspace::SplitPane => render_split_workspace(f, app, area, spec),
+            VisibleWorkspace::Market => render_market_workspace(f, app, area, spec),
+            VisibleWorkspace::Operations => render_operations_workspace(f, app, area, spec),
+            VisibleWorkspace::Credit => render_credit_workspace(f, app, area, spec),
+            VisibleWorkspace::None => unreachable!("visible_workspace_spec never returns None"),
+        }
     } else {
         match app.active_tab {
-            Tab::Dashboard => dashboard::render_dashboard(f, app, area),
-            Tab::Positions => positions::render_positions(f, app, area),
+            Tab::Dashboard => dashboard::render_dashboard_panel(f, app, area),
+            Tab::Positions => positions::render_positions_panel(f, app, area),
             Tab::Charts => charts::render_charts(f, app, area),
-            Tab::Orders => orders::render_orders(f, app, area),
+            Tab::Orders => orders::render_orders_panel(f, app, area),
             Tab::Alerts => alerts::render_alerts(f, app, area),
-            Tab::Yield => render_yield_curve_tab(f, app, area),
+            Tab::Yield => yield_curve::render_yield_curve_panel(f, app, area),
             Tab::Loans => loans::render_loans(f, app, area),
+            Tab::DiscountBank => discount_bank::render_discount_bank(f, app, area),
             Tab::Scenarios => scenarios::render_scenarios(f, app, area),
             Tab::Logs => logs::render_logs(f, app, area),
             Tab::Settings => settings::render_settings(f, app, area),
@@ -295,8 +263,133 @@ fn render_main(f: &mut Frame, app: &App, area: Rect) {
     }
 }
 
+fn render_split_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
+    let outer = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(1), Constraint::Min(0)])
+        .split(area);
+    let split_label = Paragraph::new(Line::from(vec![
+        Span::styled(
+            format!(" {} ", spec.title),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(format!("{}  |  Tab/Shift-Tab: focus panes", spec.summary)),
+    ]));
+    f.render_widget(split_label, outer[0]);
+
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(outer[1]);
+    dashboard::render_dashboard_panel(f, app, chunks[0]);
+    positions::render_positions_panel(f, app, chunks[1]);
+}
+
+fn workspace_banner(spec: WorkspaceSpec, focus_label: &str) -> Paragraph<'static> {
+    Paragraph::new(Line::from(vec![
+        Span::styled(
+            format!(" {} ", spec.title),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(format!("{}  |  Focus: ", spec.summary)),
+        Span::styled(
+            focus_label.to_string(),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw("  |  Tab/Shift-Tab cycles panes"),
+    ]))
+}
+
+fn render_market_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
+    let outer = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(1), Constraint::Min(0)])
+        .split(area);
+
+    f.render_widget(workspace_banner(spec, app.active_tab.title()), outer[0]);
+
+    let rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(outer[1]);
+    let top = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(52), Constraint::Percentage(48)])
+        .split(rows[0]);
+    let bottom = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(48), Constraint::Percentage(52)])
+        .split(rows[1]);
+
+    dashboard::render_dashboard_panel(f, app, top[0]);
+    positions::render_positions_panel(f, app, top[1]);
+    orders::render_orders_panel(f, app, bottom[0]);
+    yield_curve::render_yield_curve_panel(f, app, bottom[1]);
+}
+
+fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
+    let outer = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(1), Constraint::Min(0)])
+        .split(area);
+
+    f.render_widget(workspace_banner(spec, app.active_tab.title()), outer[0]);
+
+    let columns = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(38), Constraint::Percentage(62)])
+        .split(outer[1]);
+    let left = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(42), Constraint::Percentage(58)])
+        .split(columns[0]);
+
+    let alerts_view = alerts::build_alerts_view(app, left[0]);
+    alerts::render_alerts_panel(f, left[0], alerts_view);
+
+    let logs_widget = logs::build_logs_widget(app, logs::logs_title(app));
+    f.render_widget(logs_widget, left[1]);
+
+    let layout = settings::settings_layout(columns[1]);
+    settings::render_settings_health_section(f, app, layout.health);
+    settings::render_settings_config_section(f, app, layout.config);
+    settings::render_settings_symbols_section(f, app, layout.symbols);
+    settings::render_settings_sources_section(f, app, layout.sources);
+    settings::render_settings_hint_section(f, app, layout.hint);
+}
+
+fn render_credit_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
+    let outer = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(1), Constraint::Min(0)])
+        .split(area);
+
+    let (loans_width, bank_width) = if app.active_tab == Tab::Loans {
+        (52, 48)
+    } else {
+        (48, 52)
+    };
+    f.render_widget(workspace_banner(spec, app.active_tab.title()), outer[0]);
+
+    let panes = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(loans_width),
+            Constraint::Percentage(bank_width),
+        ])
+        .split(outer[1]);
+    loans::render_loans(f, app, panes[0]);
+    discount_bank::render_discount_bank(f, app, panes[1]);
+}
+
 fn render_detail_overlay(f: &mut Frame, area: Rect, content: &DetailPopupContent) {
-    let (title, lines) = match content {
+    let (title, lines): (String, Vec<Line>) = match content {
         DetailPopupContent::Order(o) => {
             let side_style = if o.side.to_uppercase() == "BUY" {
                 Style::default().fg(Color::Green)
@@ -304,7 +397,7 @@ fn render_detail_overlay(f: &mut Frame, area: Rect, content: &DetailPopupContent
                 Style::default().fg(Color::Red)
             };
             (
-                " Order details ",
+                " Order details ".to_string(),
                 vec![
                     Line::from(format!("ID:        {}", o.id)),
                     Line::from(format!("Symbol:    {}", o.symbol)),
@@ -321,9 +414,8 @@ fn render_detail_overlay(f: &mut Frame, area: Rect, content: &DetailPopupContent
                 ],
             )
         }
-        DetailPopupContent::Position(p) => (
-            " Position detail ",
-            vec![
+        DetailPopupContent::Position(p, greeks) => {
+            let mut lines = vec![
                 Line::from(format!("ID:       {}", p.id)),
                 Line::from(format!("Symbol:   {}", p.symbol)),
                 Line::from(format!(
@@ -350,10 +442,35 @@ fn render_detail_overlay(f: &mut Frame, area: Rect, content: &DetailPopupContent
                     p.account_id.as_deref().unwrap_or("—")
                 )),
                 Line::from(format!("Source:   {}", p.source.as_deref().unwrap_or("—"))),
-            ],
-        ),
+            ];
+            if let Some(g) = greeks {
+                lines.push(Line::from(""));
+                lines.push(Line::from(Span::styled(
+                    "— Greeks —",
+                    Style::default().fg(Color::Cyan),
+                )));
+                lines.push(Line::from(format!("IV:    {:.1}%", g.iv * 100.0)));
+                lines.push(Line::from(format!("Δ delta:{:+.4}", g.delta)));
+                lines.push(Line::from(format!("Γ gamma:{:.6}", g.gamma)));
+                lines.push(Line::from(format!("Θ theta:{:+.4}", g.theta)));
+                lines.push(Line::from(format!("ν vega: {:.4}", g.vega)));
+                lines.push(Line::from(format!("ρ rho:  {:+.4}", g.rho)));
+            } else if p
+                .position_type
+                .as_deref()
+                .map(|t| t == "OPT" || t == "OPTION")
+                .unwrap_or(false)
+            {
+                lines.push(Line::from(""));
+                lines.push(Line::from(Span::styled(
+                    "Greeks: loading…",
+                    Style::default().fg(Color::DarkGray),
+                )));
+            }
+            (" Position detail ".to_string(), lines)
+        }
         DetailPopupContent::Scenario(s) => (
-            " Scenario detail ",
+            " Scenario detail ".to_string(),
             vec![
                 Line::from(format!("Symbol:   {}", s.symbol)),
                 Line::from(format!("Expiration: {}", s.expiration)),
@@ -366,7 +483,7 @@ fn render_detail_overlay(f: &mut Frame, area: Rect, content: &DetailPopupContent
             ],
         ),
         DetailPopupContent::YieldPoint(p) => (
-            " Box spread legs ",
+            " Box spread legs ".to_string(),
             vec![
                 Line::from(format!("Symbol:      {}", p.symbol)),
                 Line::from(format!("Expiry:      {}", p.expiry)),
@@ -377,8 +494,12 @@ fn render_detail_overlay(f: &mut Frame, area: Rect, content: &DetailPopupContent
                     Span::styled(
                         format!(
                             "{} / {}",
-                            p.strike_low.map(|s| format!("{:.0}", s)).unwrap_or("—".into()),
-                            p.strike_high.map(|s| format!("{:.0}", s)).unwrap_or("—".into()),
+                            p.strike_low
+                                .map(|s| format!("{:.0}", s))
+                                .unwrap_or("—".into()),
+                            p.strike_high
+                                .map(|s| format!("{:.0}", s))
+                                .unwrap_or("—".into()),
                         ),
                         Style::default().fg(Color::Cyan),
                     ),
@@ -401,7 +522,9 @@ fn render_detail_overlay(f: &mut Frame, area: Rect, content: &DetailPopupContent
                     Span::raw("Mid rate:    "),
                     Span::styled(
                         format!("{:.3}%", p.mid_rate * 100.0),
-                        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                        Style::default()
+                            .fg(Color::Yellow)
+                            .add_modifier(Modifier::BOLD),
                     ),
                 ]),
                 Line::from(format!("Net debit:   {:.2}", p.net_debit)),
@@ -418,6 +541,46 @@ fn render_detail_overlay(f: &mut Frame, area: Rect, content: &DetailPopupContent
                 Line::from(format!("Timestamp:   {}", p.timestamp)),
             ],
         ),
+        DetailPopupContent::FmpSymbol(data) => {
+            let mut lines = vec![
+                Line::from(format!("Symbol:    {}", data.symbol)),
+                Line::from(""),
+                Line::from(Span::styled("— Quote —", Style::default().fg(Color::Cyan))),
+            ];
+            if let Some(p) = data.price {
+                lines.push(Line::from(format!("Price:     {:.2}", p)));
+            }
+            if let Some(v) = data.prev_close {
+                lines.push(Line::from(format!("Prev close:{:.2}", v)));
+            }
+            if let Some(h) = data.day_high {
+                lines.push(Line::from(format!("Day high:  {:.2}", h)));
+            }
+            if let Some(l) = data.day_low {
+                lines.push(Line::from(format!("Day low:   {:.2}", l)));
+            }
+            lines.push(Line::from(""));
+            lines.push(Line::from(Span::styled(
+                "— Fundamentals (latest) —",
+                Style::default().fg(Color::Cyan),
+            )));
+            if let Some(r) = data.revenue {
+                lines.push(Line::from(format!("Revenue:   ${:.0}", r)));
+            }
+            if let Some(n) = data.net_income {
+                lines.push(Line::from(format!("Net income:${:.0}", n)));
+            }
+            if let Some(e) = data.eps {
+                lines.push(Line::from(format!("EPS:       {:.2}", e)));
+            }
+            if data.revenue.is_none() && data.eps.is_none() {
+                lines.push(Line::from(Span::styled(
+                    "No fundamentals (FMP key required)",
+                    Style::default().fg(Color::DarkGray),
+                )));
+            }
+            (format!(" FMP: {} ", data.symbol), lines)
+        }
     };
     let mut all_lines = lines;
     all_lines.push(Line::from(""));
@@ -601,6 +764,22 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         ));
         spans.push(Span::raw(":Yield symbol"));
     }
+    if app.split_pane && matches!(app.active_tab, Tab::Dashboard | Tab::Positions) {
+        spans.push(Span::raw("  "));
+        spans.push(Span::styled(
+            "←/→",
+            Style::default().add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::raw(":focus pane"));
+    }
+    if app.active_tab == Tab::Settings {
+        spans.push(Span::raw("  "));
+        spans.push(Span::styled(
+            "←/→",
+            Style::default().add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::raw(":section"));
+    }
     if app.active_tab == Tab::Charts {
         spans.push(Span::raw("  "));
         spans.push(Span::styled(
@@ -687,6 +866,16 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
             Style::default().add_modifier(Modifier::BOLD),
         ));
         spans.push(Span::raw(":reset symbols"));
+    }
+    if let Some(spec) = app.visible_workspace_spec() {
+        spans.push(Span::raw("  | "));
+        spans.push(Span::styled(
+            spec.hint_label,
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::raw(": Tab/Shift-Tab cycles panes"));
     }
 
     if let Some((label, color)) = settings_mode_indicator(app) {
@@ -802,7 +991,7 @@ fn settings_mode_indicator(app: &App) -> Option<(String, Color)> {
 }
 
 fn append_async_status_spans<'a>(spans: &mut Vec<Span<'a>>, app: &App) {
-    if app.yield_fetch_pending {
+    if app.yield_refresh_pending {
         spans.push(Span::raw("  | "));
         spans.push(Span::styled(
             "~ Yield:loading",

@@ -63,9 +63,8 @@ fn current_yield_symbol(app: &App) -> String {
         .unwrap_or_else(|| "—".to_string())
 }
 
-pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
-    render_yield_curve_panel(f, app, area);
-}
+#[allow(unused_imports)]
+pub use render_yield_curve_panel as render_yield_curve;
 
 pub fn render_yield_curve_panel(f: &mut Frame, app: &App, area: Rect) {
     let chunks = Layout::default()
