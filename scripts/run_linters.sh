@@ -302,75 +302,19 @@ PY
 # }
 
 run_eslint() {
-  info "Running ESLint (React/TypeScript/JSON web frontend)"
-  if ! command -v npm >/dev/null 2>&1; then
-    warn "Skipping ESLint (npm not found)"
-    return 0
-  fi
-
-  if [ ! -f "${ROOT_DIR}/web/package.json" ]; then
-    warn "Skipping ESLint (web/package.json not found)"
-    return 0
-  fi
-
-  local cmd="lint"
-  [[ "${LINT_FIX:-0}" -eq 1 ]] && cmd="lint:fix"
-  if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
-    run_limited bash -c "cd '${ROOT_DIR}/web' && npm run ${cmd}" || {
-      [[ "${LINT_FIX:-0}" -ne 1 ]] && warn "ESLint found issues. Run with --fix or 'cd web && npm run lint:fix' to auto-fix."
-      return 1
-    }
-  else
-    (cd "${ROOT_DIR}/web" && npm run ${cmd}) || {
-      [[ "${LINT_FIX:-0}" -ne 1 ]] && warn "ESLint found issues. Run with --fix or 'cd web && npm run lint:fix' to auto-fix."
-      return 1
-    }
-  fi
+  # ESLint disabled - web/ folder archived (React PWA retired)
+  info "Skipping ESLint (web/ archived)"
+  return 0
 }
 
 run_stylelint() {
-  if ! command -v npm >/dev/null 2>&1; then
-    warn "Skipping stylelint (npm not found)"
-    return 0
-  fi
-
-  if [ ! -f "${ROOT_DIR}/web/package.json" ]; then
-    warn "Skipping stylelint (web/package.json not found)"
-    return 0
-  fi
-
-  info "Running stylelint (CSS web frontend)"
-  local cmd="lint:css"
-  [[ "${LINT_FIX:-0}" -eq 1 ]] && cmd="lint:css:fix"
-  if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
-    run_limited bash -c "cd '${ROOT_DIR}/web' && npm run ${cmd}" || {
-      [[ "${LINT_FIX:-0}" -ne 1 ]] && warn "stylelint found issues. Run with --fix or 'cd web && npm run lint:css:fix' to auto-fix."
-      return 1
-    }
-  else
-    (cd "${ROOT_DIR}/web" && npm run ${cmd}) || {
-      [[ "${LINT_FIX:-0}" -ne 1 ]] && warn "stylelint found issues. Run with --fix or 'cd web && npm run lint:css:fix' to auto-fix."
-      return 1
-    }
-  fi
+  # stylelint disabled - web/ folder archived (React PWA retired)
+  return 0
 }
 
 run_type_check() {
-  if ! command -v npm >/dev/null 2>&1; then
-    warn "Skipping TypeScript type check (npm not found)"
-    return 0
-  fi
-
-  if [ ! -f "${ROOT_DIR}/web/package.json" ]; then
-    warn "Skipping TypeScript type check (web/package.json not found)"
-    return 0
-  fi
-
-  info "Running TypeScript type check (tsc --noEmit)"
-  (cd "${ROOT_DIR}/web" && npm run type-check) || {
-    warn "TypeScript type check found errors. Fix type errors before committing."
-    return 1
-  }
+  # TypeScript type check disabled - web/ folder archived (React PWA retired)
+  return 0
 }
 
 run_shellcheck() {

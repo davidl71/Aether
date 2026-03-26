@@ -33,7 +33,7 @@
           # Rust (agents/)
           rustc
           cargo
-          # Node (web/, optional)
+          # Node (scripts/)
           nodejs_22
           # Lint / scripts
           jq

@@ -385,19 +385,8 @@ proto-gen:
             proto/messages.proto 2>/dev/null || echo "[warn] Python codegen failed")
     echo "[proto] Generating Rust (prost)..."
     echo "  (handled by agents/build.rs via prost-build)"
-    echo "[proto] Generating TypeScript (ts-proto)..."
-    mkdir -p web/src/generated/proto
-    TS_PROTO_PLUGIN="./web/node_modules/.bin/protoc-gen-ts_proto"
-    [ -x "$TS_PROTO_PLUGIN" ] || TS_PROTO_PLUGIN="$(which protoc-gen-ts_proto 2>/dev/null || true)"
-    if [ -n "$TS_PROTO_PLUGIN" ]; then \
-      protoc --proto_path=proto \
-             --proto_path=native/third_party/tws-api/source/proto \
-             --plugin="protoc-gen-ts_proto=$TS_PROTO_PLUGIN" \
-             --ts_proto_out=web/src/generated/proto \
-             proto/messages.proto 2>/dev/null || echo "[warn] ts-proto generation failed"; \
-    else \
-      echo "[warn] ts-proto plugin not found (cd web && npm install; or run ansible playbook for global install)"; \
-    fi
+    # TypeScript generation disabled - web/ folder archived (React PWA retired)
+    echo "[proto] TypeScript generation skipped (web/ archived)"
     echo "[proto] Done."
 
 # Check protobuf files for syntax errors

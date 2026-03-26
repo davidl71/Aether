@@ -17,12 +17,13 @@ cat <<'BLOCK_END' >"${BLOCK_FILE}"
 .dmg/
 
 # Generated code (reproducible at build; reduces AI context)
-web/src/generated/
-web/src/proto/
+# Note: web/ folder archived (React PWA retired), keeping patterns for reference
+# web/src/generated/
+# web/src/proto/
 
-# Web build output
-web/dist/
-web/dev-dist/
+# Web build output (archived)
+# web/dist/
+# web/dev-dist/
 BLOCK_END
 
 if grep -q "^${MARKER}$" "${CURSORIGNORE}" 2>/dev/null; then

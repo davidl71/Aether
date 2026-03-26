@@ -41,22 +41,10 @@
       }
     },
     "npm": {
-      "enabled": true,
-      "files": [
-        "web/package.json"
-      ],
-      "tools": {
-        "npm_audit": {
-          "enabled": true,
-          "command": "npm",
-          "args": ["audit", "--json"]
-        },
-        "osv_scanner": {
-          "enabled": true,
-          "command": "osv-scanner",
-          "args": ["--format", "json"]
-        }
-      }
+      "_comment": "Disabled - web/ folder archived (React PWA retired)",
+      "enabled": false,
+      "files": [],
+      "tools": {}
     }
   },
   "severity_levels": {

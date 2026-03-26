@@ -294,7 +294,10 @@ EOF
 }
 
 # Create Debian package for Web PWA
+# ARCHIVED: web/ is no longer active (see AGENTS.md: "Archived React web application")
 create_web_deb() {
+  log_warn "Web PWA packaging is archived - web/ folder removed"
+  return 0
   log_info "Creating Debian package for Web PWA"
 
   local pkg_name="ib-box-spread-web"
@@ -626,7 +629,7 @@ main() {
   # Create packages
   create_native_deb || log_warn "Failed to create native package"
   create_python_deb || log_warn "Failed to create Python package"
-  create_web_deb || log_warn "Failed to create web package"
+  # create_web_deb disabled - web/ is archived (see AGENTS.md)
   create_rust_deb || log_warn "Failed to create Rust backend package"
   create_build_tools_deb || log_warn "Failed to create build tools package"
   create_automation_tools_deb || log_warn "Failed to create automation tools package"

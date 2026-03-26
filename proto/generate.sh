@@ -24,17 +24,8 @@ else
     protoc -I "$PROTO_DIR" --go_out="$GO_OUT" --go_opt=paths=source_relative "$PROTO_DIR/messages.proto"
   fi
 
-  # TypeScript fallback
-  TS_OUT="$ROOT_DIR/web/src/generated/proto"
-  PLUGIN="${ROOT_DIR}/web/node_modules/.bin/protoc-gen-ts_proto"
-  if [ -x "$PLUGIN" ] || command -v protoc-gen-ts_proto >/dev/null 2>&1; then
-    mkdir -p "$TS_OUT"
-    if [ ! -x "$PLUGIN" ]; then PLUGIN="protoc-gen-ts_proto"; fi
-    echo "[ts] generating..."
-    protoc -I "$PROTO_DIR" --plugin="protoc-gen-ts_proto=$PLUGIN" \
-      --ts_proto_out="$TS_OUT" --ts_proto_opt=esModuleInterop=true \
-      "$PROTO_DIR/messages.proto" 2>/dev/null || echo "[ts] ts-proto failed, skipping"
-  fi
+  # TypeScript generation disabled - web/ folder archived (React PWA retired)
+  echo "[ts] skipped (web/ archived)"
 fi
 
 # Python/betterproto (non-standard plugin — kept here, not in buf.gen.yaml)
