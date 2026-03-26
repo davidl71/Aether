@@ -1,0 +1,563 @@
+//! Finance rates NATS request/reply handlers.
+//! Subjects: api.finance_rates.*, api.yield_curve.*
+
+use crate::handlers::{api_queue_group, handle_sub};
+use api::finance_rates::{
+    build_curve, compare_rates, extract_rate, get_sofr_rates, get_treasury_rates,
+    yield_curve_comparison, BoxSpreadInput, CompareRequest, CurveQuery, CurveRequest,
+    CurveResponse, YieldCurveComparisonRequest,
+};
+use bytes::Bytes;
+use futures::StreamExt;
+use nats_adapter::async_nats::Client;
+use serde_json::Value;
+use tracing::{debug, warn};
+use tws_yield_curve;
+
+const SUBJECT_FINANCE_RATES_EXTRACT: &str = "api.finance_rates.extract";
+const SUBJECT_FINANCE_RATES_BUILD_CURVE: &str = "api.finance_rates.build_curve";
+const SUBJECT_FINANCE_RATES_COMPARE: &str = "api.finance_rates.compare";
+const SUBJECT_FINANCE_RATES_YIELD_CURVE: &str = "api.finance_rates.yield_curve";
+const SUBJECT_FINANCE_RATES_BENCHMARKS: &str = "api.finance_rates.benchmarks";
+const SUBJECT_FINANCE_RATES_SOFR: &str = "api.finance_rates.sofr";
+const SUBJECT_FINANCE_RATES_TREASURY: &str = "api.finance_rates.treasury";
+const SUBJECT_YIELD_CURVE_REFRESH: &str = "api.yield_curve.refresh";
+
+/// KV key for box spread opportunities per symbol (real yield curve).
+/// Value: JSON array of objects with "spread" key (BoxSpreadInput).
+const KV_KEY_PREFIX_YIELD_CURVE: &str = "yield_curve";
+
+const REFERENCE_SPOT_ENV_PREFIX: &str = "YIELD_CURVE_REFERENCE_SPOT_";
+const DEFAULT_REFERENCE_SPOT: f64 = 6000.0;
+
+/// Spawn Finance Rates NATS API handlers.
+pub async fn spawn(
+    nc: Client,
+    yield_curve_refresh_tx: Option<tokio::sync::mpsc::Sender<()>>,
+) {
+    // Timeout so FRED/New York Fed calls don't hang and cause NATS request timeouts
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .unwrap_or_else(|_| reqwest::Client::new());
+
+    if let Some(tx) = yield_curve_refresh_tx {
+        let nc_refresh = nc.clone();
+        tokio::spawn(async move {
+            let mut sub = match nc_refresh
+                .subscribe(SUBJECT_YIELD_CURVE_REFRESH.to_string())
+                .await
+            {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::warn!(error = %e, "subscribe api.yield_curve.refresh failed");
+                    return;
+                }
+            };
+            while let Some(msg) = sub.next().await {
+                let _ = tx.send(()).await;
+                if let Some(reply) = msg.reply {
+                    let _ = nc_refresh
+                        .publish(reply, Bytes::from_static(b"{\"ok\":true}"))
+                        .await;
+                }
+            }
+        });
+    }
+
+    let sub_extract = match nc
+        .queue_subscribe(SUBJECT_FINANCE_RATES_EXTRACT.to_string(), api_queue_group())
+        .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(error = %e, "subscribe api.finance_rates.extract failed");
+            return;
+        }
+    };
+    let sub_build = match nc
+        .queue_subscribe(
+            SUBJECT_FINANCE_RATES_BUILD_CURVE.to_string(),
+            api_queue_group(),
+        )
+        .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(error = %e, "subscribe api.finance_rates.build_curve failed");
+            return;
+        }
+    };
+    let sub_compare = match nc
+        .queue_subscribe(SUBJECT_FINANCE_RATES_COMPARE.to_string(), api_queue_group())
+        .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(error = %e, "subscribe api.finance_rates.compare failed");
+            return;
+        }
+    };
+    let sub_yield = match nc
+        .queue_subscribe(
+            SUBJECT_FINANCE_RATES_YIELD_CURVE.to_string(),
+            api_queue_group(),
+        )
+        .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(error = %e, "subscribe api.finance_rates.yield_curve failed");
+            return;
+        }
+    };
+    let sub_benchmarks = match nc
+        .queue_subscribe(
+            SUBJECT_FINANCE_RATES_BENCHMARKS.to_string(),
+            api_queue_group(),
+        )
+        .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(error = %e, "subscribe api.finance_rates.benchmarks failed");
+            return;
+        }
+    };
+    let sub_sofr = match nc
+        .queue_subscribe(SUBJECT_FINANCE_RATES_SOFR.to_string(), api_queue_group())
+        .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(error = %e, "subscribe api.finance_rates.sofr failed");
+            return;
+        }
+    };
+    let sub_treasury = match nc
+        .queue_subscribe(
+            SUBJECT_FINANCE_RATES_TREASURY.to_string(),
+            api_queue_group(),
+        )
+        .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(error = %e, "subscribe api.finance_rates.treasury failed");
+            return;
+        }
+    };
+
+    tokio::spawn(handle_sub(
+        nc.clone(),
+        sub_extract,
+        move |body: Option<Vec<u8>>| async move {
+            let input: BoxSpreadInput =
+                match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
+                    Some(i) => i,
+                    None => {
+                        return finance_rates_result::<api::finance_rates::RatePointResponse>(Err(
+                            "request body must be BoxSpreadInput JSON".to_string(),
+                        ))
+                    }
+                };
+            finance_rates_result(extract_rate(input))
+        },
+    ));
+
+    let nc_build = nc.clone();
+    tokio::spawn(handle_sub(
+        nc_build.clone(),
+        sub_build,
+        move |body: Option<Vec<u8>>| {
+            let nc_build = nc_build.clone();
+            async move {
+                let (mut request, query) = parse_curve_body(body.as_deref());
+                let symbol: Option<String> = match &request {
+                    CurveRequest::Named { symbol: s, .. } => s
+                        .clone()
+                        .or_else(|| query.as_ref().and_then(|q| q.symbol.clone())),
+                    CurveRequest::Opportunities(_) => query.as_ref().and_then(|q| q.symbol.clone()),
+                };
+
+                // Serve yield curve from KV (written by yield_curve_writer) or TWS.
+                // HTTP fetches (Yahoo, Synthetic) are intentionally excluded here — they
+                // block a tokio worker for up to 20 s per call. The yield_curve_writer
+                // background task is the sole fetcher; this handler is read-only.
+                let is_empty = symbol.as_ref().map_or(false, |_sym| match &request {
+                    CurveRequest::Opportunities(opps) => opps.is_empty(),
+                    CurveRequest::Named { opportunities, .. } => opportunities.is_empty(),
+                });
+
+                let mut used_tws = false;
+
+                if is_empty {
+                    if let Some(ref sym) = symbol {
+                        // 1. KV cache (populated by yield_curve_writer every ~60 s)
+                        if let Some(curve_from_kv) =
+                            load_yield_curve_from_kv(&nc_build, sym, query.as_ref()).await
+                        {
+                            let spot = reference_spot_for_report(sym);
+                            let mut curve = curve_from_kv;
+                            curve.underlying_price = Some(spot);
+                            fill_missing_strikes(&mut curve, spot);
+                            for p in curve.points.iter_mut() {
+                                p.data_source = Some("KV".to_string());
+                            }
+                            debug!(symbol = %sym, "Using KV yield curve");
+                            return finance_rates_result(Ok(curve));
+                        }
+
+                        // 2. TWS live data (fast, no HTTP round-trip)
+                        if let Ok(opportunities) =
+                            tws_yield_curve::fetch_yield_curve_from_tws(sym).await
+                        {
+                            if !opportunities.is_empty() {
+                                request = CurveRequest::Named {
+                                    opportunities,
+                                    symbol: Some(sym.clone()),
+                                };
+                                used_tws = true;
+                                debug!(symbol = %sym, "Using TWS yield curve");
+                            }
+                        }
+
+                        // If neither KV nor TWS has data, return an error so the TUI
+                        // can display "waiting for yield_curve_writer" rather than hanging.
+                        if !used_tws {
+                            return finance_rates_result::<api::finance_rates::CurveResponse>(Err(
+                                format!("no yield curve data for {sym} — yield_curve_writer has not populated KV yet")
+                            ));
+                        }
+                    }
+                }
+
+                let mut curve = match build_curve(request, query) {
+                    Ok(c) => c,
+                    Err(e) => {
+                        return finance_rates_result::<api::finance_rates::CurveResponse>(Err(e))
+                    }
+                };
+                let spot = symbol
+                    .as_ref()
+                    .map(|s| reference_spot_for_report(s))
+                    .unwrap_or(DEFAULT_REFERENCE_SPOT);
+                if symbol.is_some() {
+                    curve.underlying_price = Some(spot);
+                }
+                fill_missing_strikes(&mut curve, spot);
+                let source_label = if used_tws { "TWS" } else { "request" };
+                for p in curve.points.iter_mut() {
+                    p.data_source = Some(source_label.to_string());
+                }
+                finance_rates_result(Ok(curve))
+            }
+        },
+    ));
+
+    let client_compare = client.clone();
+    tokio::spawn(handle_sub(
+        nc.clone(),
+        sub_compare,
+        move |body: Option<Vec<u8>>| {
+            let client = client_compare.clone();
+            async move {
+                let (request, query) = parse_compare_body(body.as_deref());
+                let r = compare_rates(request, query, &client).await;
+                finance_rates_result(r)
+            }
+        },
+    ));
+
+    let client_yield = client.clone();
+    tokio::spawn(handle_sub(
+        nc.clone(),
+        sub_yield,
+        move |body: Option<Vec<u8>>| {
+            let client = client_yield.clone();
+            async move {
+                let request: YieldCurveComparisonRequest = match body
+                .as_deref()
+                .and_then(|b| serde_json::from_slice(b).ok())
+            {
+                Some(r) => r,
+                None => return serde_json::to_vec(&serde_json::json!({ "error": "request body must be YieldCurveComparisonRequest JSON" }))
+                    .unwrap_or_else(|_| b"{}".to_vec()),
+            };
+                let response = yield_curve_comparison(request, &client).await;
+                serde_json::to_vec(&response).unwrap_or_else(|_| b"{}".to_vec())
+            }
+        },
+    ));
+
+    let client_bench = client.clone();
+    tokio::spawn(handle_sub(
+        nc.clone(),
+        sub_benchmarks,
+        move |_body: Option<Vec<u8>>| {
+            let client = client_bench.clone();
+            async move {
+                let sofr = get_sofr_rates(&client).await;
+                let treasury = get_treasury_rates(&client).await;
+                let response = serde_json::json!({
+                    "sofr": sofr,
+                    "treasury": treasury,
+                    "timestamp": chrono::Utc::now().to_rfc3339()
+                });
+                serde_json::to_vec(&response).unwrap_or_else(|_| b"{}".to_vec())
+            }
+        },
+    ));
+
+    let client_sofr = client.clone();
+    tokio::spawn(handle_sub(
+        nc.clone(),
+        sub_sofr,
+        move |_body: Option<Vec<u8>>| {
+            let client = client_sofr.clone();
+            async move {
+                let response = get_sofr_rates(&client).await;
+                serde_json::to_vec(&response).unwrap_or_else(|_| b"{}".to_vec())
+            }
+        },
+    ));
+
+    tokio::spawn(handle_sub(
+        nc,
+        sub_treasury,
+        move |_body: Option<Vec<u8>>| {
+            let client = client.clone();
+            async move {
+                let response = get_treasury_rates(&client).await;
+                serde_json::to_vec(&response).unwrap_or_else(|_| b"{}".to_vec())
+            }
+        },
+    ));
+}
+
+fn finance_rates_result<T: serde::Serialize>(r: Result<T, String>) -> Vec<u8> {
+    match r {
+        Ok(data) => serde_json::to_vec(&data).unwrap_or_else(|_| b"{}".to_vec()),
+        Err(e) => serde_json::to_vec(&serde_json::json!({ "error": e }))
+            .unwrap_or_else(|_| b"{}".to_vec()),
+    }
+}
+
+/// Reference/underlying price for symbol (env YIELD_CURVE_REFERENCE_SPOT_{SYMBOL} or default). Used for report display.
+fn reference_spot_for_report(symbol: &str) -> f64 {
+    let key = format!("{}{}", REFERENCE_SPOT_ENV_PREFIX, symbol.to_uppercase());
+    std::env::var(&key)
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(DEFAULT_REFERENCE_SPOT)
+}
+
+/// Fill strike_low/strike_high on curve points when missing (e.g. old KV or URL source without strikes), using symmetric ±width/2 around spot.
+fn fill_missing_strikes(curve: &mut CurveResponse, spot: f64) {
+    let mut filled = 0_usize;
+    for p in curve.points.iter_mut() {
+        if p.strike_low.is_none() && p.strike_high.is_none() && p.strike_width > 0.0 {
+            let half = p.strike_width / 2.0;
+            let round = |x: f64| (x * 10.0).round() / 10.0;
+            p.strike_low = Some(round(spot - half));
+            p.strike_high = Some(round(spot + half));
+            filled += 1;
+        }
+    }
+    if filled > 0 {
+        tracing::debug!(filled, %spot, "fill_missing_strikes: filled strike_low/strike_high for points");
+    }
+}
+
+/// Load yield curve from NATS KV for a symbol. Tries proto decode first (YieldCurve), then JSON array fallback.
+/// Bucket from NATS_KV_BUCKET (default LIVE_STATE). Key: yield_curve.{symbol}.
+async fn load_yield_curve_from_kv(
+    nc: &Client,
+    symbol: &str,
+    query: Option<&CurveQuery>,
+) -> Option<CurveResponse> {
+    let bucket = std::env::var("NATS_KV_BUCKET").unwrap_or_else(|_| "LIVE_STATE".to_string());
+    let js = nats_adapter::async_nats::jetstream::new(nc.clone());
+    let kv: nats_adapter::async_nats::jetstream::kv::Store =
+        match js.get_key_value(bucket.as_str()).await {
+            Ok(k) => k,
+            Err(e) => {
+                debug!(%bucket, error = %e, "KV bucket not available for yield curve");
+                return None;
+            }
+        };
+    let key = format!("{}.{}", KV_KEY_PREFIX_YIELD_CURVE, symbol);
+    let entry = match kv.entry(key.as_str()).await {
+        Ok(Some(e)) => e,
+        Ok(None) => {
+            debug!(%key, "no yield curve key in KV");
+            return None;
+        }
+        Err(e) => {
+            debug!(%key, error = %e, "KV get failed for yield curve");
+            return None;
+        }
+    };
+    let bytes = entry.value.as_ref().to_vec();
+    if let Some(curve) = api::yield_curve_proto::curve_response_from_proto_bytes(&bytes, symbol) {
+        if !curve.points.is_empty() {
+            return Some(curve);
+        }
+    }
+    let arr: Vec<Value> = match serde_json::from_slice(&bytes) {
+        Ok(a) => a,
+        Err(e) => {
+            debug!(%key, error = %e, "yield curve KV value not proto, not valid JSON array");
+            return None;
+        }
+    };
+    if arr.is_empty() {
+        return None;
+    }
+    let request = CurveRequest::Named {
+        opportunities: arr,
+        symbol: Some(symbol.to_string()),
+    };
+    build_curve(request, query.cloned()).ok()
+}
+
+fn parse_curve_body(body: Option<&[u8]>) -> (CurveRequest, Option<CurveQuery>) {
+    let (request, query) = body
+        .and_then(|b| serde_json::from_slice::<Value>(b).ok())
+        .map(|v| {
+            let request = serde_json::from_value::<CurveRequest>(v.clone()).unwrap_or_else(|_| {
+                CurveRequest::Named {
+                    opportunities: vec![],
+                    symbol: None,
+                }
+            });
+            let query = v.get("symbol").map(|s| CurveQuery {
+                symbol: s.as_str().map(String::from),
+            });
+            (request, query)
+        })
+        .unwrap_or_else(|| {
+            (
+                CurveRequest::Named {
+                    opportunities: vec![],
+                    symbol: None,
+                },
+                None,
+            )
+        });
+    (request, query)
+}
+
+fn parse_compare_body(body: Option<&[u8]>) -> (CompareRequest, Option<CurveQuery>) {
+    let (request, query) = body
+        .and_then(|b| serde_json::from_slice::<Value>(b).ok())
+        .map(|v| {
+            let request =
+                serde_json::from_value::<CompareRequest>(v.clone()).unwrap_or_else(|_| {
+                    CompareRequest::Named {
+                        opportunities: vec![],
+                        symbol: None,
+                    }
+                });
+            let query = v.get("symbol").map(|s| CurveQuery {
+                symbol: s.as_str().map(String::from),
+            });
+            (request, query)
+        })
+        .unwrap_or_else(|| {
+            (
+                CompareRequest::Named {
+                    opportunities: vec![],
+                    symbol: None,
+                },
+                None,
+            )
+        });
+    (request, query)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::fill_missing_strikes;
+    use api::finance_rates::{CurveResponse, RatePointResponse};
+
+    fn point(
+        strike_width: f64,
+        strike_low: Option<f64>,
+        strike_high: Option<f64>,
+    ) -> RatePointResponse {
+        RatePointResponse {
+            symbol: "SPX".to_string(),
+            expiry: "2026-04-17".to_string(),
+            days_to_expiry: 30,
+            strike_width,
+            strike_low,
+            strike_high,
+            buy_implied_rate: 4.4,
+            sell_implied_rate: 5.2,
+            mid_rate: 4.8,
+            net_debit: 80.0,
+            net_credit: 80.0,
+            liquidity_score: 70.0,
+            timestamp: "2026-03-18T00:00:00Z".to_string(),
+            spread_id: None,
+            convenience_yield: None,
+            data_source: None,
+        }
+    }
+
+    #[test]
+    fn fill_missing_strikes_fills_symmetric_strikes_around_spot() {
+        let mut curve = CurveResponse {
+            symbol: "SPX".to_string(),
+            points: vec![point(4.0, None, None), point(4.0, None, None)],
+            timestamp: "2026-03-18T00:00:00Z".to_string(),
+            strike_width: Some(4.0),
+            point_count: 2,
+            underlying_price: Some(6000.0),
+        };
+        fill_missing_strikes(&mut curve, 6000.0);
+        for p in &curve.points {
+            assert_eq!(
+                p.strike_low,
+                Some(5998.0),
+                "strike_low should be spot - width/2"
+            );
+            assert_eq!(
+                p.strike_high,
+                Some(6002.0),
+                "strike_high should be spot + width/2"
+            );
+        }
+    }
+
+    #[test]
+    fn fill_missing_strikes_leaves_existing_strikes_unchanged() {
+        let mut curve = CurveResponse {
+            symbol: "SPX".to_string(),
+            points: vec![point(4.0, Some(5990.0), Some(5994.0))],
+            timestamp: "2026-03-18T00:00:00Z".to_string(),
+            strike_width: Some(4.0),
+            point_count: 1,
+            underlying_price: None,
+        };
+        fill_missing_strikes(&mut curve, 6000.0);
+        assert_eq!(curve.points[0].strike_low, Some(5990.0));
+        assert_eq!(curve.points[0].strike_high, Some(5994.0));
+    }
+
+    #[test]
+    fn fill_missing_strikes_skips_zero_width() {
+        let mut curve = CurveResponse {
+            symbol: "SPX".to_string(),
+            points: vec![point(0.0, None, None)],
+            timestamp: "2026-03-18T00:00:00Z".to_string(),
+            strike_width: Some(0.0),
+            point_count: 1,
+            underlying_price: None,
+        };
+        fill_missing_strikes(&mut curve, 6000.0);
+        assert_eq!(curve.points[0].strike_low, None);
+        assert_eq!(curve.points[0].strike_high, None);
+    }
+}

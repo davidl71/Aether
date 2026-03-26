@@ -35,6 +35,7 @@ mod api_handlers;
 mod collection_aggregation;
 mod demo_seed;
 mod dlq_consumer;
+mod handlers;
 mod health_aggregation;
 mod ib_positions;
 mod nats_integration;

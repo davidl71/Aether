@@ -169,6 +169,7 @@ pub fn credential_source(key: CredentialKey) -> Option<CredentialSource> {
 }
 
 fn credential_value_and_source(key: CredentialKey) -> Option<(String, CredentialSource)> {
+    // Check environment variables first (highest priority)
     if let Ok(val) = env::var(key.env_var()) {
         if !val.trim().is_empty() {
             return Some((val, CredentialSource::Env));
@@ -182,17 +183,26 @@ fn credential_value_and_source(key: CredentialKey) -> Option<(String, Credential
         }
     }
 
+    // Keyring is primary storage when feature is enabled
     #[cfg(feature = "keyring")]
     {
-        if let Ok(entry) = keyring::Entry::new(SERVICE, key.user()) {
-            if let Ok(val) = entry.get_password() {
-                if !val.trim().is_empty() {
+        match keyring::Entry::new(SERVICE, key.user()) {
+            Ok(entry) => match entry.get_password() {
+                Ok(val) if !val.trim().is_empty() => {
                     return Some((val, CredentialSource::Keyring));
                 }
+                Ok(_) => {} // Empty password, continue to check file for migration
+                Err(e) => {
+                    tracing::debug!("Keyring get failed for {}: {}", key.user(), e);
+                }
+            },
+            Err(e) => {
+                tracing::debug!("Keyring entry creation failed for {}: {}", key.user(), e);
             }
         }
     }
 
+    // File fallback (for non-keyring builds or migration)
     let file = cred_file(&key.file_key());
     if file.exists() {
         if let Ok(content) = fs::read_to_string(&file) {
@@ -207,32 +217,59 @@ fn credential_value_and_source(key: CredentialKey) -> Option<(String, Credential
 }
 
 pub fn set_credential(key: CredentialKey, value: &str) -> Result<(), String> {
-    let dir = config_dir();
-    fs::create_dir_all(&dir).map_err(|e| format!("Failed to create config dir: {}", e))?;
-
-    let file = cred_file(&key.file_key());
-    fs::write(&file, value).map_err(|e| format!("Failed to write credential: {}", e))?;
+    if value.trim().is_empty() {
+        return Err("Credential value cannot be empty".to_string());
+    }
 
     #[cfg(feature = "keyring")]
     {
-        if let Ok(entry) = keyring::Entry::new(SERVICE, key.user()) {
-            let _ = entry.set_password(value);
-        }
+        let entry = keyring::Entry::new(SERVICE, key.user())
+            .map_err(|e| format!("Failed to create keyring entry: {}", e))?;
+
+        entry
+            .set_password(value)
+            .map_err(|e| format!("Failed to store credential in keyring: {}", e))?;
+
+        tracing::debug!("Credential stored in keyring: {}", key.user());
+    }
+
+    #[cfg(not(feature = "keyring"))]
+    {
+        let dir = config_dir();
+        fs::create_dir_all(&dir).map_err(|e| format!("Failed to create config dir: {}", e))?;
+
+        let file = cred_file(&key.file_key());
+        fs::write(&file, value).map_err(|e| format!("Failed to write credential: {}", e))?;
+
+        tracing::debug!("Credential stored in file: {}", file.display());
     }
 
     Ok(())
 }
 
 pub fn delete_credential(key: CredentialKey) -> Result<(), String> {
-    let file = cred_file(&key.file_key());
-    if file.exists() {
-        fs::remove_file(&file).map_err(|e| format!("Failed to delete credential: {}", e))?;
-    }
-
     #[cfg(feature = "keyring")]
     {
-        if let Ok(entry) = keyring::Entry::new(SERVICE, key.user()) {
-            let _ = entry.delete_credential();
+        match keyring::Entry::new(SERVICE, key.user()) {
+            Ok(entry) => {
+                if entry.get_password().is_ok() {
+                    entry
+                        .delete_credential()
+                        .map_err(|e| format!("Failed to delete credential from keyring: {}", e))?;
+                    tracing::debug!("Credential deleted from keyring: {}", key.user());
+                }
+            }
+            Err(e) => tracing::debug!("Keyring entry not found for {}: {}", key.user(), e),
+        }
+    }
+
+    #[cfg(not(feature = "keyring"))]
+    {
+        let file = cred_file(&key.file_key());
+        if file.exists() {
+            fs::remove_file(&file)
+                .map_err(|e| format!("Failed to delete credential file: {}", e))?;
+            tracing::debug!("Credential file deleted: {}", file.display());
         }
     }
 
