@@ -72,6 +72,7 @@ mod dirty_flags;
 mod discoverability;
 mod events;
 mod mouse;
+mod portfolio_summary;
 mod scrollable_table;
 mod expiry_buckets;
 mod input;
