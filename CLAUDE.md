@@ -7,6 +7,25 @@ For current product direction and workflow defaults, see
 [docs/DATA_EXPLORATION_MODE.md](docs/DATA_EXPLORATION_MODE.md) and
 [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
 
+---
+
+## ⚠️ CRITICAL: Cargo Workspace Location
+
+**The Rust workspace is at `agents/backend/`, NOT the project root.**
+
+All `cargo` commands must be run from that directory:
+
+```bash
+cd agents/backend && cargo build
+cd agents/backend && cargo test
+cd agents/backend && cargo run -p backend_service
+```
+
+Running `cargo` from the project root will show an error message directing you
+to the correct location.
+
+---
+
 ## Project at a Glance
 
 Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management, cash flow modeling, and multi-instrument optimization across 21+ accounts and multiple brokers. Box spreads are one active strategy component (T-bill-equivalent yields on spare cash). **Rust-first codebase**: all active development is in `agents/backend/`. C++ native build has been removed (see root `CMakeLists.txt`).

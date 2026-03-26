@@ -1,0 +1,25 @@
+# Aether - Rust Workspace Redirect
+#
+# ⚠️  IMPORTANT: This is NOT the actual workspace root.
+#
+# The Rust workspace is located at: agents/backend/
+#
+# Run all cargo commands from that directory:
+#   cd agents/backend && cargo build
+#   cd agents/backend && cargo test
+#   cd agents/backend && cargo run -p backend_service
+#
+# See AGENTS.md for complete project guidelines.
+
+[package]
+name = "aether-root-redirect"
+version = "0.1.0"
+edition = "2021"
+
+# Intentionally empty workspace - forces helpful error
+[workspace]
+members = []
+
+[[bin]]
+name = "aether-redirect"
+path = "src/main.rs"

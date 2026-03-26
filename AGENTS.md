@@ -10,6 +10,25 @@ Current product direction is documented in
 **`docs/DATA_EXPLORATION_MODE.md`**. AI/editor workflow defaults are in
 **`docs/AI_WORKFLOW.md`**.
 
+---
+
+## ⚠️ CRITICAL: Cargo Workspace Location
+
+**The Rust workspace is at `agents/backend/`, NOT the project root.**
+
+All `cargo` commands must be run from that directory:
+
+```bash
+cd agents/backend && cargo build
+cd agents/backend && cargo test
+cd agents/backend && cargo run -p backend_service
+```
+
+Running `cargo` from the project root will show an error message directing you
+to the correct location. See `.cursor/rules/cargo-workspace-path.mdc` for details.
+
+---
+
 Box spreads are one active strategy component (7-10% of portfolio, spare cash allocation for T-bill-equivalent yields). The platform supports multiple strategy types including futures-implied financing, bond ETFs, and secured lending.
 
 ### Product framing for AI agents
