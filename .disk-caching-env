@@ -1,0 +1,11 @@
+# Disk-based caching environment (migrated from RAM disk)
+# Source this in your shell: source .disk-caching-env
+export CCACHE_DIR="/Users/davidl/.cache/aether/ccache"
+export CCACHE_MAXSIZE="4G"
+export SCCACHE_DIR="/Users/davidl/.cache/aether/sccache"
+export SCCACHE_CACHE_SIZE="4G"
+export CARGO_TARGET_DIR="/Users/davidl/.cache/aether/cargo-target"
+export PYTHONPYCACHEPREFIX="/Users/davidl/.cache/aether/pip/__pycache__"
+export pip_cache_dir="/Users/davidl/.cache/aether/pip"
+export npm_config_cache="/Users/davidl/.cache/aether/npm"
+export YARN_CACHE_FOLDER="/Users/davidl/.cache/aether/yarn"

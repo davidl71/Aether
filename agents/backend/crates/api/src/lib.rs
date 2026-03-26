@@ -1,3 +1,4 @@
+pub mod alpaca_positions;
 pub mod client_portal_options;
 pub mod combo_strategy;
 pub mod commands;
@@ -26,6 +27,7 @@ pub use health::{
     SharedHealthAggregate,
 };
 pub use ib_positions::{fetch_ib_positions, fetch_ib_positions_all, IbPositionDto};
+pub use alpaca_positions::{AlpacaPositionSource, AlpacaAccountInfo};
 pub use loans::{LoanAggregationInput, LoanRecord, LoanRepository, LoanStatus, LoanType};
 pub use shared_config::{
     load_shared_config, read_shared_config_at, validate_shared_config, write_example_shared_config,

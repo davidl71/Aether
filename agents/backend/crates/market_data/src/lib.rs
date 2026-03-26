@@ -1,4 +1,5 @@
 pub mod aggregator;
+pub mod alpaca;
 pub mod cache;
 pub mod fmp;
 pub mod mock;
@@ -35,6 +36,7 @@ pub use yahoo::{
     YahooFinanceSourceFactory, YahooHistorySource, YahooOptionsSource,
 };
 pub use yield_curve::{BoxSpreadResult, YahooYieldCurveSource, YieldCurve, YieldCurvePoint};
+pub use alpaca::{AlpacaSource, AlpacaSourceFactory};
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -58,6 +60,7 @@ pub fn provider_registry() -> &'static HashMap<&'static str, DynFactory> {
         register(&mut m, "fmp", FmpMarketDataSourceFactory);
         register(&mut m, "mock", MockMarketDataSourceFactory);
         register(&mut m, "polygon", PolygonMarketDataSourceFactory);
+        register(&mut m, "alpaca", AlpacaSourceFactory);
         m
     })
 }

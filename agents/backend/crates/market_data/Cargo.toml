@@ -24,6 +24,7 @@ thiserror = "1"
 rusqlite = { version = "0.37", features = ["bundled"] }
 regex = "1"
 keyring = { version = "3", optional = true }
+alpaca_api_client = "0.8"
 
 [features]
 keyring = ["dep:keyring"]

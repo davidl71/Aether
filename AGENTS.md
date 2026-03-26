@@ -106,21 +106,25 @@ See **ARCHITECTURE.md** for full ownership and current build settings.
 
 ## Build, Test & Development Commands
 
+**IMPORTANT:** The Rust workspace is in `agents/backend/`. Always `cd agents/backend` before running cargo commands.
+
 ```bash
 # Rust (primary)
 cd agents/backend && cargo build
 ./scripts/build_rust_ai_friendly.sh --json-only   # AI-friendly JSON output
 
-# Run backend and TUI
+# Run backend and TUI (from agents/backend/)
 cargo run -p backend_service   # :8080
 cargo run -p tui_service       # TUI
 cargo run -p cli               # CLI
 
-# Test and lint
+# Test and lint (from agents/backend/)
 cargo test
 cargo clippy
 ./scripts/run_linters.sh       # includes Rust linters
 ```
+
+**Common Error:** If you see `error: could not find Cargo.toml`, you're in the wrong directory. Run `cd agents/backend` first.
 
 See `docs/MULTI_LANGUAGE_CODEBASE.md` for full language map and `docs/BUILD_PARALLELIZATION_AND_MODULARITY.md` for parallelization. C++ native build is removed; CMake targets at repo root are for lint/scripts only.
 

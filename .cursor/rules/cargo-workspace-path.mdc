@@ -1,0 +1,52 @@
+# Cargo Workspace Path Rule
+
+**Applies to:** All AI agents and automated tools
+
+## Rule
+
+**ALWAYS** change directory to `agents/backend/` before running any `cargo` commands.
+
+## Rationale
+
+The Rust workspace is located at `agents/backend/`, not the project root. Running cargo from the project root results in:
+```
+error: could not find `Cargo.toml` in `/Users/davidl/Projects/Trading/Aether` or any parent directory
+```
+
+## Correct Usage
+
+```bash
+# ✅ CORRECT - cd to workspace first
+cd agents/backend && cargo build
+cd agents/backend && cargo test
+cd agents/backend && cargo check -p market_data
+
+# ✅ CORRECT - use workdir parameter
+cargo build  # in agents/backend directory
+```
+
+## Incorrect Usage
+
+```bash
+# ❌ WRONG - from project root
+cargo build
+cargo test
+
+# ❌ WRONG - from project root with path
+cargo build --manifest-path agents/backend/Cargo.toml  # works but confusing
+```
+
+## Helper Commands
+
+For quick access, use the Justfile commands from project root:
+```bash
+just build-rust    # builds agents/backend
+just test          # runs tests in agents/backend
+just lint-rust     # runs clippy in agents/backend
+```
+
+## Reference
+
+- Workspace: `agents/backend/Cargo.toml`
+- Main crates: `agents/backend/crates/`
+- Services: `agents/backend/services/`

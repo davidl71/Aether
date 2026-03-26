@@ -237,6 +237,8 @@ impl App {
             ("polygon", CredentialKey::PolygonApiKey),
             ("fred", CredentialKey::FredApiKey),
             ("tase", CredentialKey::TaseApiKey),
+            ("alpaca_paper", CredentialKey::AlpacaPaperApiKeyId),
+            ("alpaca_live", CredentialKey::AlpacaLiveApiKeyId),
         ] {
             let source = credential_source(key);
             self.credential_status.insert(provider, source.is_some());

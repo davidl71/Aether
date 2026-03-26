@@ -31,6 +31,7 @@ discount_bank_parser = { path = "../discount_bank_parser" }
 quant = { path = "../quant", features = ["serde"] }
 keyring = { version = "3", optional = true }
 dirs = "5"
+alpaca_api_client = "0.8"
 
 [dev-dependencies]
 async-trait = { workspace = true }

@@ -177,6 +177,11 @@ enum Commands {
         #[command(subcommand)]
         sub: CredCmd,
     },
+    /// Alpaca API commands - fetch quotes, positions, and account info
+    Alpaca {
+        #[command(subcommand)]
+        sub: AlpacaCmd,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -250,6 +255,39 @@ enum DiscountBankCmd {
         #[arg(long)]
         exchange_rate: Option<f64>,
         /// Output as JSON (default: human-readable summary)
+        #[arg(long)]
+        json: bool,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum AlpacaCmd {
+    /// Fetch latest quote for a symbol
+    Quote {
+        /// Symbol to look up (e.g., AAPL, SPY)
+        symbol: String,
+        /// Use paper trading environment (default) or live
+        #[arg(long)]
+        live: bool,
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Fetch account information
+    Account {
+        /// Use paper trading environment (default) or live
+        #[arg(long)]
+        live: bool,
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// List open positions
+    Positions {
+        /// Use paper trading environment (default) or live
+        #[arg(long)]
+        live: bool,
+        /// Output as JSON
         #[arg(long)]
         json: bool,
     },
@@ -371,6 +409,9 @@ fn main() -> Result<()> {
             } => run_discount_bank_import(&path, exchange_rate, format, json)?,
         },
         Commands::Cred { sub } => run_cred(sub)?,
+        Commands::Alpaca { sub } => {
+            tokio::runtime::Runtime::new()?.block_on(run_alpaca(sub))?
+        }
     }
 
     Ok(())
@@ -1435,6 +1476,163 @@ fn trading_loop(_config: &config::Config) -> Result<()> {
     info!("Run 'cargo run -p tui_service' for the terminal UI");
 
     std::thread::park();
+
+    Ok(())
+}
+
+async fn run_alpaca(sub: AlpacaCmd) -> Result<()> {
+    use api::credentials::{get_credential, CredentialKey};
+    use api::alpaca_positions::AlpacaPositionSource;
+
+    match sub {
+        AlpacaCmd::Quote { symbol, live, json } => {
+            use market_data::alpaca::AlpacaSource;
+            
+            let source = if live {
+                let key_id = get_credential(CredentialKey::AlpacaLiveApiKeyId)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca live key not found"))?;
+                let secret = get_credential(CredentialKey::AlpacaLiveSecretKey)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca live secret not found"))?;
+                std::env::set_var("APCA_API_KEY_ID", key_id);
+                std::env::set_var("APCA_API_SECRET_KEY", secret);
+                std::env::set_var("APCA_API_BASE_URL", "https://api.alpaca.markets");
+                AlpacaSource::from_env()
+                    .ok_or_else(|| anyhow::anyhow!("Failed to create Alpaca source"))?
+            } else {
+                let key_id = get_credential(CredentialKey::AlpacaPaperApiKeyId)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca paper key not found"))?;
+                let secret = get_credential(CredentialKey::AlpacaPaperSecretKey)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca paper secret not found"))?;
+                std::env::set_var("APCA_API_KEY_ID", key_id);
+                std::env::set_var("APCA_API_SECRET_KEY", secret);
+                std::env::set_var("APCA_API_BASE_URL", "https://paper-api.alpaca.markets");
+                AlpacaSource::from_env()
+                    .ok_or_else(|| anyhow::anyhow!("Failed to create Alpaca source"))?
+            };
+
+            println!("Fetching quote for {} from Alpaca {}...", symbol, if live { "LIVE" } else { "PAPER" });
+            match source.get_quote_sync(&symbol) {
+                Ok(quote) => {
+                    if json {
+                        println!("{{");
+                        println!("  \"symbol\": \"{}\",", quote.symbol);
+                        println!("  \"bid_price\": {},", quote.bid_price);
+                        println!("  \"ask_price\": {},", quote.ask_price);
+                        println!("  \"bid_size\": {},", quote.bid_size);
+                        println!("  \"ask_size\": {},", quote.ask_size);
+                        println!("  \"timestamp\": \"{}\",", quote.timestamp);
+                        println!("  \"source\": \"{}\"", source.source_name());
+                        println!("}}");
+                    } else {
+                        println!("✓ Quote received from {}", source.source_name());
+                        println!();
+                        println!("Symbol: {}", quote.symbol);
+                        println!("  Bid: ${:.2} (size: {})", quote.bid_price, quote.bid_size);
+                        println!("  Ask: ${:.2} (size: {})", quote.ask_price, quote.ask_size);
+                        println!("  Timestamp: {}", quote.timestamp);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("✗ Error fetching quote: {}", e);
+                    eprintln!();
+                    eprintln!("Note: Alpaca market data limitations:");
+                    eprintln!("  - Indices like ^SPX are NOT available");
+                    eprintln!("  - Use ETFs like SPY, QQQ, IWM instead");
+                    eprintln!("  - Free tier only covers IEX exchange");
+                    std::process::exit(1);
+                }
+            }
+        }
+        AlpacaCmd::Account { live, json } => {
+            let source = if live {
+                let key_id = get_credential(CredentialKey::AlpacaLiveApiKeyId)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca live key not found"))?;
+                let secret = get_credential(CredentialKey::AlpacaLiveSecretKey)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca live secret not found"))?;
+                std::env::set_var("APCA_API_KEY_ID", key_id);
+                std::env::set_var("APCA_API_SECRET_KEY", secret);
+                std::env::set_var("APCA_API_BASE_URL", "https://api.alpaca.markets");
+                AlpacaPositionSource::from_env()
+                    .ok_or_else(|| anyhow::anyhow!("Failed to create Alpaca source"))?
+            } else {
+                let key_id = get_credential(CredentialKey::AlpacaPaperApiKeyId)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca paper key not found"))?;
+                let secret = get_credential(CredentialKey::AlpacaPaperSecretKey)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca paper secret not found"))?;
+                std::env::set_var("APCA_API_KEY_ID", key_id);
+                std::env::set_var("APCA_API_SECRET_KEY", secret);
+                std::env::set_var("APCA_API_BASE_URL", "https://paper-api.alpaca.markets");
+                AlpacaPositionSource::from_env()
+                    .ok_or_else(|| anyhow::anyhow!("Failed to create Alpaca source"))?
+            };
+
+            println!("Fetching account info from Alpaca...");
+            match source.fetch_account().await {
+                Ok(account) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&account)?);
+                    } else {
+                        println!("Account ID: {}", account.account_id);
+                        println!("Cash: ${:.2}", account.cash);
+                        println!("Buying Power: ${:.2}", account.buying_power);
+                        println!("Equity: ${:.2}", account.equity);
+                        println!("Portfolio Value: ${:.2}", account.portfolio_value);
+                        println!("Environment: {}", if source.is_paper() { "Paper" } else { "Live" });
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Error fetching account: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+        AlpacaCmd::Positions { live, json } => {
+            let source = if live {
+                let key_id = get_credential(CredentialKey::AlpacaLiveApiKeyId)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca live key not found"))?;
+                let secret = get_credential(CredentialKey::AlpacaLiveSecretKey)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca live secret not found"))?;
+                std::env::set_var("APCA_API_KEY_ID", key_id);
+                std::env::set_var("APCA_API_SECRET_KEY", secret);
+                std::env::set_var("APCA_API_BASE_URL", "https://api.alpaca.markets");
+                AlpacaPositionSource::from_env()
+                    .ok_or_else(|| anyhow::anyhow!("Failed to create Alpaca source"))?
+            } else {
+                let key_id = get_credential(CredentialKey::AlpacaPaperApiKeyId)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca paper key not found"))?;
+                let secret = get_credential(CredentialKey::AlpacaPaperSecretKey)
+                    .ok_or_else(|| anyhow::anyhow!("Alpaca paper secret not found"))?;
+                std::env::set_var("APCA_API_KEY_ID", key_id);
+                std::env::set_var("APCA_API_SECRET_KEY", secret);
+                std::env::set_var("APCA_API_BASE_URL", "https://paper-api.alpaca.markets");
+                AlpacaPositionSource::from_env()
+                    .ok_or_else(|| anyhow::anyhow!("Failed to create Alpaca source"))?
+            };
+
+            println!("Fetching positions from Alpaca...");
+            match source.fetch_positions().await {
+                Ok(positions) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&positions)?);
+                    } else {
+                        if positions.is_empty() {
+                            println!("No open positions");
+                        } else {
+                            println!("Open Positions:");
+                            for pos in positions {
+                                println!("  {}: {} shares @ ${:.2} (market value: ${:.2})",
+                                    pos.symbol, pos.quantity, pos.cost_basis, pos.market_value);
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Error fetching positions: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+    }
 
     Ok(())
 }

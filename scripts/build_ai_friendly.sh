@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Run CMake build in AI-friendly mode: quiet (log to file) and emit a single JSON result.
 # Use with BUILD_AI_FRIENDLY preset so compiler diagnostics are JSON when build fails.
-# When build-ramdisk is set up (e.g. ./scripts/setup_ramdisk.sh create), uses the -ramdisk
-# preset automatically so the build runs on the ramdisk.
 #
 # Usage:
 #   ./scripts/build_ai_friendly.sh [build|configure] [<preset>]
@@ -79,21 +77,6 @@ resolve_preset() {
   fi
 }
 
-# If build-ramdisk is set up (symlink or dir), prefer the -ramdisk preset when it exists
-prefer_ramdisk_if_setup() {
-  local p="$1"
-  [[ -z "${p}" ]] && return
-  local ramdisk_dir="${PROJECT_ROOT}/build-ramdisk"
-  if [[ -d "${ramdisk_dir}" ]] && [[ -w "${ramdisk_dir}" ]]; then
-    local ramdisk_preset="${p}-ramdisk"
-    if cmake --list-presets 2>/dev/null | grep -q "^\s*${ramdisk_preset}\s"; then
-      echo "${ramdisk_preset}"
-      return
-    fi
-  fi
-  echo "${p}"
-}
-
 ACTION="build"
 PRESET=""
 while [[ $# -ge 1 ]]; do
@@ -124,7 +107,6 @@ while [[ $# -ge 1 ]]; do
 done
 PRESET="${PRESET:-${CMAKE_PRESET:-$(detect_default_preset)}}"
 PRESET="$(resolve_preset "${PRESET}")"
-PRESET="$(prefer_ramdisk_if_setup "${PRESET}")"
 
 cd "${PROJECT_ROOT}"
 # Use all cores for Ninja when not set (see docs/BUILD_PARALLELIZATION_AND_MODULARITY.md)

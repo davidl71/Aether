@@ -90,6 +90,18 @@ fn settings_source_rows(app: &App) -> Vec<Row<'static>> {
             cred_key: "(TWS connection)",
             note: "IB broker push (highest priority)",
         },
+        SourceDef {
+            name: "alpaca_paper",
+            priority: "55",
+            cred_key: "ALPACA_PAPER",
+            note: "Alpaca paper trading",
+        },
+        SourceDef {
+            name: "alpaca_live",
+            priority: "75",
+            cred_key: "ALPACA_LIVE",
+            note: "Alpaca live trading",
+        },
     ];
 
     let configured_provider = app

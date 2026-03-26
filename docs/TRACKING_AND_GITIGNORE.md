@@ -8,7 +8,7 @@ Decisions on which uncommitted paths to add to version control and which to igno
 |----------|----------|-----------|
 | **Generated code** | **Do not track** | Reproducible at build time; reduces noise and merge conflicts. |
 | **Third-party vendor trees** | **Do not track** | Large clones (tws-api, Intel libs) and cache archives; use scripts/docs to obtain. |
-| **Build symlinks** | **Do not track** | Machine-specific (e.g. `build-ramdisk` → ramdisk volume). |
+| **Build directories** | **Do not track** | Machine-specific build outputs in `build/`, `target/`. |
 | **Project source** | **Track** | Rust in `agents/backend/`, Python/scripts where still active, docs, scripts, Ansible, and shared editor config. Legacy `native/` references are historical only. |
 | **Project docs** | **Track** | Exarp-go, Ansible, subagents, planning (unless auto-generated reports). |
 | **Nix lockfile** | **Track** | `flake.lock` for reproducible Nix builds. |
