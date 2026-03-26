@@ -8,10 +8,9 @@ on:
       - ".github/workflows/agents-backend-rust.yml"
   pull_request:
     branches: [main, develop]
-    paths:
-      - "agents/backend/**"
-      - ".github/workflows/agents-backend-rust.yml"
   workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'
 
 jobs:
   rust-checks:
@@ -73,6 +72,45 @@ jobs:
 
       - name: Run cargo audit
         run: cargo audit
+
+  security-audit:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        working-directory: agents/backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Run cargo audit (fail on high/critical)
+        run: cargo audit --deny warnings
+        continue-on-error: true
+        id: audit
+
+      - name: Create issue on vulnerability found
+        if: steps.audit.outcome == 'failure' && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Security vulnerabilities detected in dependencies`,
+              body: `Automated security audit detected high/critical severity vulnerabilities.\n\nRun \`cargo audit\` locally to see details.`,
+              labels: ['security', 'dependencies', 'automated']
+            });
+            console.log('Created issue:', issue.data.html_url);
+
+      - name: Fail workflow on audit failure
+        if: steps.audit.outcome == 'failure'
+        run: exit 1
 
       # Trim target/ before saving cache (keeps cache smaller; sweep removes artifacts older than 0 days)
       - name: Install cargo-sweep
