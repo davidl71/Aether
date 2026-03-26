@@ -1,290 +1,282 @@
 # TUI Implementation Patterns Research
 
-**Status**: Synthesis Complete  
+**Status**: Implementation In Progress  
 **Sources**: ticker (Go/bubbletea), tickrs (Rust/tui-rs), longbridge-terminal patterns  
 **Applies to**: Aether Rust/Ratatui TUI
 
 ---
 
-## Executive Summary
+## Implementation Status
 
-This document synthesizes research from multiple terminal UI applications to identify implementation patterns applicable to Aether's Rust/Ratatui TUI.
-
-### Key Findings
-
-1. **Mode System**: All professional TUIs use explicit mode systems (Navigation/Edit/View)
-2. **Dirty Flag Optimization**: Essential for 60fps rendering with large datasets
-3. **ScrollableTableState**: Pattern for table navigation with selection and scrolling
-4. **Toast Notifications**: Non-blocking user feedback with auto-dismiss
-5. **Right-aligned Numerics**: Financial data presentation standard
-
----
-
-## Source Analysis
-
-### 1. Ticker (Go/bubbletea) - Archived Analysis
-
-**Repository**: `achannarasappa/ticker`  
-**Framework**: bubbletea (Elm architecture for Go)  
-**License**: GPL-3.0 (incompatible for direct use)
-
-#### Patterns Identified
-
-| Pattern | Implementation | Applicable to Aether |
-|---------|----------------|---------------------|
-| **MVU Architecture** | Model-View-Update with message passing | Partial - Ratatui uses event-driven |
-| **Polling Refresh** | Configurable intervals (5s default) | Already using NATS push (superior) |
-| **Summary Statistics** | Portfolio totals, gain/loss | Not implemented - HIGH PRIORITY |
-| **Position Grouping** | By watchlist/group | Not implemented - HIGH PRIORITY |
-| **Color Schemes** | User-configurable themes | Not implemented - MEDIUM PRIORITY |
-| **Sorting Options** | Configurable sort order | Not implemented - MEDIUM PRIORITY |
-| **Export (CSV/JSON)** | `--export` flag | Not implemented - LOW PRIORITY |
-
-#### Key Insight
-Tickers uses a polling-based architecture intentionally for simplicity. Aether's NATS-based push architecture is superior for real-time trading data.
+| Task | Pattern | Status | Location |
+|------|---------|--------|----------|
+| T-UX-001 | AppMode system (Navigation/Edit/View) | ✅ Implemented | `mode.rs`, `app.rs` |
+| T-UX-002 | ScrollableTableState | ✅ Implemented | `scrollable_table.rs` |
+| T-UX-003 | Numeric right-alignment | 🔄 In Progress | - |
+| T-UX-004 | DirtyFlags optimization | ⏳ Planned | - |
+| T-UX-005 | Position grouping | ⏳ Planned | - |
+| T-UX-006 | Summary statistics | ⏳ Planned | - |
+| T-1774469201593212000 | Toast notifications | ✅ Implemented | `ui/feedback.rs` |
+| T-1774469228746075000 | Command palette | ✅ Implemented | `discoverability.rs` |
+| T-1774528154110853000 | macOS shortcuts | ✅ Implemented | `input.rs` |
+| T-NEW | Mouse support | ✅ Implemented | `mouse.rs` |
+| T-1774481655277034000 | Alpaca health | ✅ Implemented | `alpaca_health.rs` |
 
 ---
 
-### 2. Tickrs (Rust/tui-rs)
+## Implemented Patterns
 
-**Repository**: `tarkah/tickrs`  
-**Framework**: tui-rs (predecessor to Ratatui)  
-**Stars**: 1.6k  
-**License**: MIT (compatible)
+### 1. Toast Notification System ✅
 
-#### Architecture
+**Location**: `ui/feedback.rs`  
+**Usage**: `app.toast_manager.info("Message")`
 
-```
-tickrs/
-├── api/          # Yahoo Finance API client
-├── src/
-│   ├── main.rs   # Event loop, app state
-│   ├── app.rs    # Application state
-│   ├── ui.rs     # Rendering
-│   ├── widget/   # Custom widgets
-│   │   ├── chart.rs      # Candlestick charts
-│   │   ├── options.rs    # Options chain display
-│   │   └── summary.rs    # Portfolio summary
-│   └── task/     # Async task management
-│       ├── fetch.rs      # Data fetching
-│       └── update.rs     # Update coordination
-```
-
-#### Key Patterns
-
-**Async Data Fetching + UI Coordination**:
 ```rust
-// Pattern: Separate async fetch from UI update
-pub struct FetchTask {
-    symbol: String,
-    tx: mpsc::Sender<MarketData>,
+pub struct ToastManager {
+    toasts: VecDeque<Toast>,
+    next_id: u64,
 }
 
-// In main loop:
-// 1. Spawn fetch task
-// 2. Receive result via channel
-// 3. Update App state
-// 4. Trigger redraw
+pub enum ToastLevel {
+    Info, Success, Warning, Error
+}
 ```
 
-**Chart Rendering**:
-- Uses tui-rs canvas for candlestick rendering
-- Supports multiple timeframes (1D, 1W, 1M, etc.)
-- Pre/post market data handling
-- Volume overlay
-
-**Keyboard Navigation**:
-- Arrow keys for navigation
-- Number keys for tab jumping
-- `/` for search
-- `?` for help overlay
-- `q` to quit
-
-**Configuration**:
-- YAML config file support
-- CLI args override config
-- Watchlist persistence
-
-#### Applicability to Aether
-
-| Feature | Tickrs Pattern | Aether Status |
-|---------|----------------|---------------|
-| Candlestick charts | Canvas-based | Already implemented |
-| Timeframe switching | Tab-based | Already implemented |
-| Pre/post market | Configurable | Not implemented |
-| Volume display | Overlay | Not implemented |
-| Options chain | Table view | Partial (scenarios tab) |
-| Summary mode | Dedicated view | Not implemented |
+**Features**:
+- Auto-expiring notifications (4-6 seconds)
+- Stacking (max 3 visible)
+- Severity levels with colors
+- Integrated into status bar
 
 ---
 
-### 3. Longbridge Terminal Patterns
+### 2. AppMode System ✅
 
-From task descriptions, these patterns are identified:
+**Location**: `mode.rs`, integrated in `app.rs`  
+**Status Bar**: Shows `NAV`/`EDIT`/`VIEW` with colors
 
-#### T-1774285319951400000: Numeric Right-Alignment
-**Pattern**: Financial data tables with right-aligned numerics  
-**Benefit**: Easy comparison of decimal places  
+```rust
+pub enum AppMode {
+    Navigation,  // Tab switching, scrolling (green)
+    Edit,        // Form input, text editing (yellow)
+    View,        // Detail views, read-only (cyan)
+}
+```
+
+**Mode Transitions**:
+- Edit mode: Settings forms, loan forms, search inputs
+- View mode: Help overlay, detail popups, log panel
+- Navigation mode: Default for tab switching/scrolling
+
+**Key Binding**: `m` to cycle modes
+
+---
+
+### 3. Command Palette ✅
+
+**Location**: `discoverability.rs`  
+**Trigger**: `:` key
+
+```rust
+pub struct CommandPalette {
+    visible: bool,
+    search: String,
+    selected: usize,
+    commands: Vec<Command>,
+}
+```
+
+**Features**:
+- Searchable command list
+- Keyboard navigation (up/down)
+- Context-aware shortcuts
+- Integrated with action system
+
+---
+
+### 4. macOS-Friendly Shortcuts ✅
+
+**Location**: `input.rs`, `input_shell.rs`
+
+**Standard Shortcuts**:
+- `d` - Delete in Settings watchlist (in addition to Delete key)
+- `Space` - Toggle combo view in Positions
+
+**Cmd (Super) Key Shortcuts**:
+- `Cmd+1-0` - Jump to tabs
+- `Cmd+Q` - Quit
+- `Cmd+W` - Close detail/help/log panel
+- `Cmd+P` - Toggle split pane
+- `Cmd+R` - Force snapshot
+
+---
+
+### 5. Mouse Support ✅
+
+**Location**: `mouse.rs`
+
+**Features**:
+- Mouse wheel scroll in Positions/Orders/Dashboard tabs
+- Click on tabs to switch
+- Click on content to open detail views
+- Automatic mouse capture enable/disable
+
 **Implementation**:
+```rust
+pub fn handle_mouse_event(app: &App, mouse: MouseEvent, area: Rect) -> Option<Action>
+```
+
+---
+
+### 6. ScrollableTableState ✅
+
+**Location**: `scrollable_table.rs`
+
+```rust
+pub struct ScrollableTableState {
+    offset: usize,
+    selected: usize,
+    total_rows: usize,
+    visible_rows: usize,
+}
+```
+
+**Features**:
+- Scroll up/down with selection tracking
+- Page up/down navigation
+- Go to top/bottom
+- Automatic offset adjustment
+- Efficient visible range calculation
+
+**Note**: Module created, full integration into Positions/Orders tabs requires refactoring existing scroll handling.
+
+---
+
+### 7. Alpaca Health Monitoring ✅
+
+**Location**: `alpaca_health.rs`
+
+```rust
+pub struct AlpacaHealthMonitor {
+    paper_health: AlpacaHealth,
+    live_health: AlpacaHealth,
+}
+```
+
+**Features**:
+- Periodic health checks (30s interval)
+- Credential validation
+- Account info display (equity, buying power)
+- Status bar indicators (`A` for paper, `P` for live)
+- Color-coded status (green=ok, red=error, gray=not configured)
+
+---
+
+## Remaining Implementation
+
+### T-UX-003: Numeric Right-Alignment
+
+**Pattern**: Financial data tables with right-aligned numerics
+**Benefit**: Easy comparison of decimal places
+
+**Implementation Plan**:
 ```rust
 // Table cells with numeric alignment
 Cell::from(format!("{:>10.2}", price))  // Right-align, 2 decimals
 Cell::from(format!("{:>8}", quantity))   // Right-align, integer
 ```
 
-#### T-1774285317440018000: Toast Notifications
-**Pattern**: Non-blocking transient notifications  
-**Benefit**: User feedback without modal interruption  
-**Status**: ✅ IMPLEMENTED in `ui/feedback.rs`
+**Files to Update**:
+- `ui/positions.rs` - Price, quantity, PnL columns
+- `ui/orders.rs` - Price, quantity columns
+- `ui/scenarios.rs` - Strike, price columns
 
-#### T-1774285315059562000: ScrollableTableState
-**Pattern**: Table state with selection + scroll position  
-**Benefit**: Large table navigation  
-**Implementation**:
-```rust
-pub struct ScrollableTableState {
-    offset: usize,      // Scroll offset
-    selected: usize,    // Selected row
-    items_count: usize,
-}
-```
+---
 
-#### T-1774285312494816000: DirtyFlags Render Optimization
-**Pattern**: Only re-render changed regions  
-**Benefit**: 60fps with large datasets  
-**Implementation**:
+### T-UX-004: DirtyFlags Render Optimization
+
+**Pattern**: Only re-render changed regions
+**Benefit**: 60fps with large datasets
+
+**Implementation Plan**:
 ```rust
 pub struct DirtyFlags {
     tabs: bool,
     content: bool,
     status_bar: bool,
-    // Only redraw flagged regions
+    sidebar: bool,
 }
 ```
 
+**Integration**:
+- Mark dirty on state changes
+- Check flags before rendering each region
+- Clear flags after render
+
 ---
 
-## Mode System Design
+### T-UX-005: Position Grouping
 
-### Current State
+**Pattern**: Group positions by strategy/expiration
+**Benefit**: Better organization for complex portfolios
 
-Aether has an `InputMode` enum but it's reactive (responding to state), not proactive (controlling available actions).
-
+**Implementation Plan**:
 ```rust
-// Current (reactive)
-pub enum InputMode {
-    Normal,
-    Help,           // Shows help overlay
-    DetailPopup,    // Shows detail view
-    SettingsEditConfig,
-    LoanForm,
-    ChartSearch,
-    // ...
+pub struct PositionGroup {
+    key: (account, strategy, expiration),
+    positions: Vec<Position>,
+    expanded: bool,
+    total_value: f64,
 }
 ```
 
-### Recommended Mode System
+**Features**:
+- Expandable/collapsible groups
+- Group-level statistics
+- Keyboard navigation between groups
 
-Implement explicit modes that control available key bindings:
+---
 
+### T-UX-006: Summary Statistics
+
+**Pattern**: Portfolio-level aggregations
+**Benefit**: High-level portfolio overview
+
+**Implementation Plan**:
 ```rust
-pub enum AppMode {
-    Navigation,     // Tab switching, scrolling, selection
-    Edit,           // Form input, text editing
-    View,           // Detail views, charts, read-only
-}
-
-pub enum NavigationMode {
-    Normal,         // Standard navigation
-    Search,         // Search/filter active
+pub struct PortfolioSummary {
+    total_value: f64,
+    total_pnl: f64,
+    pnl_percent: f64,
+    by_strategy: HashMap<String, StrategySummary>,
 }
 ```
 
-### Mode Transition Map
-
-| From Mode | Key/Event | To Mode | Action |
-|-----------|-----------|---------|--------|
-| Navigation | Enter on item | View | Open detail |
-| Navigation | Tab | Navigation | Next tab |
-| Navigation | i | Edit | Enter insert mode |
-| Edit | Esc | Navigation | Cancel/Close |
-| Edit | Enter | Navigation | Save/Confirm |
-| View | Esc | Navigation | Close view |
-| View | Arrow keys | View | Scroll detail |
-
-### Implementation Plan
-
-1. Add `AppMode` enum alongside existing `InputMode`
-2. Create mode-specific key binding maps
-3. Add mode indicator to status bar
-4. Update help overlay to show mode-specific shortcuts
-5. Implement mode transitions in input handlers
+**Display**: Add to Dashboard tab
 
 ---
 
-## Implementation Tasks
+## Architecture Insights
 
-### Immediate (High Priority)
+### Strengths of Current Implementation
 
-1. **T-UX-001**: Implement AppMode system (Navigation/Edit/View)
-   - Add AppMode enum
-   - Create mode transition logic
-   - Add mode indicator to status bar
-   - Update key binding handlers
+1. **NATS-based Architecture**: Push model superior to polling
+2. **Async Event Loop**: Non-blocking with tokio::select!
+3. **Modular Input System**: Separate handlers per tab/mode
+4. **Type-Safe Actions**: Action enum prevents invalid states
 
-2. **T-UX-002**: Add ScrollableTableState for large tables
-   - Positions tab
-   - Orders tab
-   - Scenarios tab
+### Performance Considerations
 
-3. **T-UX-003**: Numeric right-alignment in tables
-   - Update positions table
-   - Update orders table
-   - Update scenarios table
+- Current: Full redraw every tick (250ms)
+- Future: DirtyFlags for selective redraw
+- Memory: ScrollableTableState for large datasets
 
-### Short-term (Medium Priority)
+### UX Patterns Learned
 
-4. **T-UX-004**: DirtyFlags render optimization
-   - Implement DirtyFlags struct
-   - Update render loop
-   - Benchmark performance
-
-5. **T-UX-005**: Position grouping by strategy/expiration
-   - Group positions in positions tab
-   - Expandable/collapsible groups
-   - Group-level statistics
-
-6. **T-UX-006**: Summary statistics display
-   - Portfolio totals in dashboard
-   - Gain/loss aggregations
-   - Per-strategy summaries
-
-### Long-term (Low Priority)
-
-7. **T-UX-007**: Configurable color schemes
-   - Theme configuration
-   - Color palette management
-   - Terminal capability detection
-
-8. **T-UX-008**: Export functionality (CSV/JSON)
-   - Export positions
-   - Export orders
-   - Export scenarios
-
-9. **T-UX-009**: Sorting options for tables
-   - Clickable column headers
-   - Configurable default sort
-   - Multi-column sort
-
----
-
-## Key Insights
-
-1. **Architecture**: Aether's NATS-based push model is superior to polling used by ticker/tickrs
-2. **Framework**: Ratatui is the right choice (actively maintained, feature-rich)
-3. **Mode System**: Essential for discoverability and power-user workflows
-4. **Performance**: DirtyFlags + ScrollableTableState needed for large datasets
-5. **Presentation**: Right-aligned numerics are standard for financial UIs
+1. **Discoverability**: Command palette (`:`) more discoverable than `?` help
+2. **Mode Indicators**: Visual mode indicator (NAV/EDIT/VIEW) reduces confusion
+3. **Context Hints**: Show available keys based on current context
+4. **Immediate Feedback**: Toast notifications for async operations
 
 ---
 
@@ -298,4 +290,4 @@ pub enum NavigationMode {
 ---
 
 **Last Updated**: 2026-03-26  
-**Next Review**: After mode system implementation
+**Next Review**: After T-UX-003 completion
