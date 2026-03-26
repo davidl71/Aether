@@ -66,6 +66,7 @@ mod app;
 mod app_config;
 mod circuit_breaker;
 mod config;
+mod alpaca_health;
 mod config_watcher;
 mod discoverability;
 mod events;

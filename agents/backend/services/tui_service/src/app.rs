@@ -455,6 +455,8 @@ pub struct App {
     pub alpaca_paper_status: ConnectionStatus,
     /// Alpaca connection status (live trading).
     pub alpaca_live_status: ConnectionStatus,
+    /// Alpaca health monitor for tracking API connectivity.
+    pub alpaca_health: crate::alpaca_health::AlpacaHealthMonitor,
     /// When true, main area shows Dashboard (left) and Positions (right) side-by-side; toggled with [p] or from config.
     pub split_pane: bool,
     /// Scroll/selection index for Positions tab (arrow-key scroll).
@@ -627,6 +629,7 @@ impl App {
             nats_transport: NatsTransportHealthState::default(),
             alpaca_paper_status: ConnectionStatus::new(ConnectionState::Retrying, "Not configured"),
             alpaca_live_status: ConnectionStatus::new(ConnectionState::Retrying, "Not configured"),
+            alpaca_health: crate::alpaca_health::AlpacaHealthMonitor::new(),
             split_pane,
             positions_scroll: 0,
             positions_combo_view: false,
