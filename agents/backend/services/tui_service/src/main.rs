@@ -382,6 +382,11 @@ async fn main() -> color_eyre::Result<()> {
         .await;
     });
 
+    let alpaca_health_monitor = crate::alpaca_health::AlpacaHealthMonitor::new();
+    tokio::spawn(async move {
+        alpaca_health_monitor.spawn_health_checks().await;
+    });
+
     // Spawn config file watcher — hot-reloads TuiConfig on disk changes
     tokio::spawn(async move {
         config_watcher::run(config_tx).await;
