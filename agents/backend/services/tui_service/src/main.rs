@@ -71,6 +71,7 @@ mod config_watcher;
 mod discoverability;
 mod events;
 mod mouse;
+mod scrollable_table;
 mod expiry_buckets;
 mod input;
 mod input_loans;
