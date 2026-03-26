@@ -156,10 +156,7 @@ impl App {
     pub fn tick(&mut self) {
         let mut changed = false;
 
-        let ttl = std::time::Duration::from_secs(TOAST_TTL_SECS);
-        let before = self.toast_queue.len();
-        self.toast_queue.retain(|(_, _, ts)| ts.elapsed() < ttl);
-        if self.toast_queue.len() != before {
+        if self.toast_manager.cleanup_expired() {
             changed = true;
         }
 
@@ -224,6 +221,8 @@ impl App {
         if needs_cred_refresh {
             self.refresh_credential_status();
         }
+
+        self.update_app_mode();
 
         if changed {
             self.needs_redraw = true;

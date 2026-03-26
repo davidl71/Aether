@@ -76,6 +76,7 @@ mod input_shell;
 mod input_tabs;
 mod input_views;
 mod models;
+mod mode;
 mod nats;
 mod option_symbol;
 mod pane;
@@ -678,6 +679,7 @@ async fn run_loop(
                         // Only process Press; ignore Repeat/Release (crossterm 0.27+)
                         if key.kind == KeyEventKind::Press {
                             app.handle_key(key);
+                            app.update_app_mode();
                         }
                     }
                     Some(Err(e)) => {

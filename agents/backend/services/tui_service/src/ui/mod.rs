@@ -5,6 +5,7 @@ mod candlestick;
 pub mod charts;
 mod dashboard;
 mod discount_bank;
+pub mod feedback;
 mod loans;
 pub mod logs;
 mod orders;
@@ -15,6 +16,7 @@ pub use scenarios::filtered_scenarios;
 mod settings;
 mod yield_curve;
 pub use candlestick::Candle;
+pub use feedback::{ToastLevel, ToastManager};
 #[cfg(test)]
 pub(crate) use yield_curve::render_yield_curve as render_yield_curve_tab;
 
@@ -89,6 +91,11 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
 
     let mut spans = vec![
         Span::raw(format!(" {} | ", app.config.backend_id.to_uppercase())),
+        Span::styled(
+            app.app_mode.label(),
+            app.app_mode.style().add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(" | "),
         Span::styled(mode, Style::default().fg(Color::Cyan)),
         Span::raw(" | "),
         Span::styled(strategy, Style::default().fg(Color::Yellow)),
@@ -742,16 +749,20 @@ pub(crate) fn truncate_detail(detail: &str, max_len: usize) -> String {
 }
 
 fn render_connection_badge(target: ConnectionTarget, status: &ConnectionStatus) -> Span<'static> {
-    let color = match status.state {
-        ConnectionState::Connected => Color::Green,
-        ConnectionState::Starting => Color::Blue,
-        ConnectionState::Retrying => Color::Red,
-    };
+    let color = connection_status_color(status);
 
     Span::styled(
         format!("{}:{}", target.label(), status.state.label()),
         Style::default().fg(color).add_modifier(Modifier::BOLD),
     )
+}
+
+fn connection_status_color(status: &ConnectionStatus) -> Color {
+    match status.state {
+        ConnectionState::Connected => Color::Green,
+        ConnectionState::Starting => Color::Blue,
+        ConnectionState::Retrying => Color::Red,
+    }
 }
 
 fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
@@ -987,16 +998,11 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         spans.push(Span::styled(n.to_string(), alert_style));
     }
 
-    if let Some((msg, level, _)) = app.toast_queue.front() {
-        use crate::app::ToastLevel;
-        let color = match level {
-            ToastLevel::Info => Color::Cyan,
-            ToastLevel::Warning => Color::Yellow,
-            ToastLevel::Error => Color::Red,
-        };
+    if let Some(toast) = app.toast_manager.active_toasts().next() {
+        let color = toast.level.color();
         spans.push(Span::raw("  | "));
         spans.push(Span::styled(
-            truncate_detail(msg, 40),
+            truncate_detail(&toast.message, 40),
             Style::default().fg(color).add_modifier(Modifier::BOLD),
         ));
     }
@@ -1087,6 +1093,12 @@ fn append_async_status_spans<'a>(spans: &mut Vec<Span<'a>>, app: &App) {
             Style::default().fg(Color::Red),
         ));
     }
+
+    let alpaca_paper_color = connection_status_color(&app.alpaca_paper_status);
+    let alpaca_live_color = connection_status_color(&app.alpaca_live_status);
+    spans.push(Span::raw("  | "));
+    spans.push(Span::styled("A", Style::default().fg(alpaca_paper_color)));
+    spans.push(Span::styled("P", Style::default().fg(alpaca_live_color)));
 }
 
 fn truncate_command_id(command_id: &str) -> String {

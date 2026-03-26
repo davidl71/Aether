@@ -1,7 +1,8 @@
 use crossterm::event::KeyCode;
 
-use crate::app::{App, LoanEntryState, ToastLevel};
+use crate::app::{App, LoanEntryState};
 use crate::input::Action;
+use crate::ui::ToastLevel;
 
 pub(crate) fn loan_form_key_action(key: KeyCode) -> Option<Action> {
     match key {

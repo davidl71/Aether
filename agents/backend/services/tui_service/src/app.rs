@@ -20,9 +20,10 @@ use crate::app_config::{
 };
 use crate::config::TuiConfig;
 use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget};
+use crate::mode::AppMode;
 use crate::models::TuiSnapshot;
 use crate::pane::pane_spec;
-use crate::ui::Candle;
+use crate::ui::{Candle, ToastLevel, ToastManager};
 use crate::workspace::{
     SecondaryFocus, SettingsHealthFocus, SettingsSection, VisibleWorkspace, WorkspaceSpec,
     SPLIT_PANE_TABS,
@@ -56,15 +57,6 @@ pub struct RefreshTask {
     pub triggered_at: chrono::DateTime<chrono::Utc>,
     pub completed_at: Option<chrono::DateTime<chrono::Utc>>,
     pub status: RefreshTaskStatus,
-}
-
-/// Severity level for transient toast notifications.
-#[derive(Debug, Clone, PartialEq)]
-#[allow(dead_code)]
-pub enum ToastLevel {
-    Info,
-    Warning,
-    Error,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -439,10 +431,12 @@ pub struct App {
     pub log_display_level: log::LevelFilter,
     pub nats_status: ConnectionStatus,
     pub should_quit: bool,
+    /// Current application mode (Navigation/Edit/View).
+    pub app_mode: AppMode,
     /// Last command result from strategy/control actions (shown in status/hint bar).
     pub last_command_status: Option<CommandStatusView>,
-    /// Transient toast notifications (auto-expire after TOAST_TTL_SECS).
-    pub toast_queue: VecDeque<(String, ToastLevel, Instant)>,
+    /// Toast notification manager for user feedback.
+    pub toast_manager: ToastManager,
     /// When true, show the help overlay (key bindings).
     pub show_help: bool,
     /// When true, show the debug log panel overlay (toggled with backtick).
@@ -455,6 +449,10 @@ pub struct App {
     pub backend_health: HashMap<String, BackendHealthState>,
     /// First-class NATS transport health for the subscriber path.
     pub nats_transport: NatsTransportHealthState,
+    /// Alpaca connection status (paper trading).
+    pub alpaca_paper_status: ConnectionStatus,
+    /// Alpaca connection status (live trading).
+    pub alpaca_live_status: ConnectionStatus,
     /// When true, main area shows Dashboard (left) and Positions (right) side-by-side; toggled with [p] or from config.
     pub split_pane: bool,
     /// Scroll/selection index for Positions tab (arrow-key scroll).
@@ -615,14 +613,17 @@ impl App {
             log_display_level: log::LevelFilter::Debug,
             nats_status: ConnectionStatus::new(ConnectionState::Starting, "Connecting to NATS"),
             should_quit: false,
+            app_mode: AppMode::default(),
             last_command_status: None,
-            toast_queue: VecDeque::new(),
+            toast_manager: ToastManager::new(),
             show_help: false,
             show_log_panel: false,
             detail_popup: None,
             config_warning,
             backend_health: HashMap::new(),
             nats_transport: NatsTransportHealthState::default(),
+            alpaca_paper_status: ConnectionStatus::new(ConnectionState::Retrying, "Not configured"),
+            alpaca_live_status: ConnectionStatus::new(ConnectionState::Retrying, "Not configured"),
             split_pane,
             positions_scroll: 0,
             positions_combo_view: false,
@@ -780,6 +781,20 @@ impl App {
         } else {
             InputMode::Normal
         }
+    }
+
+    /// Update app_mode based on current input_mode and state.
+    pub fn update_app_mode(&mut self) {
+        let input_mode = self.input_mode();
+        self.app_mode = match input_mode {
+            InputMode::SettingsEditConfig
+            | InputMode::SettingsAddSymbol
+            | InputMode::LoanForm
+            | InputMode::ChartSearch
+            | InputMode::OrdersFilter => AppMode::Edit,
+            InputMode::Help | InputMode::DetailPopup | InputMode::LogPanel => AppMode::View,
+            InputMode::Normal => AppMode::Navigation,
+        };
     }
 
     /// Legacy: set yield data from NATS request/reply fetch (curve + benchmarks).
@@ -963,8 +978,7 @@ impl App {
 
     /// Push a transient toast notification. Toasts expire after TOAST_TTL_SECS seconds.
     pub fn push_toast(&mut self, msg: impl Into<String>, level: ToastLevel) {
-        self.toast_queue
-            .push_back((msg.into(), level, Instant::now()));
+        self.toast_manager.push(msg, level);
         self.mark_dirty();
     }
 
