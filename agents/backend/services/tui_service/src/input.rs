@@ -111,6 +111,7 @@ pub enum Action {
     CommandPaletteNext,
     CommandPaletteBackspace,
     CommandPaletteChar(char),
+    CloseDetail,
     StrategyStart,
     StrategyStop,
     StrategyCancelAll,
@@ -127,9 +128,16 @@ pub enum Action {
 
 /// Converts a key event to an action, or None if the key is not handled.
 pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
+    use crossterm::event::KeyModifiers;
+
     // Only handle Press events (crossterm 0.27+)
     if key.kind != crossterm::event::KeyEventKind::Press {
         return None;
+    }
+
+    // Handle macOS Cmd (Super) key shortcuts
+    if key.modifiers.contains(KeyModifiers::SUPER) {
+        return handle_macos_cmd_key(key.code);
     }
 
     // Handle command palette input first
@@ -157,7 +165,26 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
     shell_key_action(app, key.code)
 }
 
-/// Handle input when command palette is visible
+fn handle_macos_cmd_key(key: KeyCode) -> Option<Action> {
+    match key {
+        KeyCode::Char('q') | KeyCode::Char('Q') => Some(Action::Quit),
+        KeyCode::Char('w') | KeyCode::Char('W') => Some(Action::CloseDetail),
+        KeyCode::Char('1') => Some(Action::JumpToTab(1)),
+        KeyCode::Char('2') => Some(Action::JumpToTab(2)),
+        KeyCode::Char('3') => Some(Action::JumpToTab(3)),
+        KeyCode::Char('4') => Some(Action::JumpToTab(4)),
+        KeyCode::Char('5') => Some(Action::JumpToTab(5)),
+        KeyCode::Char('6') => Some(Action::JumpToTab(6)),
+        KeyCode::Char('7') => Some(Action::JumpToTab(7)),
+        KeyCode::Char('8') => Some(Action::JumpToTab(8)),
+        KeyCode::Char('9') => Some(Action::JumpToTab(9)),
+        KeyCode::Char('0') => Some(Action::JumpToTab(0)),
+        KeyCode::Char('p') | KeyCode::Char('P') => Some(Action::SplitPaneToggle),
+        KeyCode::Char('r') | KeyCode::Char('R') => Some(Action::ForceSnapshot),
+        _ => None,
+    }
+}
+
 fn handle_command_palette_input(
     palette: &crate::discoverability::CommandPalette,
     key: KeyCode,

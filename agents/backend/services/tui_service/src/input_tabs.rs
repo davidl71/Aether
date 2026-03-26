@@ -56,7 +56,9 @@ fn charts_key_action(key: KeyCode, input_mode: InputMode) -> Option<Action> {
 
 fn positions_key_action(key: KeyCode) -> Option<Action> {
     match key {
-        KeyCode::Char('c') | KeyCode::Char('C') => Some(Action::PositionsToggleCombo),
+        KeyCode::Char('c') | KeyCode::Char('C') | KeyCode::Char(' ') => {
+            Some(Action::PositionsToggleCombo)
+        }
         KeyCode::Up => Some(Action::PositionsScrollUp),
         KeyCode::Down => Some(Action::PositionsScrollDown),
         KeyCode::PageUp => Some(Action::PositionsScrollPageUp),

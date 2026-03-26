@@ -15,6 +15,11 @@ pub(crate) fn settings_key_action(app: &App, key: KeyCode) -> Option<Action> {
         {
             Some(Action::SettingsAddSymbol)
         }
+        KeyCode::Char('d') | KeyCode::Char('D')
+            if app.settings_section == SettingsSection::Symbols =>
+        {
+            Some(Action::SettingsDelete)
+        }
         KeyCode::Char('e') | KeyCode::Char('E') | KeyCode::Enter
             if app.settings_section == SettingsSection::Config =>
         {

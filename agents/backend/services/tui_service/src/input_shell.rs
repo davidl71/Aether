@@ -68,6 +68,11 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
         Action::ToggleLogPanel => {
             app.show_log_panel = !app.show_log_panel;
         }
+        Action::CloseDetail => {
+            app.detail_popup = None;
+            app.show_help = false;
+            app.show_log_panel = false;
+        }
         Action::TabNext => {
             set_active_tab(app, app.active_tab.next());
         }
