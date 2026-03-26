@@ -7,6 +7,7 @@ pub(crate) fn global_key_action(input_mode: InputMode, key: KeyCode) -> Option<A
     match key {
         KeyCode::Char('q') | KeyCode::Char('Q') => Some(Action::Quit),
         KeyCode::Char('?') => Some(Action::ShowHelp),
+        KeyCode::Char(':') => Some(Action::CommandPalette),
         KeyCode::Char('`') | KeyCode::Char('~') => Some(Action::ToggleLogPanel),
         KeyCode::Esc if matches!(input_mode, InputMode::Normal | InputMode::LogPanel) => {
             Some(Action::ToggleLogPanel)
@@ -91,6 +92,21 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
         }
         Action::ModeCycle => {
             app.set_command_status(CommandStatusView::disabled("set_mode"));
+        }
+        Action::CommandPalette => {
+            app.command_palette.toggle();
+        }
+        Action::CommandPalettePrev => {
+            app.command_palette.select_prev();
+        }
+        Action::CommandPaletteNext => {
+            app.command_palette.select_next();
+        }
+        Action::CommandPaletteBackspace => {
+            app.command_palette.backspace();
+        }
+        Action::CommandPaletteChar(c) => {
+            app.command_palette.push_char(c);
         }
         Action::StrategyStart => {
             app.set_command_status(CommandStatusView::disabled("start"));

@@ -437,6 +437,8 @@ pub struct App {
     pub last_command_status: Option<CommandStatusView>,
     /// Toast notification manager for user feedback.
     pub toast_manager: ToastManager,
+    /// Command palette for discoverability.
+    pub command_palette: crate::discoverability::CommandPalette,
     /// When true, show the help overlay (key bindings).
     pub show_help: bool,
     /// When true, show the debug log panel overlay (toggled with backtick).
@@ -616,6 +618,7 @@ impl App {
             app_mode: AppMode::default(),
             last_command_status: None,
             toast_manager: ToastManager::new(),
+            command_palette: crate::discoverability::CommandPalette::new(),
             show_help: false,
             show_log_panel: false,
             detail_popup: None,

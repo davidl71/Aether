@@ -60,6 +60,7 @@ pub fn render(f: &mut Frame, app: &App) {
     if let Some(ref content) = app.detail_popup {
         render_detail_overlay(f, f.area(), content);
     }
+    crate::discoverability::render_command_palette(f, &app.command_palette, f.area());
 }
 
 fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {

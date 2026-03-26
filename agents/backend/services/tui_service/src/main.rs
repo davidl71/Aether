@@ -67,6 +67,7 @@ mod app_config;
 mod circuit_breaker;
 mod config;
 mod config_watcher;
+mod discoverability;
 mod events;
 mod expiry_buckets;
 mod input;

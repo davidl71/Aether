@@ -4,7 +4,7 @@
 //! separate from application state mutation.
 
 use api::RuntimePositionDto;
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent};
 
 use crate::app::{App, DetailPopupContent, InputMode};
 use crate::input_loans::{apply_loan_action, loan_form_key_action};
@@ -106,6 +106,11 @@ pub enum Action {
     LogLevelInfo,
     LogLevelDebug,
     ModeCycle,
+    CommandPalette,
+    CommandPalettePrev,
+    CommandPaletteNext,
+    CommandPaletteBackspace,
+    CommandPaletteChar(char),
     StrategyStart,
     StrategyStop,
     StrategyCancelAll,
@@ -127,6 +132,11 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         return None;
     }
 
+    // Handle command palette input first
+    if app.command_palette.visible {
+        return handle_command_palette_input(&app.command_palette, key.code);
+    }
+
     let input_mode = app.input_mode();
 
     if let Some(action) = global_key_action(input_mode.clone(), key.code) {
@@ -145,6 +155,29 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
     }
 
     shell_key_action(app, key.code)
+}
+
+/// Handle input when command palette is visible
+fn handle_command_palette_input(
+    palette: &crate::discoverability::CommandPalette,
+    key: KeyCode,
+) -> Option<Action> {
+    match key {
+        KeyCode::Esc => Some(Action::CommandPalette),
+        KeyCode::Enter => {
+            // Execute selected command
+            if let Some(cmd) = palette.selected_command() {
+                Some(cmd.action)
+            } else {
+                Some(Action::NoOp)
+            }
+        }
+        KeyCode::Up => Some(Action::CommandPalettePrev),
+        KeyCode::Down => Some(Action::CommandPaletteNext),
+        KeyCode::Backspace => Some(Action::CommandPaletteBackspace),
+        KeyCode::Char(c) => Some(Action::CommandPaletteChar(c)),
+        _ => Some(Action::NoOp),
+    }
 }
 
 /// Applies an action to the app state.
