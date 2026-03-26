@@ -112,6 +112,8 @@ pub enum Action {
     CommandPaletteBackspace,
     CommandPaletteChar(char),
     CloseDetail,
+    MouseScrollUp,
+    MouseScrollDown,
     StrategyStart,
     StrategyStop,
     StrategyCancelAll,
@@ -270,6 +272,58 @@ pub fn apply_action(app: &mut App, action: Action) {
             app.positions_combo_view = !app.positions_combo_view;
             app.positions_scroll = 0;
         }
+        Action::MouseScrollUp => match app.active_tab {
+            crate::app::Tab::Positions => {
+                app.positions_scroll = app.positions_scroll.saturating_sub(3);
+            }
+            crate::app::Tab::Orders => {
+                app.orders_scroll = app.orders_scroll.saturating_sub(3);
+            }
+            crate::app::Tab::Dashboard => {
+                app.dashboard_scroll = app.dashboard_scroll.saturating_sub(3);
+            }
+            _ => {}
+        },
+        Action::MouseScrollDown => match app.active_tab {
+            crate::app::Tab::Positions => {
+                let len = app
+                    .snapshot()
+                    .as_ref()
+                    .map(|s| {
+                        crate::ui::positions_display_info(
+                            &s.dto().positions,
+                            app.positions_combo_view,
+                            &app.positions_expanded_combos,
+                        )
+                        .0
+                    })
+                    .unwrap_or(0);
+                if len > 0 {
+                    app.positions_scroll = (app.positions_scroll + 3).min(len - 1);
+                }
+            }
+            crate::app::Tab::Orders => {
+                let len = app
+                    .snapshot()
+                    .as_ref()
+                    .map(|s| s.dto().orders.len())
+                    .unwrap_or(0);
+                if len > 0 {
+                    app.orders_scroll = (app.orders_scroll + 3).min(len - 1);
+                }
+            }
+            crate::app::Tab::Dashboard => {
+                let len = app
+                    .snapshot()
+                    .as_ref()
+                    .map(|s| s.dto().positions.len())
+                    .unwrap_or(0);
+                if len > 0 {
+                    app.dashboard_scroll = (app.dashboard_scroll + 3).min(len - 1);
+                }
+            }
+            _ => {}
+        },
         Action::PositionsScrollUp => {
             app.positions_scroll = app.positions_scroll.saturating_sub(1);
         }

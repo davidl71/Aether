@@ -43,7 +43,7 @@ use api::finance_rates::{BenchmarksResponse, CurveResponse};
 use api::loans::LoanRecord;
 use color_eyre::eyre::Context;
 use crossterm::{
-    event::{EventStream, KeyEventKind},
+    event::{EventStream, KeyEventKind, MouseEvent, MouseEventKind},
     execute,
     terminal::{
         disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen,
@@ -70,6 +70,7 @@ mod alpaca_health;
 mod config_watcher;
 mod discoverability;
 mod events;
+mod mouse;
 mod expiry_buckets;
 mod input;
 mod input_loans;
@@ -443,7 +444,10 @@ fn init_terminal(use_alternate_screen: bool) -> color_eyre::Result<ratatui::Defa
             execute!(stdout, EnterAlternateScreen).context("enter alternate screen")?;
             ALT_SCREEN_ACTIVE.store(true, Ordering::SeqCst);
         }
-        // Clear screen before first draw (like `reset` does) so no prior output remains.
+        execute!(
+            stdout,
+            crossterm::event::EnableMouseCapture
+        ).context("enable mouse capture")?;
         execute!(stdout, Clear(ClearType::All)).context("clear screen")?;
         ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(stdout))
             .context("create terminal backend")
@@ -455,6 +459,7 @@ fn init_terminal(use_alternate_screen: bool) -> color_eyre::Result<ratatui::Defa
 }
 
 fn restore_terminal(use_alternate_screen: bool) -> color_eyre::Result<()> {
+    let _ = execute!(std::io::stdout(), crossterm::event::DisableMouseCapture);
     if RAW_MODE_ACTIVE.swap(false, Ordering::SeqCst) {
         disable_raw_mode().context("disable raw mode")?;
     }
@@ -689,11 +694,18 @@ async fn run_loop(
                             app.update_app_mode();
                         }
                     }
+                    Some(Ok(crossterm::event::Event::Mouse(mouse))) => {
+                        let size = terminal.size().unwrap_or_default();
+                        let area = ratatui::layout::Rect::new(0, 0, size.width, size.height);
+                        if let Some(action) = mouse::handle_mouse_event(&app, mouse, area) {
+                            app.handle_action(action);
+                        }
+                    }
                     Some(Err(e)) => {
                         error!(error = %e, "Terminal event stream error");
                     }
-                    None => break, // stream closed — terminal gone
-                    _ => {}        // resize, focus, mouse — not used yet
+                    None => break,
+                    _ => {}
                 }
             }
 

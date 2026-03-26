@@ -1129,6 +1129,11 @@ impl App {
             crate::input::apply_action(self, action);
         }
     }
+
+    pub fn handle_action(&mut self, action: crate::input::Action) {
+        self.needs_redraw = true;
+        crate::input::apply_action(self, action);
+    }
 }
 
 #[path = "app_updates.rs"]
