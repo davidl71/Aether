@@ -7,6 +7,9 @@
     ".opencode/rules/derive-builder-pattern.md",
     ".opencode/rules/shared-types-pattern.md"
   ],
+  "plugins": [
+    "@tarquinen/opencode-dcp@latest"
+  ],
   "mcp": {
     "exarp-go": {
       "type": "local",

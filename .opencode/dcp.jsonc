@@ -1,0 +1,45 @@
+{
+  // Dynamic Context Pruning (DCP) configuration for Aether project
+  // Automatically reduces token usage by managing conversation context
+  
+  "compress": {
+    // Start compressing when context reaches 60k tokens
+    "minContextLimit": 60000,
+    // Target context size after compression: 40k tokens
+    "maxContextLimit": 40000,
+    // Use range mode for better summary nesting
+    "mode": "range"
+  },
+  
+  // Protect user messages from compression
+  "protectUserMessages": true,
+  
+  // Protected tools whose outputs are never compressed
+  "commands": {
+    "protectedTools": [
+      "exarp-go",
+      "context7",
+      "rust-docs"
+    ]
+  },
+  
+  // Protected file patterns (keep in compression summaries)
+  "protectedFilePatterns": [
+    "*.rs",
+    "Cargo.toml",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "ARCHITECTURE.md"
+  ],
+  
+  // Deduplication settings
+  "deduplication": {
+    "enabled": true
+  },
+  
+  // Error pruning settings
+  "purgeErrors": {
+    "enabled": true,
+    "turns": 4
+  }
+}
