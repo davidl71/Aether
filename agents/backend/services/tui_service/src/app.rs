@@ -410,8 +410,8 @@ impl Tab {
 
 pub struct App {
     pub config: TuiConfig,
-    /// Set true when state changes require redraw. Reset after each render.
     pub needs_redraw: bool,
+    pub dirty_flags: crate::dirty_flags::DirtyFlags,
     pub active_tab: Tab,
     /// Last rendered main-content area size; input uses this to decide whether wide workspaces
     /// are actually visible before hijacking focus navigation.
@@ -607,6 +607,7 @@ impl App {
         Self {
             config,
             needs_redraw: true,
+            dirty_flags: crate::dirty_flags::DirtyFlags::new(),
             active_tab: Tab::Dashboard,
             last_main_area_size: Cell::new((0, 0)),
             snapshot: std::cell::UnsafeCell::new(None),
@@ -699,9 +700,9 @@ impl App {
         }
     }
 
-    /// Mark that the UI needs to be redrawn on the next render cycle.
     pub fn mark_dirty(&mut self) {
         self.needs_redraw = true;
+        self.dirty_flags.mark_all();
     }
 
     /// Returns a reference to the current snapshot (for rendering).

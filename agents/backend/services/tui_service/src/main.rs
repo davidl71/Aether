@@ -68,6 +68,7 @@ mod circuit_breaker;
 mod config;
 mod alpaca_health;
 mod config_watcher;
+mod dirty_flags;
 mod discoverability;
 mod events;
 mod mouse;
