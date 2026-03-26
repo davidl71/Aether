@@ -1,7 +1,10 @@
 //! Finance rates NATS request/reply handlers.
 //! Subjects: api.finance_rates.*, api.yield_curve.*
+//!
+//! Parallelism: Uses bounded concurrency (default 50) for HTTP calls to prevent
+//! overwhelming external APIs. Configurable via NATS_FINANCE_CONCURRENCY_LIMIT.
 
-use crate::handlers::{api_queue_group, handle_sub};
+use crate::handlers::{api_queue_group, concurrency_limit, handle_sub_parallel};
 use api::finance_rates::{
     build_curve, compare_rates, extract_rate, get_sofr_rates, get_treasury_rates,
     yield_curve_comparison, BoxSpreadInput, CompareRequest, CurveQuery, CurveRequest,
@@ -13,6 +16,19 @@ use nats_adapter::async_nats::Client;
 use serde_json::Value;
 use tracing::{debug, warn};
 use tws_yield_curve;
+
+/// Default concurrency limit for finance rates HTTP calls.
+/// Lower than general limit to avoid overwhelming external APIs.
+const DEFAULT_FINANCE_CONCURRENCY: usize = 50;
+
+/// Get finance-specific concurrency limit.
+fn finance_concurrency_limit() -> usize {
+    std::env::var("NATS_FINANCE_CONCURRENCY_LIMIT")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(DEFAULT_FINANCE_CONCURRENCY)
+        .min(concurrency_limit()) // Never exceed global limit
+}
 
 const SUBJECT_FINANCE_RATES_EXTRACT: &str = "api.finance_rates.extract";
 const SUBJECT_FINANCE_RATES_BUILD_CURVE: &str = "api.finance_rates.build_curve";
@@ -30,11 +46,13 @@ const KV_KEY_PREFIX_YIELD_CURVE: &str = "yield_curve";
 const REFERENCE_SPOT_ENV_PREFIX: &str = "YIELD_CURVE_REFERENCE_SPOT_";
 const DEFAULT_REFERENCE_SPOT: f64 = 6000.0;
 
-/// Spawn Finance Rates NATS API handlers.
+/// Spawn Finance Rates NATS API handlers with bounded parallelism.
 pub async fn spawn(
     nc: Client,
     yield_curve_refresh_tx: Option<tokio::sync::mpsc::Sender<()>>,
 ) {
+    let limit = finance_concurrency_limit();
+    
     // Timeout so FRED/New York Fed calls don't hang and cause NATS request timeouts
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
@@ -148,8 +166,9 @@ pub async fn spawn(
         }
     };
 
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    let nc_extract = nc.clone();
+    tokio::spawn(handle_sub_parallel(
+        nc_extract,
         sub_extract,
         move |body: Option<Vec<u8>>| async move {
             let input: BoxSpreadInput =
@@ -163,10 +182,12 @@ pub async fn spawn(
                 };
             finance_rates_result(extract_rate(input))
         },
+        limit,
     ));
 
     let nc_build = nc.clone();
-    tokio::spawn(handle_sub(
+    let limit_build = limit;
+    tokio::spawn(handle_sub_parallel(
         nc_build.clone(),
         sub_build,
         move |body: Option<Vec<u8>>| {
@@ -179,6 +200,7 @@ pub async fn spawn(
                         .or_else(|| query.as_ref().and_then(|q| q.symbol.clone())),
                     CurveRequest::Opportunities(_) => query.as_ref().and_then(|q| q.symbol.clone()),
                 };
+                let _limit = limit_build;
 
                 // Serve yield curve from KV (written by yield_curve_writer) or TWS.
                 // HTTP fetches (Yahoo, Synthetic) are intentionally excluded here — they
@@ -253,11 +275,13 @@ pub async fn spawn(
                 finance_rates_result(Ok(curve))
             }
         },
+        limit_build,
     ));
 
     let client_compare = client.clone();
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    let nc_compare = nc.clone();
+    tokio::spawn(handle_sub_parallel(
+        nc_compare,
         sub_compare,
         move |body: Option<Vec<u8>>| {
             let client = client_compare.clone();
@@ -267,11 +291,13 @@ pub async fn spawn(
                 finance_rates_result(r)
             }
         },
+        limit,
     ));
 
+    let nc_yield = nc.clone();
     let client_yield = client.clone();
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    tokio::spawn(handle_sub_parallel(
+        nc_yield,
         sub_yield,
         move |body: Option<Vec<u8>>| {
             let client = client_yield.clone();
@@ -288,11 +314,13 @@ pub async fn spawn(
                 serde_json::to_vec(&response).unwrap_or_else(|_| b"{}".to_vec())
             }
         },
+        limit,
     ));
 
+    let nc_bench = nc.clone();
     let client_bench = client.clone();
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    tokio::spawn(handle_sub_parallel(
+        nc_bench,
         sub_benchmarks,
         move |_body: Option<Vec<u8>>| {
             let client = client_bench.clone();
@@ -307,11 +335,13 @@ pub async fn spawn(
                 serde_json::to_vec(&response).unwrap_or_else(|_| b"{}".to_vec())
             }
         },
+        limit,
     ));
 
+    let nc_sofr = nc.clone();
     let client_sofr = client.clone();
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    tokio::spawn(handle_sub_parallel(
+        nc_sofr,
         sub_sofr,
         move |_body: Option<Vec<u8>>| {
             let client = client_sofr.clone();
@@ -320,10 +350,12 @@ pub async fn spawn(
                 serde_json::to_vec(&response).unwrap_or_else(|_| b"{}".to_vec())
             }
         },
+        limit,
     ));
 
-    tokio::spawn(handle_sub(
-        nc,
+    let nc_treasury = nc.clone();
+    tokio::spawn(handle_sub_parallel(
+        nc_treasury,
         sub_treasury,
         move |_body: Option<Vec<u8>>| {
             let client = client.clone();
@@ -332,6 +364,7 @@ pub async fn spawn(
                 serde_json::to_vec(&response).unwrap_or_else(|_| b"{}".to_vec())
             }
         },
+        limit,
     ));
 }
 

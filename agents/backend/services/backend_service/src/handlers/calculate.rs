@@ -1,7 +1,10 @@
 //! Quantitative calculation NATS request/reply handlers.
 //! Subjects: api.calculate.*
+//!
+//! Parallelism: Uses spawn_cpu_work for CPU-intensive calculations to avoid
+//! blocking the async runtime.
 
-use crate::handlers::{api_queue_group, handle_sub};
+use crate::handlers::{api_queue_group, handle_sub_parallel, spawn_cpu_work, concurrency_limit};
 use api::quant::{
     calculate_box_spread, calculate_greeks, calculate_historical_volatility, calculate_iv,
     calculate_jelly_roll, calculate_ratio_spread, calculate_risk_metrics, calculate_strategy,
@@ -20,8 +23,11 @@ const SUBJECT_CALCULATE_BOX_SPREAD: &str = "api.calculate.box_spread";
 const SUBJECT_CALCULATE_JELLY_ROLL: &str = "api.calculate.jelly_roll";
 const SUBJECT_CALCULATE_RATIO_SPREAD: &str = "api.calculate.ratio_spread";
 
-/// Spawn Calculate NATS API handlers.
+/// Spawn Calculate NATS API handlers with parallel processing.
+/// CPU-intensive calculations run on the blocking thread pool.
 pub async fn spawn(nc: Client) {
+    let limit = concurrency_limit();
+    
     let sub_greeks = match nc
         .queue_subscribe(SUBJECT_CALCULATE_GREEKS.to_string(), api_queue_group())
         .await
@@ -112,10 +118,12 @@ pub async fn spawn(nc: Client) {
         }
     };
 
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    // Spawn handlers with parallel processing and CPU-bound work offloading
+    let nc_greeks = nc.clone();
+    tokio::spawn(handle_sub_parallel(
+        nc_greeks,
         sub_greeks,
-        |body: Option<Vec<u8>>| async move {
+        move |body: Option<Vec<u8>>| async move {
             let request: GreeksRequest =
                 match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
                     Some(r) => r,
@@ -125,13 +133,17 @@ pub async fn spawn(nc: Client) {
                         ))
                     }
                 };
-            calculate_result(calculate_greeks(&request))
+            // Offload CPU work to blocking pool
+            spawn_cpu_work(move || calculate_result(calculate_greeks(&request))).await
         },
+        limit,
     ));
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    
+    let nc_iv = nc.clone();
+    tokio::spawn(handle_sub_parallel(
+        nc_iv,
         sub_iv,
-        |body: Option<Vec<u8>>| async move {
+        move |body: Option<Vec<u8>>| async move {
             let request: IvRequest =
                 match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
                     Some(r) => r,
@@ -141,13 +153,16 @@ pub async fn spawn(nc: Client) {
                         ))
                     }
                 };
-            calculate_result(calculate_iv(&request))
+            spawn_cpu_work(move || calculate_result(calculate_iv(&request))).await
         },
+        limit,
     ));
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    
+    let nc_hv = nc.clone();
+    tokio::spawn(handle_sub_parallel(
+        nc_hv,
         sub_hv,
-        |body: Option<Vec<u8>>| async move {
+        move |body: Option<Vec<u8>>| async move {
             let request: HistoricalVolRequest =
                 match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
                     Some(r) => r,
@@ -157,13 +172,16 @@ pub async fn spawn(nc: Client) {
                         ))
                     }
                 };
-            calculate_result(calculate_historical_volatility(&request))
+            spawn_cpu_work(move || calculate_result(calculate_historical_volatility(&request))).await
         },
+        limit,
     ));
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    
+    let nc_risk = nc.clone();
+    tokio::spawn(handle_sub_parallel(
+        nc_risk,
         sub_risk,
-        |body: Option<Vec<u8>>| async move {
+        move |body: Option<Vec<u8>>| async move {
             let request: RiskMetricsRequest =
                 match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
                     Some(r) => r,
@@ -173,13 +191,16 @@ pub async fn spawn(nc: Client) {
                         ))
                     }
                 };
-            calculate_result(calculate_risk_metrics(&request))
+            spawn_cpu_work(move || calculate_result(calculate_risk_metrics(&request))).await
         },
+        limit,
     ));
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    
+    let nc_strategy = nc.clone();
+    tokio::spawn(handle_sub_parallel(
+        nc_strategy,
         sub_strategy,
-        |body: Option<Vec<u8>>| async move {
+        move |body: Option<Vec<u8>>| async move {
             let request: StrategyRequest =
                 match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
                     Some(r) => r,
@@ -189,13 +210,16 @@ pub async fn spawn(nc: Client) {
                         ))
                     }
                 };
-            calculate_result(calculate_strategy(&request))
+            spawn_cpu_work(move || calculate_result(calculate_strategy(&request))).await
         },
+        limit,
     ));
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    
+    let nc_box = nc.clone();
+    tokio::spawn(handle_sub_parallel(
+        nc_box,
         sub_box,
-        |body: Option<Vec<u8>>| async move {
+        move |body: Option<Vec<u8>>| async move {
             let request: BoxSpreadRequest =
                 match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
                     Some(r) => r,
@@ -205,13 +229,16 @@ pub async fn spawn(nc: Client) {
                         ))
                     }
                 };
-            calculate_result(calculate_box_spread(&request))
+            spawn_cpu_work(move || calculate_result(calculate_box_spread(&request))).await
         },
+        limit,
     ));
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    
+    let nc_jelly = nc.clone();
+    tokio::spawn(handle_sub_parallel(
+        nc_jelly,
         sub_jelly,
-        |body: Option<Vec<u8>>| async move {
+        move |body: Option<Vec<u8>>| async move {
             let request: JellyRollRequest =
                 match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
                     Some(r) => r,
@@ -221,13 +248,16 @@ pub async fn spawn(nc: Client) {
                         ))
                     }
                 };
-            calculate_result(calculate_jelly_roll(&request))
+            spawn_cpu_work(move || calculate_result(calculate_jelly_roll(&request))).await
         },
+        limit,
     ));
-    tokio::spawn(handle_sub(
-        nc.clone(),
+    
+    let nc_ratio = nc.clone();
+    tokio::spawn(handle_sub_parallel(
+        nc_ratio,
         sub_ratio,
-        |body: Option<Vec<u8>>| async move {
+        move |body: Option<Vec<u8>>| async move {
             let request: RatioSpreadRequest =
                 match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
                     Some(r) => r,
@@ -237,8 +267,9 @@ pub async fn spawn(nc: Client) {
                         ))
                     }
                 };
-            calculate_result(calculate_ratio_spread(&request))
+            spawn_cpu_work(move || calculate_result(calculate_ratio_spread(&request))).await
         },
+        limit,
     ));
 }
 
