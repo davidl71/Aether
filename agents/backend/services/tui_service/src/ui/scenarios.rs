@@ -4,6 +4,7 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
+    text::Line,
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
     Frame,
 };
@@ -155,17 +156,17 @@ pub fn render_scenarios(f: &mut Frame, app: &App, area: Rect) {
         .unwrap_or(0);
 
     let header = Row::new([
-        "Symbol",
-        "Expiry",
-        "DTE",
-        "Width",
-        "Center",
-        "APR%",
-        "Tbill%",
-        "vs bps",
-        "Net Debit",
-        "ROI%",
-        "FillProb",
+        Cell::from("Symbol"),
+        Cell::from("Expiry"),
+        Cell::from(Line::from("DTE").right_aligned()),
+        Cell::from(Line::from("Width").right_aligned()),
+        Cell::from(Line::from("Center").right_aligned()),
+        Cell::from(Line::from("APR%").right_aligned()),
+        Cell::from(Line::from("Tbill%").right_aligned()),
+        Cell::from(Line::from("vs bps").right_aligned()),
+        Cell::from(Line::from("Net Debit").right_aligned()),
+        Cell::from(Line::from("ROI%").right_aligned()),
+        Cell::from(Line::from("FillProb").right_aligned()),
     ])
     .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
@@ -215,17 +216,17 @@ pub fn render_scenarios(f: &mut Frame, app: &App, area: Rect) {
                     _ => ("—".to_string(), "—".to_string()),
                 };
                 let row = Row::new([
-                    s.symbol.clone(),
-                    s.expiration.clone(),
-                    dte_str,
-                    s.strike_width.to_string(),
-                    center_str,
-                    format!("{:.2}", s.apr_pct),
-                    tbill_str,
-                    vs_bps_str,
-                    format!("{:.2}", s.net_debit),
-                    format!("{:.2}", s.roi_pct),
-                    format!("{:.2}", s.fill_probability),
+                    Cell::from(s.symbol.clone()),
+                    Cell::from(s.expiration.clone()),
+                    Cell::from(Line::from(dte_str).right_aligned()),
+                    Cell::from(Line::from(s.strike_width.to_string()).right_aligned()),
+                    Cell::from(Line::from(center_str).right_aligned()),
+                    Cell::from(Line::from(format!("{:.2}", s.apr_pct)).right_aligned()),
+                    Cell::from(Line::from(tbill_str).right_aligned()),
+                    Cell::from(Line::from(vs_bps_str).right_aligned()),
+                    Cell::from(Line::from(format!("{:.2}", s.net_debit)).right_aligned()),
+                    Cell::from(Line::from(format!("{:.2}", s.roi_pct)).right_aligned()),
+                    Cell::from(Line::from(format!("{:.2}", s.fill_probability)).right_aligned()),
                 ]);
                 if is_selected {
                     row.style(Style::default().add_modifier(Modifier::REVERSED))

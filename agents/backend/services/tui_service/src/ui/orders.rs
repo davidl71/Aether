@@ -3,6 +3,7 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
+    text::Line,
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
     Frame,
 };
@@ -70,8 +71,15 @@ pub fn render_orders_filter(f: &mut Frame, app: &App, area: Rect) {
 }
 
 pub fn render_orders_table(f: &mut Frame, app: &App, area: Rect) {
-    let header = Row::new(["ID", "Symbol", "Side", "Qty", "Status", "Submitted"])
-        .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
+    let header = Row::new([
+        Cell::from("ID"),
+        Cell::from("Symbol"),
+        Cell::from("Side"),
+        Cell::from(Line::from("Qty").right_aligned()),
+        Cell::from("Status"),
+        Cell::from("Submitted"),
+    ])
+    .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
     let filter_lower = app.order_filter.to_lowercase();
     let all_rows: Vec<Row> = if let Some(ref snap) = app.snapshot() {
@@ -98,7 +106,7 @@ pub fn render_orders_table(f: &mut Frame, app: &App, area: Rect) {
                     Cell::from(o.id.clone()),
                     Cell::from(o.symbol.clone()),
                     Cell::from(o.side.clone()).style(Style::default().fg(side_color)),
-                    Cell::from(o.quantity.to_string()),
+                    Cell::from(Line::from(o.quantity.to_string()).right_aligned()),
                     Cell::from(o.status.clone()),
                     Cell::from(submitted),
                 ])

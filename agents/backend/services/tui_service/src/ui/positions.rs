@@ -6,6 +6,7 @@ use api::RuntimePositionDto;
 use ratatui::{
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
+    text::Line,
     widgets::{Block, Borders, Cell, Row, Table},
     Frame,
 };
@@ -135,10 +136,14 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
 
         let header = Row::new([
             Cell::from("Symbol").style(Style::default().add_modifier(Modifier::BOLD)),
-            Cell::from("Qty").style(Style::default().add_modifier(Modifier::BOLD)),
-            Cell::from("Cost").style(Style::default().add_modifier(Modifier::BOLD)),
-            Cell::from("Mark").style(Style::default().add_modifier(Modifier::BOLD)),
-            Cell::from("P&L").style(Style::default().add_modifier(Modifier::BOLD)),
+            Cell::from(Line::from("Qty").right_aligned())
+                .style(Style::default().add_modifier(Modifier::BOLD)),
+            Cell::from(Line::from("Cost").right_aligned())
+                .style(Style::default().add_modifier(Modifier::BOLD)),
+            Cell::from(Line::from("Mark").right_aligned())
+                .style(Style::default().add_modifier(Modifier::BOLD)),
+            Cell::from(Line::from("P&L").right_aligned())
+                .style(Style::default().add_modifier(Modifier::BOLD)),
             Cell::from("Strat").style(Style::default().add_modifier(Modifier::BOLD)),
         ]);
 
@@ -210,10 +215,14 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
                     }
                     Row::new([
                         Cell::from(sym).style(Style::default().add_modifier(Modifier::BOLD)),
-                        Cell::from(qty).style(Style::default().add_modifier(Modifier::BOLD)),
-                        Cell::from(cost).style(Style::default().add_modifier(Modifier::BOLD)),
-                        Cell::from(mark).style(Style::default().add_modifier(Modifier::BOLD)),
-                        Cell::from(pnl).style(Style::default().add_modifier(Modifier::BOLD)),
+                        Cell::from(Line::from(qty).right_aligned())
+                            .style(Style::default().add_modifier(Modifier::BOLD)),
+                        Cell::from(Line::from(cost).right_aligned())
+                            .style(Style::default().add_modifier(Modifier::BOLD)),
+                        Cell::from(Line::from(mark).right_aligned())
+                            .style(Style::default().add_modifier(Modifier::BOLD)),
+                        Cell::from(Line::from(pnl).right_aligned())
+                            .style(Style::default().add_modifier(Modifier::BOLD)),
                         Cell::from(strat).style(Style::default().add_modifier(Modifier::BOLD)),
                     ])
                     .style(base_style)
@@ -229,10 +238,13 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
                     }
                     Row::new([
                         Cell::from(format!("  {}", pos.symbol)),
-                        Cell::from(pos.quantity.to_string()),
-                        Cell::from(format!("{:.2}", pos.cost_basis)),
-                        Cell::from(format!("{:.2}", pos.mark)),
-                        Cell::from(format!("{:+.2}", pos.unrealized_pnl)).style(if is_selected {
+                        Cell::from(Line::from(pos.quantity.to_string()).right_aligned()),
+                        Cell::from(Line::from(format!("{:.2}", pos.cost_basis)).right_aligned()),
+                        Cell::from(Line::from(format!("{:.2}", pos.mark)).right_aligned()),
+                        Cell::from(
+                            Line::from(format!("{:+.2}", pos.unrealized_pnl)).right_aligned(),
+                        )
+                        .style(if is_selected {
                             base_style
                         } else {
                             Style::default().fg(pnl_color)
