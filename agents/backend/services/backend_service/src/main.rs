@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use api::{
-    credentials::{get_credential, CredentialKey},
+    credentials::{bootstrap_process_env_from_store, get_credential, CredentialKey},
     shared_config::load_shared_config,
     Alert, HealthAggregateState, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
 };
@@ -185,40 +185,14 @@ fn default_poll_interval_ms() -> u64 {
     800
 }
 
-/// Load API credentials from the keyring / credential files into env vars so that
-/// downstream factories in the `market_data` crate (which only read `std::env::var`)
-/// can find them. Explicit env vars always win — this only fills gaps.
-///
-/// Must be called before any threads are spawned.
-fn bootstrap_credentials() {
-    let pairs: &[(CredentialKey, &str)] = &[
-        (CredentialKey::FmpApiKey, "FMP_API_KEY"),
-        (CredentialKey::PolygonApiKey, "POLYGON_API_KEY"),
-        (CredentialKey::FredApiKey, "FRED_API_KEY"),
-        (CredentialKey::TaseApiKey, "TASE_API_KEY"),
-    ];
-    for &(key, env_name) in pairs {
-        if std::env::var(env_name).is_ok() {
-            continue; // already set — respect explicit env var
-        }
-        if let Some(val) = get_credential(key) {
-            // Safety: single-threaded at this point in main(), before any spawns.
-            #[allow(unused_unsafe)]
-            unsafe {
-                std::env::set_var(env_name, &val);
-            }
-            info!(credential = env_name, "loaded credential from keyring/file");
-        }
-    }
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     if std::env::args().any(|a| a == "--validate") {
         run_validate();
     }
     init_tracing();
-    bootstrap_credentials();
+    // FMP/Polygon/FRED/TASE + Alpaca (paper preferred, else live) into env for env-only readers.
+    bootstrap_process_env_from_store();
     let config = load_config().context("failed to load backend config")?;
     let backend_id = resolve_backend_id();
 

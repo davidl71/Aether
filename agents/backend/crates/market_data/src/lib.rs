@@ -28,7 +28,10 @@ pub use model::{
     SimpleMarketDataSourceFactory,
 };
 pub use pipeline::{MarketDataIngestor, MarketDataPipeline};
-pub use polygon::{PolygonMarketDataSource, PolygonMarketDataSourceFactory, PolygonOptionsSource, PolygonOptionsSourceFactory};
+pub use polygon::{
+    PolygonMarketDataSource, PolygonMarketDataSourceFactory, PolygonOptionsSource,
+    PolygonOptionsSourceFactory,
+};
 pub use polygon_ws::PolygonWsMarketDataSource;
 pub use shir::{default_shir_rate, fetch_shir_rate, ShirRate};
 pub use tase::{TaseClient, TaseIndex, TaseQuote, TaseSearchResult};
@@ -70,13 +73,18 @@ fn options_registry() -> &'static HashMap<&'static str, DynOptionsFactory> {
     static REGISTRY: OnceLock<HashMap<&'static str, DynOptionsFactory>> = OnceLock::new();
     REGISTRY.get_or_init(|| {
         let mut m = HashMap::new();
-        m.insert("yahoo", Box::new(|| {
-            Ok(Box::new(YahooOptionsSource::new()) as Box<dyn OptionsDataSource>)
-        }) as DynOptionsFactory);
-        m.insert("polygon", Box::new(|| {
-            let source = PolygonOptionsSource::from_env()?;
-            Ok(Box::new(source) as Box<dyn OptionsDataSource>)
-        }) as DynOptionsFactory);
+        m.insert(
+            "yahoo",
+            Box::new(|| Ok(Box::new(YahooOptionsSource::new()) as Box<dyn OptionsDataSource>))
+                as DynOptionsFactory,
+        );
+        m.insert(
+            "polygon",
+            Box::new(|| {
+                let source = PolygonOptionsSource::from_env()?;
+                Ok(Box::new(source) as Box<dyn OptionsDataSource>)
+            }) as DynOptionsFactory,
+        );
         m
     })
 }

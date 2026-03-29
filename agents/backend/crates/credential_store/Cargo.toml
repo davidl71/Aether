@@ -1,0 +1,14 @@
+[package]
+name = "credential_store"
+description = "Shared env/keyring/file credential resolution for Aether (no dependency on api or market_data)"
+edition = "2021"
+version = "0.1.0"
+
+[dependencies]
+dirs = "5"
+tracing = { workspace = true }
+keyring = { version = "3", optional = true }
+
+[features]
+default = []
+keyring = ["dep:keyring"]

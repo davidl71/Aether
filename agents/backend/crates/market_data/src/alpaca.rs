@@ -56,8 +56,8 @@ impl AlpacaSource {
     }
 
     /// Create new Alpaca source from environment.
-    /// Credentials are resolved by the TUI/backend via credential management
-    /// (keyring, env, or file) and passed as APCA_API_KEY_ID/APCA_API_SECRET_KEY.
+    /// Prefer `credential_store::bootstrap_process_env_from_store` at process start (backend `main`),
+    /// or set `APCA_API_KEY_ID` / `APCA_API_SECRET_KEY` / `APCA_API_BASE_URL` yourself.
     pub fn from_env() -> Option<(bool, String, String)> {
         let key_id = std::env::var("APCA_API_KEY_ID").ok()?;
         let secret_key = std::env::var("APCA_API_SECRET_KEY").ok()?;
@@ -183,9 +183,10 @@ impl MarketDataSourceFactory for AlpacaSourceFactory {
     ) -> anyhow::Result<Box<dyn MarketDataSource>> {
         let (is_paper, _key_id, _secret_key) = AlpacaSource::from_env()
             .ok_or_else(|| anyhow::anyhow!(
-                "Alpaca credentials not configured. Set via TUI Settings > Sources or configure APCA_API_KEY_ID \
-                and APCA_API_SECRET_KEY environment variables. Paper: https://paper-api.alpaca.markets \
-                Live: https://api.alpaca.markets"
+                "Alpaca credentials not configured. Use TUI Settings → Alpaca (keyring/file), legacy \
+                ALPACA_PAPER_* / ALPACA_LIVE_* env vars, or set APCA_API_KEY_ID and APCA_API_SECRET_KEY \
+                (backend calls bootstrap_process_env_from_store at startup). \
+                Paper: https://paper-api.alpaca.markets Live: https://api.alpaca.markets"
             ))?;
 
         let source = AlpacaSource::new(is_paper, symbols.iter().cloned(), interval)?;

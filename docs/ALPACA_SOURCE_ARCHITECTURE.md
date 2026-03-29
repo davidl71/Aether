@@ -75,7 +75,7 @@ The promising Rust/native libraries in the repo for later work are:
 
 ## 5. Active Files
 
-- [agents/backend/crates/api/src/credentials.rs](/Users/davidl/Projects/Trading/Aether/agents/backend/crates/api/src/credentials.rs)
+- [agents/backend/crates/credential_store/src/lib.rs](../agents/backend/crates/credential_store/src/lib.rs) (stable import: `api::credentials`)
 - [agents/backend/crates/api/src/finance_rates.rs](/Users/davidl/Projects/Trading/Aether/agents/backend/crates/api/src/finance_rates.rs)
 - [agents/backend/services/backend_service/src/yield_curve_writer.rs](/Users/davidl/Projects/Trading/Aether/agents/backend/services/backend_service/src/yield_curve_writer.rs)
 - [docs/MARKET_DATA_INTEGRATION.md](/Users/davidl/Projects/Trading/Aether/docs/MARKET_DATA_INTEGRATION.md)

@@ -5,7 +5,7 @@ version = "0.1.0"
 
 [features]
 default = []
-keyring = ["dep:keyring"]
+keyring = ["credential_store/keyring"]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -23,14 +23,13 @@ sqlx = { version = "0.9.0-alpha.1", default-features = false, features = ["runti
 prost = "0.13"
 prost-types = "0.13"
 common = { path = "../common" }
+credential_store = { path = "../credential_store" }
 market_data = { path = "../market_data" }
 risk = { path = "../risk", features = ["serde"] }
 strategy = { path = "../strategy" }
 nats_adapter = { path = "../nats_adapter" }
 discount_bank_parser = { path = "../discount_bank_parser" }
 quant = { path = "../quant", features = ["serde"] }
-keyring = { version = "3", optional = true }
-dirs = "5"
 alpaca_api_client = "0.8"
 
 [dev-dependencies]

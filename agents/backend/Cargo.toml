@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "crates/common",
+  "crates/credential_store",
   "crates/market_data",
   "crates/strategy",
   "crates/risk",
@@ -21,6 +22,7 @@ members = [
 ]
 default-members = [
   "crates/common",
+  "crates/credential_store",
   "crates/market_data",
   "crates/strategy",
   "crates/risk",

@@ -38,7 +38,7 @@ Active Alpaca code lives under `agents/backend/`:
 | Concern | Location |
 |--------|----------|
 | REST quotes | `crates/market_data/src/alpaca.rs` |
-| Credential keys + storage | `crates/api/src/credentials.rs` |
+| Credential keys + storage | `crates/credential_store` (import as `api::credentials`) |
 | Positions | `crates/api/src/alpaca_positions.rs` |
 | TUI health / settings | `services/tui_service/src/alpaca_health.rs`, `ui/settings_alpaca.rs` |
 

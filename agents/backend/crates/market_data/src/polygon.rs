@@ -219,55 +219,11 @@ impl MarketDataSourceFactory for PolygonMarketDataSourceFactory {
 }
 
 // ---------------------------------------------------------------------------
-// Credential helper (mirrors api::credentials without a hard dep)
+// Polygon API key: shared rules with TUI/backend via `credential_store`
 // ---------------------------------------------------------------------------
 
-/// Resolve the Polygon API key from (in order):
-/// 1. `POLYGON_API_KEY` environment variable
-/// 2. `~/.config/aether/polygon_api_key.cred` file (written by the credstore)
 fn resolve_polygon_api_key() -> Option<String> {
-    if let Ok(v) = std::env::var("POLYGON_API_KEY") {
-        if !v.trim().is_empty() {
-            return Some(v);
-        }
-    }
-
-    #[cfg(feature = "keyring")]
-    {
-        if let Ok(entry) = keyring::Entry::new("aether", "polygon_api_key") {
-            if let Ok(v) = entry.get_password() {
-                if !v.trim().is_empty() {
-                    return Some(v.trim().to_string());
-                }
-            }
-        }
-    }
-
-    // Fallback: cred file written by the credstore.
-    // Mirror the path used by api::credentials (dirs::config_dir() + "aether").
-    // On macOS: ~/Library/Application Support/aether/
-    // On Linux: ~/.config/aether/
-    let config_base = if cfg!(target_os = "macos") {
-        std::env::var("HOME").ok().map(|h| {
-            std::path::PathBuf::from(h)
-                .join("Library")
-                .join("Application Support")
-        })
-    } else {
-        std::env::var("XDG_CONFIG_HOME")
-            .ok()
-            .map(std::path::PathBuf::from)
-            .or_else(|| {
-                std::env::var("HOME")
-                    .ok()
-                    .map(|h| std::path::PathBuf::from(h).join(".config"))
-            })
-    };
-    let path = config_base?.join("aether").join("polygon_api_key.cred");
-    std::fs::read_to_string(path)
-        .ok()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
+    credential_store::polygon_api_key()
 }
 
 // ---------------------------------------------------------------------------

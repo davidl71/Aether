@@ -1,7 +1,25 @@
+//! Shared credential resolution for Aether binaries and libraries.
+//!
+//! # Resolution order (per [`CredentialKey`])
+//! 1. Primary environment variable (and Alpaca legacy env names where applicable)
+//! 2. OS keyring (when built with `--features keyring`)
+//! 3. File under [`dirs::config_dir()`]`/aether/{key}.cred`
+//!
+//! # Dependency graph
+//! This crate depends only on `dirs`, `tracing`, and optional `keyring`. The `api` crate
+//! depends on `market_data`; **`market_data` must not depend on `api`**, so both use this
+//! crate for identical storage paths and lookup rules.
+//!
+//! # Process environment bootstrap
+//! Some dependencies only read `std::env` (e.g. `alpaca_api_client`, parts of `market_data`).
+//! Call [`bootstrap_process_env_from_store`] once from `main` before spawning worker threads.
+//! It never overwrites existing non-empty environment variables.
+
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 
+#[cfg_attr(not(feature = "keyring"), allow(dead_code))]
 const SERVICE: &str = "aether";
 
 fn config_dir() -> PathBuf {
@@ -54,8 +72,8 @@ impl CredentialSource {
 #[derive(Clone, Debug, PartialEq, Eq)]
 /// Resolved Alpaca source credentials and endpoints.
 ///
-/// Keep paper and live identities separate so market-data and future broker
-/// adapters do not collapse into a single generic Alpaca credential blob.
+/// Keep paper and live identities separate so market-data and broker adapters do not
+/// collapse into a single generic Alpaca credential blob.
 pub struct AlpacaCredentialSet {
     pub environment: AlpacaEnvironment,
     pub api_key_id: String,
@@ -405,6 +423,71 @@ pub fn list_credentials() -> Vec<(&'static str, &'static str)> {
         ("tastytrade-account", "Tastytrade Account Number"),
         ("tase", "TASE (Tel Aviv Stock Exchange)"),
     ]
+}
+
+fn env_nonempty(name: &str) -> bool {
+    env::var(name)
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .is_some()
+}
+
+fn bootstrap_scalar_env_if_missing(key: CredentialKey, env_name: &'static str) {
+    if env_nonempty(env_name) {
+        return;
+    }
+    if let Some(val) = get_credential(key) {
+        // Safety: only called from `bootstrap_process_env_from_store` during single-threaded startup.
+        #[allow(unused_unsafe)]
+        unsafe {
+            env::set_var(env_name, &val);
+        }
+        tracing::info!(
+            credential = env_name,
+            "loaded credential from keyring/file into process env"
+        );
+    }
+}
+
+fn bootstrap_alpaca_env_if_missing() {
+    if env_nonempty("APCA_API_KEY_ID") {
+        return;
+    }
+    if let Some(set) = alpaca_credentials(AlpacaEnvironment::Paper) {
+        #[allow(unused_unsafe)]
+        unsafe {
+            env::set_var("APCA_API_KEY_ID", &set.api_key_id);
+            env::set_var("APCA_API_SECRET_KEY", &set.api_secret_key);
+            env::set_var("APCA_API_BASE_URL", &set.trading_base_url);
+        }
+        tracing::info!(
+            environment = "paper",
+            "loaded Alpaca credentials from keyring/file into process env"
+        );
+        return;
+    }
+    if let Some(set) = alpaca_credentials(AlpacaEnvironment::Live) {
+        #[allow(unused_unsafe)]
+        unsafe {
+            env::set_var("APCA_API_KEY_ID", &set.api_key_id);
+            env::set_var("APCA_API_SECRET_KEY", &set.api_secret_key);
+            env::set_var("APCA_API_BASE_URL", &set.trading_base_url);
+        }
+        tracing::info!(
+            environment = "live",
+            "loaded Alpaca credentials from keyring/file into process env"
+        );
+    }
+}
+
+/// Populate `std::env` from the credential store for keys that downstream code reads only via env.
+/// Does not overwrite existing non-empty variables. Call once from `main` before spawning threads.
+pub fn bootstrap_process_env_from_store() {
+    bootstrap_scalar_env_if_missing(CredentialKey::FmpApiKey, "FMP_API_KEY");
+    bootstrap_scalar_env_if_missing(CredentialKey::PolygonApiKey, "POLYGON_API_KEY");
+    bootstrap_scalar_env_if_missing(CredentialKey::FredApiKey, "FRED_API_KEY");
+    bootstrap_scalar_env_if_missing(CredentialKey::TaseApiKey, "TASE_API_KEY");
+    bootstrap_alpaca_env_if_missing();
 }
 
 #[cfg(test)]

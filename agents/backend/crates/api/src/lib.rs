@@ -2,7 +2,10 @@ pub mod alpaca_positions;
 pub mod client_portal_options;
 pub mod combo_strategy;
 pub mod commands;
-pub mod credentials;
+/// Credential storage and env bootstrap (`credential_store` crate), re-exported as `api::credentials`.
+pub mod credentials {
+    pub use credential_store::*;
+}
 pub mod discount_bank;
 pub mod finance_rates;
 mod health;
