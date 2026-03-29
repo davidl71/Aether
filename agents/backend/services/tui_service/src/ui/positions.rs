@@ -2,7 +2,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use api::RuntimePositionDto;
+use api::{PositionSnapshot, RuntimePositionDto};
+
+use crate::config::PositionsSortMode;
 use ratatui::{
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
@@ -19,6 +21,23 @@ type DisplayInfo = (
     Vec<Option<usize>>,
     Vec<Option<(String, String, String)>>,
 );
+
+/// Reorder snapshot positions for the Positions tab (operator preference).
+pub(crate) fn sort_positions_for_operator(
+    positions: &mut Vec<PositionSnapshot>,
+    mode: PositionsSortMode,
+) {
+    match mode {
+        PositionsSortMode::AsReceived => {}
+        PositionsSortMode::Symbol => positions.sort_by(|a, b| a.symbol.cmp(&b.symbol)),
+        PositionsSortMode::UnrealizedPnlDesc => positions.sort_by(|a, b| {
+            b.unrealized_pnl
+                .partial_cmp(&a.unrealized_pnl)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| a.symbol.cmp(&b.symbol))
+        }),
+    }
+}
 
 fn symbol_stem(symbol: &str) -> &str {
     symbol.split_whitespace().next().unwrap_or(symbol)
@@ -323,4 +342,50 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
     )
     .header(header);
     f.render_widget(table, inner);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_positions() -> Vec<PositionSnapshot> {
+        vec![
+            PositionSnapshot {
+                id: String::new(),
+                symbol: "ZZZ".into(),
+                quantity: 1,
+                cost_basis: 0.0,
+                mark: 0.0,
+                unrealized_pnl: 1.0,
+                account_id: None,
+                source: None,
+            },
+            PositionSnapshot {
+                id: String::new(),
+                symbol: "AAA".into(),
+                quantity: 1,
+                cost_basis: 0.0,
+                mark: 0.0,
+                unrealized_pnl: 99.0,
+                account_id: None,
+                source: None,
+            },
+        ]
+    }
+
+    #[test]
+    fn sort_positions_symbol_orders_alphabetically() {
+        let mut p = sample_positions();
+        sort_positions_for_operator(&mut p, PositionsSortMode::Symbol);
+        assert_eq!(p[0].symbol, "AAA");
+        assert_eq!(p[1].symbol, "ZZZ");
+    }
+
+    #[test]
+    fn sort_positions_pnl_orders_by_magnitude() {
+        let mut p = sample_positions();
+        sort_positions_for_operator(&mut p, PositionsSortMode::UnrealizedPnlDesc);
+        assert_eq!(p[0].symbol, "AAA");
+        assert_eq!(p[1].symbol, "ZZZ");
+    }
 }

@@ -847,6 +847,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tws_yield_curve",
+ "yfinance-rs",
 ]
 
 [[package]]
@@ -5380,7 +5381,6 @@ dependencies = [
  "sqlx-postgres",
  "sqlx-sqlite",
  "syn 2.0.117",
- "thiserror 2.0.18",
  "tokio",
  "url",
 ]

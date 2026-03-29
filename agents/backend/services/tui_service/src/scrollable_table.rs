@@ -213,7 +213,8 @@ mod tests {
 
         state.page_down();
         assert_eq!(state.selected, 10);
-        assert_eq!(state.offset, 10);
+        // `adjust_offset` keeps the selection visible; row 10 is last row of viewport starting at 1
+        assert_eq!(state.offset, 1);
 
         state.page_up();
         assert_eq!(state.selected, 0);

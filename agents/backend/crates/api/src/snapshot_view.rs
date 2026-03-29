@@ -7,7 +7,7 @@ use crate::state::{
     StrategyDecisionSnapshot, SymbolSnapshot, SystemSnapshot,
 };
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct RuntimePositionDto {
     pub id: String,
     pub symbol: String,

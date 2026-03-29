@@ -93,14 +93,14 @@ fn settings_source_rows(app: &App) -> Vec<Row<'static>> {
         SourceDef {
             name: "alpaca_paper",
             priority: "55",
-            cred_key: "ALPACA_PAPER",
-            note: "Alpaca paper trading",
+            cred_key: "APCA_API_KEY_ID/SECRET",
+            note: "paper — env or keyring (alpaca_paper_*)",
         },
         SourceDef {
             name: "alpaca_live",
             priority: "75",
-            cred_key: "ALPACA_LIVE",
-            note: "Alpaca live trading",
+            cred_key: "APCA_API_KEY_ID/SECRET",
+            note: "live — same env names; keyring alpaca_live_*",
         },
     ];
 

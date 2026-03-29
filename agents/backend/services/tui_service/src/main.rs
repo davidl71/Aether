@@ -18,6 +18,7 @@
 //!   WATCHLIST             Comma-separated symbols to highlight (default: SPX,XSP,NDX)
 //!   TICK_MS               UI redraw interval ms (default: 250)
 //!   SNAPSHOT_TTL_SECS     Seconds before data is shown as stale (default: 30)
+//!   TUI_POSITIONS_SORT    Positions tab order: as_received | symbol | pnl (default: as_received)
 //!
 //! # Mosh (mobile shell)
 //!

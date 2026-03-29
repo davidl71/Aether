@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::config::TuiConfig;
+use crate::config::{PositionsSortMode, TuiConfig};
 
 /// Returns `Some(true)` when NYSE is currently open, `Some(false)` when closed, `None` on error.
 /// Uses NYSE as proxy for options market hours (CBOE follows NYSE schedule).
@@ -65,6 +65,11 @@ pub(crate) fn merge_config_overrides(
             c.yield_kv_bucket = value;
         }
     }
+    if let Some(v) = overrides.get("TUI_POSITIONS_SORT") {
+        if let Some(mode) = PositionsSortMode::parse_env(v) {
+            c.positions_sort = mode;
+        }
+    }
     c
 }
 
@@ -83,6 +88,10 @@ pub(crate) fn config_key_value_at(config: &TuiConfig, index: usize) -> Option<(S
             config.benchmarks_refresh_secs.to_string(),
         ),
         6 => ("NATS_KV_BUCKET", config.yield_kv_bucket.clone()),
+        7 => (
+            "TUI_POSITIONS_SORT",
+            config.positions_sort.as_setting_value().to_string(),
+        ),
         _ => return None,
     };
     Some((key.to_string(), value))

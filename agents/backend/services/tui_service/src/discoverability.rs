@@ -339,17 +339,17 @@ pub fn render_context_hints(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(paragraph, area);
 }
 
-/// Get context-sensitive hints based on current state
-fn get_context_hints(app: &App) -> Vec<(String, String)> {
+/// Get context-sensitive hints for mode + tab (testable without a full [`App`]).
+pub(crate) fn context_hints_for(mode: AppMode, tab: Tab) -> Vec<(String, String)> {
     let mut hints = vec![];
 
-    match app.app_mode {
+    match mode {
         AppMode::Navigation => {
             hints.push(("Tab".into(), "next".into()));
             hints.push(("?".into(), "help".into()));
             hints.push((":".into(), "palette".into()));
 
-            match app.active_tab {
+            match tab {
                 Tab::Positions => {
                     hints.push(("↑↓".into(), "scroll".into()));
                     hints.push(("Enter".into(), "detail".into()));
@@ -374,6 +374,10 @@ fn get_context_hints(app: &App) -> Vec<(String, String)> {
     }
 
     hints
+}
+
+fn get_context_hints(app: &App) -> Vec<(String, String)> {
+    context_hints_for(app.app_mode, app.active_tab)
 }
 
 /// Calculate a centered rectangle
@@ -428,9 +432,7 @@ mod tests {
 
     #[test]
     fn test_context_hints_navigation() {
-        // Just verify it doesn't panic
-        let app = App::default();
-        let hints = get_context_hints(&app);
-        assert!(!hints.is_empty());
+        let hints = context_hints_for(AppMode::Navigation, Tab::Dashboard);
+        assert!(hints.iter().any(|(k, _)| k == "Tab"));
     }
 }

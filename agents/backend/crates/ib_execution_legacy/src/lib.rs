@@ -9,7 +9,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use broker_engine::{BrokerConfig, BrokerError, ConnectionState, OptionContract};
 use broker_execution_legacy::{
-    BrokerExecution, OptionChainProvider, OrderAction, PlaceBagOrderRequest,
+    BagOrderLeg, BrokerExecution, OptionChainProvider, OrderAction, PlaceBagOrderRequest,
     ResolvedOptionContract, TimeInForce,
 };
 use futures::future::try_join_all;

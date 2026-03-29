@@ -7,6 +7,7 @@
 //! domain types live in `broker_execution_legacy` rather than this active crate.
 
 use rust_decimal::prelude::ToPrimitive;
+use serde::{Deserialize, Serialize};
 
 pub use crate::error::BrokerError;
 
@@ -17,7 +18,7 @@ pub use common::{MarketDataEvent, MarketDataEventBuilder};
 // -----------------------------------------------------------------------------
 
 /// Option contract
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OptionContract {
     pub symbol: String,
     pub expiry: String,

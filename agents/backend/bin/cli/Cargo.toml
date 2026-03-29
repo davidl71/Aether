@@ -20,6 +20,7 @@ clap_complete = "4"
 # Configuration: shared JSON (same as TUI/backend) + TOML fallback
 api = { path = "../../crates/api", features = ["keyring"] }
 market_data = { path = "../../crates/market_data" }
+yfinance-rs = "0.7.2"
 nats_adapter = { path = "../../crates/nats_adapter" }
 tws_yield_curve = { path = "../../crates/tws_yield_curve" }
 discount_bank_parser = { path = "../../crates/discount_bank_parser" }

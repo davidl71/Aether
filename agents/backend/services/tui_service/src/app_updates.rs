@@ -3,7 +3,14 @@ use super::*;
 impl App {
     /// Replaces the current snapshot (used by tick processing).
     #[inline]
-    pub fn set_snapshot(&mut self, snap: Option<TuiSnapshot>) {
+    pub fn set_snapshot(&mut self, mut snap: Option<TuiSnapshot>) {
+        if let Some(ref mut s) = snap {
+            crate::ui::sort_positions_for_operator(
+                &mut s.inner.positions,
+                self.config.positions_sort,
+            );
+            s.refresh_display_dto();
+        }
         unsafe {
             *self.snapshot.get() = snap;
         }

@@ -23,9 +23,7 @@ use api::loans::LoanRecord;
 use chrono::Utc;
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
-use market_data::{
-    BoxSpreadResult, OptionsDataSource, YahooOptionsSource,
-};
+use market_data::{BoxSpreadResult, OptionsDataSource};
 use nats_adapter::{
     request_json_with_retry, request_json_with_retry_timeout, NatsClient, RetryConfig,
 };
@@ -48,11 +46,13 @@ impl OutputFormat {
         if *self == OutputFormat::Json {
             println!("{}", serde_json::to_string_pretty(value)?);
         }
-    Ok(())
+        Ok(())
+    }
 }
 
 async fn run_box(symbol: String, dte: f64, width: f64, json: bool) -> Result<()> {
     use market_data::yahoo::{YahooHistorySource, YahooOptionsSource};
+    use yfinance_rs::{core::conversions::money_to_f64, Interval, Range};
 
     println!(
         "Calculating box spread for {} (DTE: {}, width: ${})",
@@ -147,7 +147,7 @@ async fn run_box(symbol: String, dte: f64, width: f64, json: bool) -> Result<()>
         println!("  \"mid_rate\": {:.4},", result.mid_rate * 100.0);
         println!("  \"net_debit\": {:.2},", result.net_debit);
         println!("  \"net_credit\": {:.2},", result.net_credit);
-        println("}}");
+        println!("}}");
     } else {
         println!();
         println!("=== Box Spread Result ===");
@@ -165,7 +165,6 @@ async fn run_box(symbol: String, dte: f64, width: f64, json: bool) -> Result<()>
     }
 
     Ok(())
-}
 }
 
 #[derive(Parser, Debug)]

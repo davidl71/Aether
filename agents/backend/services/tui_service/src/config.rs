@@ -12,6 +12,37 @@ const DEFAULT_REST_URL: &str = "http://localhost:9090";
 const DEFAULT_WATCHLIST: &str = "SPX,XSP,NDX";
 const DEFAULT_SNAPSHOT_TTL_SECS: u64 = 30;
 
+/// How the Positions tab orders rows (operator preference).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PositionsSortMode {
+    /// Snapshot / backend order (no reordering).
+    #[default]
+    AsReceived,
+    /// Alphabetical by full symbol string.
+    Symbol,
+    /// Highest absolute unrealized P&L first (ties: symbol).
+    UnrealizedPnlDesc,
+}
+
+impl PositionsSortMode {
+    pub fn parse_env(s: &str) -> Option<Self> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "" | "as_received" | "default" | "backend" => Some(Self::AsReceived),
+            "symbol" | "sym" => Some(Self::Symbol),
+            "pnl" | "unrealized_pnl" | "unrealized" => Some(Self::UnrealizedPnlDesc),
+            _ => None,
+        }
+    }
+
+    pub fn as_setting_value(self) -> &'static str {
+        match self {
+            Self::AsReceived => "as_received",
+            Self::Symbol => "symbol",
+            Self::UnrealizedPnlDesc => "pnl",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SettingScope {
     Editable,
@@ -55,6 +86,8 @@ pub struct TuiConfig {
     pub benchmarks_refresh_secs: u64,
     /// NATS KV bucket name for yield curves (env: NATS_KV_BUCKET, default: LIVE_STATE)
     pub yield_kv_bucket: String,
+    /// Positions table sort (env: TUI_POSITIONS_SORT: as_received | symbol | pnl)
+    pub positions_sort: PositionsSortMode,
 }
 
 impl Default for TuiConfig {
@@ -71,6 +104,7 @@ impl Default for TuiConfig {
             split_pane: false,
             benchmarks_refresh_secs: 3600,
             yield_kv_bucket: "LIVE_STATE".into(),
+            positions_sort: PositionsSortMode::default(),
         }
     }
 }
@@ -241,6 +275,12 @@ impl TuiConfig {
                 self.yield_kv_bucket = value;
             }
         }
+
+        if let Ok(value) = std::env::var("TUI_POSITIONS_SORT") {
+            if let Some(mode) = PositionsSortMode::parse_env(&value) {
+                self.positions_sort = mode;
+            }
+        }
     }
 
     #[cfg(test)]
@@ -263,7 +303,8 @@ pub fn config_key_scope(key: &str) -> SettingScope {
         | "SNAPSHOT_TTL_SECS"
         | "SPLIT_PANE"
         | "BENCHMARKS_REFRESH_SECS"
-        | "NATS_KV_BUCKET" => SettingScope::Editable,
+        | "NATS_KV_BUCKET"
+        | "TUI_POSITIONS_SORT" => SettingScope::Editable,
         // Legacy REST compatibility knobs are still parsed from file/env, but
         // they are not operator-editable from the active NATS-first Settings UI.
         "REST_URL" | "REST_POLL_MS" | "REST_FALLBACK" => SettingScope::EnvOnly,
@@ -560,5 +601,6 @@ mod tests {
         assert_eq!(config_key_scope("REST_URL"), SettingScope::EnvOnly);
         assert_eq!(config_key_scope("REST_POLL_MS"), SettingScope::EnvOnly);
         assert_eq!(config_key_scope("REST_FALLBACK"), SettingScope::EnvOnly);
+        assert_eq!(config_key_scope("TUI_POSITIONS_SORT"), SettingScope::Editable);
     }
 }

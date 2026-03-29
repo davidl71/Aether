@@ -11,6 +11,7 @@ pub mod logs;
 mod orders;
 mod positions;
 pub use positions::positions_display_info;
+pub(crate) use positions::sort_positions_for_operator;
 mod scenarios;
 pub use scenarios::filtered_scenarios;
 mod settings;
@@ -31,6 +32,7 @@ use ratatui::{
 use api::CommandStatus;
 
 use crate::app::{App, DetailPopupContent, InputMode, Tab};
+use crate::mode::AppMode;
 use crate::events::{ConnectionState, ConnectionStatus, ConnectionTarget};
 use crate::pane::{pane_spec, PaneHintMode};
 use crate::workspace::{VisibleWorkspace, WorkspaceSpec};
@@ -1033,6 +1035,22 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
             spans.push(Span::styled(
                 truncate_detail(err, 28),
                 Style::default().fg(Color::Red),
+            ));
+        }
+    }
+
+    if matches!(app.app_mode, AppMode::Navigation) {
+        let ctx = crate::discoverability::context_hints_for(app.app_mode, app.active_tab);
+        for (key, desc) in ctx.into_iter().skip(3).take(4) {
+            spans.push(Span::raw("  "));
+            spans.push(Span::styled(
+                key,
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::raw(":"));
+            spans.push(Span::styled(
+                desc,
+                Style::default().fg(Color::DarkGray),
             ));
         }
     }

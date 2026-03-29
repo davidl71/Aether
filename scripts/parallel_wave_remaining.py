@@ -5,7 +5,7 @@ Reads .cursor/plans/parallel-execution-waves.json and uses exarp-go task_workflo
 to get Todo/In Progress tasks; intersects with wave IDs.
 Usage:
   python3 scripts/parallel_wave_remaining.py <wave_index> [batch_size]
-  wave_index: 0, 1, or 3
+  wave_index: 0, 1, or 2 (matches parallel-execution-waves.json "waves" keys)
   batch_size: default 15
 Example:
   python3 scripts/parallel_wave_remaining.py 0
@@ -29,7 +29,10 @@ def repo_root() -> str:
 def load_waves(root: str) -> dict[str, list[str]]:
     path = os.path.join(root, ".cursor", "plans", "parallel-execution-waves.json")
     with open(path, encoding="utf-8") as f:
-        return json.load(f)
+        data = json.load(f)
+    if isinstance(data, dict) and "waves" in data and isinstance(data["waves"], dict):
+        return data["waves"]
+    return data if isinstance(data, dict) else {}
 
 
 def get_non_done_ids(root: str) -> set[str]:
@@ -97,16 +100,16 @@ def main() -> int:
     root = repo_root()
     if len(sys.argv) < 2:
         print("Usage: parallel_wave_remaining.py <wave_index> [batch_size]", file=sys.stderr)
-        print("  wave_index: 0, 1, or 3", file=sys.stderr)
+        print("  wave_index: 0, 1, or 2", file=sys.stderr)
         print("  batch_size: default 15", file=sys.stderr)
         return 1
     try:
         wave_index = int(sys.argv[1])
     except ValueError:
-        print("wave_index must be 0, 1, or 3", file=sys.stderr)
+        print("wave_index must be 0, 1, or 2", file=sys.stderr)
         return 1
-    if wave_index not in (0, 1, 3):
-        print("wave_index must be 0, 1, or 3", file=sys.stderr)
+    if wave_index not in (0, 1, 2):
+        print("wave_index must be 0, 1, or 2", file=sys.stderr)
         return 1
     batch_size = 15
     if len(sys.argv) > 2:
@@ -114,10 +117,13 @@ def main() -> int:
             batch_size = int(sys.argv[2])
         except ValueError:
             pass
-    wave_key = f"wave_{wave_index}"
+    wave_key = str(wave_index)
     waves = load_waves(root)
     if wave_key not in waves:
-        print(f"Wave {wave_key} not in parallel-execution-waves.json", file=sys.stderr)
+        print(
+            f"Wave {wave_key} not in parallel-execution-waves.json (have: {sorted(waves.keys())})",
+            file=sys.stderr,
+        )
         return 1
     wave_list = waves[wave_key]
     wave_ids = set(wave_list)
