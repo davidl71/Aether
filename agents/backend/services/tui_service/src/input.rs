@@ -174,6 +174,9 @@ fn handle_macos_cmd_key(key: KeyCode) -> Option<Action> {
     match key {
         KeyCode::Char('q') | KeyCode::Char('Q') => Some(Action::Quit),
         KeyCode::Char('w') | KeyCode::Char('W') => Some(Action::CloseDetail),
+        // macOS idiom: Preferences / Settings
+        KeyCode::Char(',') => Some(Action::JumpToTab(0)),
+        KeyCode::Char('/') => Some(Action::ShowHelp),
         KeyCode::Char('1') => Some(Action::JumpToTab(1)),
         KeyCode::Char('2') => Some(Action::JumpToTab(2)),
         KeyCode::Char('3') => Some(Action::JumpToTab(3)),
@@ -197,7 +200,7 @@ fn handle_command_palette_input(
     match key {
         KeyCode::Esc => Some(Action::CommandPalette),
         KeyCode::Enter => {
-            // Execute selected command
+            // Confirm: run the selected palette action
             if let Some(cmd) = palette.selected_command() {
                 Some(cmd.action)
             } else {

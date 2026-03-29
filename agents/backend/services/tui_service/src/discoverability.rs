@@ -17,7 +17,7 @@ use crate::app::{App, Tab};
 use crate::input::Action;
 use crate::mode::AppMode;
 
-/// A command that can be executed from the command palette
+/// A command that can be run from the command palette (invokes a typed [`Action`](crate::input::Action)).
 #[derive(Debug, Clone)]
 pub struct Command {
     /// Unique identifier
@@ -32,7 +32,7 @@ pub struct Command {
     pub available_in: Vec<AppMode>,
     /// Which tabs this command is available in (empty = all)
     pub tabs: Vec<Tab>,
-    /// The action to execute
+    /// Palette entry invokes this action
     pub action: Action,
 }
 

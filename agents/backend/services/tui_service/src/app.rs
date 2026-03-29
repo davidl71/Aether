@@ -170,7 +170,7 @@ impl CommandStatusView {
     pub fn disabled(action: impl Into<String>) -> Self {
         Self::failure(
             action,
-            "Execution is deprecated in exploration mode; data views remain available.",
+            "Order and strategy-run controls are off in exploration mode; inspect data and settings as usual.",
         )
     }
 
@@ -434,7 +434,7 @@ pub struct App {
     pub should_quit: bool,
     /// Current application mode (Navigation/Edit/View).
     pub app_mode: AppMode,
-    /// Last command result from strategy/control actions (shown in status/hint bar).
+    /// Last operator-facing action outcome for the status/hint bar (includes disabled no-ops for legacy strategy keys).
     pub last_command_status: Option<CommandStatusView>,
     /// Toast notification manager for user feedback.
     pub toast_manager: ToastManager,
@@ -452,9 +452,9 @@ pub struct App {
     pub backend_health: HashMap<String, BackendHealthState>,
     /// First-class NATS transport health for the subscriber path.
     pub nats_transport: NatsTransportHealthState,
-    /// Alpaca connection status (paper trading).
+    /// Alpaca connectivity for paper API credentials (read-only exploration; not order flow).
     pub alpaca_paper_status: ConnectionStatus,
-    /// Alpaca connection status (live trading).
+    /// Alpaca connectivity for live API credentials (read-only exploration; not order flow).
     pub alpaca_live_status: ConnectionStatus,
     /// Alpaca health monitor for tracking API connectivity.
     pub alpaca_health: crate::alpaca_health::AlpacaHealthMonitor,
@@ -989,7 +989,7 @@ impl App {
         }
     }
 
-    /// Set the last strategy/control command result (shown in the status bar).
+    /// Set the last operator action result for the status bar (strategy hotkeys map to disabled no-ops in exploration mode).
     pub fn set_command_status(&mut self, status: CommandStatusView) {
         self.last_command_status = Some(status);
         self.mark_dirty();

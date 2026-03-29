@@ -1,4 +1,4 @@
-//! Settings → Alpaca: store API key ID and secret (paper + live) in keyring or credential file.
+//! Settings → Alpaca: store API key ID and secret (paper + live endpoints) in keyring or credential file for read-only quotes and account views.
 
 use ratatui::{
     layout::{Constraint, Rect},

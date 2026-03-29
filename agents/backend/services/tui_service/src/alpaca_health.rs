@@ -12,7 +12,7 @@ use tracing::{debug, info, warn};
 
 use api::credentials::{credential_source, CredentialKey};
 
-/// Alpaca health status for paper or live trading.
+/// Alpaca health for paper vs live API credentials (which endpoint keys target; exploration mode stays read-only).
 #[derive(Debug, Clone)]
 pub struct AlpacaHealth {
     pub is_paper: bool,

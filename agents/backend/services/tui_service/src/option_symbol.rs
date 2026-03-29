@@ -15,7 +15,7 @@ pub struct ParsedOption {
 /// Returns None if not parseable.
 pub fn parse_option_symbol(symbol: &str) -> Option<ParsedOption> {
     // Find C or P separator for call/put
-    // Strategy: look for a digit sequence (date), then C or P, then strike
+    // Parse plan: digit sequence (date), then C or P, then strike
     let s = symbol.trim();
 
     // Find the first 6+ digit run (date portion)

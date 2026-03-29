@@ -1,7 +1,7 @@
 use api::finance_rates::{CurveResponse, RatePointResponse};
 use api::{Alert, AlertLevel, NatsTransportHealthState, OrderSnapshot, SystemSnapshot};
 use chrono::{Duration, Utc};
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::backend::TestBackend;
 use ratatui::Terminal;
 use tokio::sync::{mpsc, watch};
@@ -372,6 +372,19 @@ fn alerts_tab_renders_live_alert_messages() {
 }
 
 #[test]
+fn macos_cmd_comma_opens_settings() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Dashboard;
+    app.handle_key(KeyEvent {
+        code: KeyCode::Char(','),
+        modifiers: KeyModifiers::SUPER,
+        kind: KeyEventKind::Press,
+        ..KeyEvent::from(KeyCode::Char('x'))
+    });
+    assert_eq!(app.active_tab, Tab::Settings);
+}
+
+#[test]
 fn help_overlay_documents_mode_aware_bindings() {
     let (mut app, _, _) = make_app();
     app.show_help = true;
@@ -382,6 +395,7 @@ fn help_overlay_documents_mode_aware_bindings() {
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Key bindings"));
+    assert!(content.contains("macOS Cmd"));
 }
 
 #[test]
@@ -494,6 +508,10 @@ fn wide_terminal_renders_operations_workspace() {
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Operations Workspace"));
     assert!(content.contains("Alerts + Logs + Settings visible"));
+    assert!(
+        content.contains("Alpaca credentials"),
+        "composed ops workspace should include Settings → Alpaca like full Settings tab"
+    );
 }
 
 #[test]

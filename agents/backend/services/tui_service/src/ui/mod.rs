@@ -404,6 +404,7 @@ fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: Works
     settings::render_settings_config_section(f, app, layout.config);
     settings::render_settings_symbols_section(f, app, layout.symbols);
     settings::render_settings_sources_section(f, app, layout.sources);
+    settings::render_settings_alpaca_section(f, app, layout.alpaca);
     settings::render_settings_hint_section(f, app, layout.hint);
 }
 
@@ -666,6 +667,10 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::raw("next / prev tab or pane"),
         ]),
         Line::from(vec![
+            Span::styled(" macOS Cmd ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("⌘, Settings  ⌘/ help  ⌘1–⌘9 same as 1–9  ⌘p split  ⌘r refresh  ⌘w close"),
+        ]),
+        Line::from(vec![
             Span::styled(" 0–9 ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("jump to Dash / Pos / Charts / Orders / Alerts / Yield / Loans / Scen / Set"),
         ]),
@@ -711,13 +716,14 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         Line::from(vec![
             Span::styled(" Settings ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("↑↓ section/key  e/Enter edit  a add  Del remove  r reset  "),
+            Span::raw("Alpaca: e edit  d clear  "),
             Span::styled(" Status ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("provider, split-pane, loading, and latest result in bars"),
         ]),
         Line::from(vec![
-            Span::raw(" Execution: "),
+            Span::raw(" Legacy controls: "),
             Span::styled("S/T/K/F/O/X", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(" disabled in exploration mode"),
+            Span::raw(" no-ops in exploration mode (see status message if pressed)"),
         ]),
         Line::from(""),
         Line::from(Span::styled(
@@ -730,7 +736,7 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         .title(" Help ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
-    let area = centered_rect(78, 22, area);
+    let area = centered_rect(78, 24, area);
     f.render_widget(ratatui::widgets::Clear, area);
     f.render_widget(inner.block(block), area);
 }

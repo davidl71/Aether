@@ -276,7 +276,7 @@ pub enum AppEvent {
     YieldRefreshAck {
         ok: bool,
     },
-    /// Alpaca health status update (paper or live trading).
+    /// Alpaca health update (paper vs live credential environment; data views remain read-only).
     AlpacaHealthUpdate {
         is_paper: bool,
         connected: bool,

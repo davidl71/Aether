@@ -142,7 +142,7 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
             app.scenarios_dte_half_width = (app.scenarios_dte_half_width + 1).min(60);
         }
         Action::ScenariosExecute => {
-            app.set_command_status(CommandStatusView::disabled("execute_scenario"));
+            app.set_command_status(CommandStatusView::disabled("scenario_run"));
         }
         Action::ScenariosCycleStrikeWidth => {
             app.scenarios_strike_width_filter = match app.scenarios_strike_width_filter {
