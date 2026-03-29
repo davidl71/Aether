@@ -1,6 +1,15 @@
 # exarp-go Project Automation
 
-Complete guide for task management, project health, and automation using exarp-go.
+Complete guide for task management, project health, and automation using **exarp-go** as its **own** project (separate repo from Aether).
+
+## PROJECT_ROOT (critical)
+
+exarp-go is a **separate codebase**. **`PROJECT_ROOT` must be the exarp-go repository root** — the directory that contains exarp-go’s `.todo2/`, `Makefile`, `cmd/server`, and `AGENTS.md` for that repo. Paths differ by machine (e.g. a sibling clone `.../mcp/exarp-go`).
+
+- Use that path for **every exarp-go MCP tool call** that accepts `workingDirectory` / `PROJECT_ROOT`, and when running exarp-go’s **`run-exarp-go.sh`** / binary with env `PROJECT_ROOT`.
+- This skill file may live under Aether (`.cursor/skills/`) for editor discovery; that does **not** change the rule: **tasks, scorecard, docs health, and session state come from exarp-go’s tree**, not from the open app repo, unless you deliberately run a second MCP entry with a different `PROJECT_ROOT`.
+
+If `PROJECT_ROOT` points at another repo (e.g. Aether) by mistake, exarp-go will read **that** project’s `.todo2` and docs — wrong context for exarp-go work.
 
 ## When to Use
 
@@ -227,6 +236,6 @@ When multiple agents may work in parallel:
 
 **MCP not responding**: Verify exarp-go is in PATH or `run_exarp_go.sh` works
 
-**Config not persisting**: Check PROJECT_ROOT environment variable
+**Config not persisting / wrong tasks**: Confirm `PROJECT_ROOT` is the **exarp-go** repo root, not the app repo you have open (see [PROJECT_ROOT (critical)](#project_root-critical))
 
 **Session handoff missing**: Use `session` tool with `action=handoff` and `sub_action=end`
