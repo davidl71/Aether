@@ -1,0 +1,34 @@
+---
+description: Run full agents/backend cargo build before commit; avoid single-crate stale artifacts
+alwaysApply: false
+---
+
+# Workspace build before commit
+
+**Rule:** Before committing, run `cargo build` at the **workspace root** (`agents/backend/`), not only a single crate. Stale incremental caches can hide cross-crate type errors.
+
+## Why
+
+`cargo build -p <crate>` only checks the dependency graph for that crate. If a shared dependency (e.g. `common`, `api`) changes but a dependent crate has not been recompiled yet, the single-crate build can succeed using stale artifacts and hide type mismatches.
+
+**Modules:** Orphaned source files (present on disk but not `mod` in the crate root) are not compiled. Verify wiring with `rg "mod your_module" path/to/crate` before assuming a build covers them.
+
+## Commands
+
+| Scenario | Command |
+|----------|---------|
+| Before commit | `cd agents/backend && cargo build` |
+| Quick check (single crate) | `cd agents/backend && cargo build -p <crate>` |
+| After changing shared types (`common`, `api`, `broker_engine`) | `cd agents/backend && cargo build` (full workspace) |
+
+## Anti-pattern
+
+```bash
+# Wrong — single crate can miss cross-crate errors
+cargo build -p backend_service && git commit
+
+# Correct — workspace build
+cd agents/backend && cargo build && git commit
+```
+
+**Parity:** Same policy as `.opencode/rules/workspace-build-before-commit.md` (OpenCode).

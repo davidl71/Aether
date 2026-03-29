@@ -1,0 +1,33 @@
+---
+description: macOS workflow when Xcode CLI tools are missing — rustfmt, rg, cargo metadata
+alwaysApply: false
+---
+
+# Working without Xcode command-line tools
+
+**Problem:** `cargo build`, `cargo test`, and `cargo clippy` need a working C toolchain for native crates (`ring`, `aws-lc-sys`, `libsqlite3-sys`, etc.). Without Xcode command-line tools, linking often fails.
+
+**Context:** Workspace members transitively depend on native crates (e.g. `quant`, `nats_adapter`, `api`/`sqlx`, `ledger`). There is no fully “pure Rust” path for the whole workspace.
+
+## What works without Xcode
+
+| Tool | Use |
+|------|-----|
+| `rustfmt --edition 2021 --check` | Format check (no link) |
+| `rg` / `grep` | Structure and pattern search |
+| `cargo metadata` | Dependency graph analysis |
+| Editor / `rust-analyzer` | Navigation (if installed) |
+
+## What needs Xcode (or another working `cc`)
+
+| Tool | Why |
+|------|-----|
+| `cargo build` / `cargo test` / `cargo clippy` / `cargo check` | Native crate link + build scripts |
+
+## Workflow without Xcode
+
+1. **Format:** `cd agents/backend && cargo fmt --check` (or `rustfmt` on changed files).
+2. **Static review:** signatures, `From` impls, `#[derive]`, module wiring.
+3. **Before full verification:** install CLI tools (`xcode-select --install` or switch Xcode path), then `cd agents/backend && cargo build && cargo test`.
+
+**Parity:** Same guidance as `.opencode/rules/work-without-xcode.md` (OpenCode).

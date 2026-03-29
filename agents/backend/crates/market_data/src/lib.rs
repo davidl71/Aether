@@ -13,6 +13,7 @@ pub mod yahoo;
 pub mod yield_curve;
 
 pub use aggregator::{DataSource, MarketDataAggregator, Quote, QuoteWithStaleness, ResolvedQuote};
+pub use alpaca::{AlpacaSource, AlpacaSourceFactory};
 pub use cache::{
     CacheError, CachedCandle, CachedQuote, CachedYieldCurve, CachedYieldPoint, Staleness, Ttl,
 };
@@ -27,21 +28,21 @@ pub use model::{
     SimpleMarketDataSourceFactory,
 };
 pub use pipeline::{MarketDataIngestor, MarketDataPipeline};
-pub use polygon::{PolygonMarketDataSource, PolygonMarketDataSourceFactory, PolygonOptionsSource};
+pub use polygon::{PolygonMarketDataSource, PolygonMarketDataSourceFactory, PolygonOptionsSource, PolygonOptionsSourceFactory};
 pub use polygon_ws::PolygonWsMarketDataSource;
 pub use shir::{default_shir_rate, fetch_shir_rate, ShirRate};
 pub use tase::{TaseClient, TaseIndex, TaseQuote, TaseSearchResult};
 pub use yahoo::{
     OptionContractData, OptionsDataSource, OptionsExpiration, YahooFinanceSource,
-    YahooFinanceSourceFactory, YahooHistorySource, YahooOptionsSource,
+    YahooFinanceSourceFactory, YahooHistorySource, YahooOptionsSource, YahooOptionsSourceFactory,
 };
 pub use yield_curve::{BoxSpreadResult, YahooYieldCurveSource, YieldCurve, YieldCurvePoint};
-pub use alpaca::{AlpacaSource, AlpacaSourceFactory};
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
 type DynFactory = Box<dyn MarketDataSourceFactory + Send + Sync>;
+type DynOptionsFactory = Box<dyn Fn() -> anyhow::Result<Box<dyn OptionsDataSource>> + Send + Sync>;
 
 fn register(
     registry: &mut HashMap<&'static str, DynFactory>,
@@ -63,6 +64,30 @@ pub fn provider_registry() -> &'static HashMap<&'static str, DynFactory> {
         register(&mut m, "alpaca", AlpacaSourceFactory);
         m
     })
+}
+
+fn options_registry() -> &'static HashMap<&'static str, DynOptionsFactory> {
+    static REGISTRY: OnceLock<HashMap<&'static str, DynOptionsFactory>> = OnceLock::new();
+    REGISTRY.get_or_init(|| {
+        let mut m = HashMap::new();
+        m.insert("yahoo", Box::new(|| {
+            Ok(Box::new(YahooOptionsSource::new()) as Box<dyn OptionsDataSource>)
+        }) as DynOptionsFactory);
+        m.insert("polygon", Box::new(|| {
+            let source = PolygonOptionsSource::from_env()?;
+            Ok(Box::new(source) as Box<dyn OptionsDataSource>)
+        }) as DynOptionsFactory);
+        m
+    })
+}
+
+/// Create an options source by provider name.
+pub fn create_options_provider(name: &str) -> anyhow::Result<Box<dyn OptionsDataSource>> {
+    let registry = options_registry();
+    let factory = registry
+        .get(name.to_lowercase().trim())
+        .ok_or_else(|| anyhow::anyhow!("unknown options provider: {name}"))?;
+    factory()
 }
 
 /// Create a market data source by provider name.

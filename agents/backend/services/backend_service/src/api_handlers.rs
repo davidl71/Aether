@@ -64,8 +64,13 @@ pub fn spawn(
     let nc_strategy = nats_client.client().clone();
     let state_strategy = state.clone();
     tokio::spawn(async move {
-        handlers::strategy::spawn(nc_strategy, strategy_controller, state_strategy, broker_engine)
-            .await;
+        handlers::strategy::spawn(
+            nc_strategy,
+            strategy_controller,
+            state_strategy,
+            broker_engine,
+        )
+        .await;
     });
 
     // Finance Rates handlers

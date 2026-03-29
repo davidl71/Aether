@@ -26,6 +26,5 @@ You reported having 99 installed extensions. The CLI tool may not show all of th
 
 ## Quick Actions
 
-1. Run: `./scripts/analyze_all_extensions.sh` (may only show CLI-accessible extensions)
-2. Manually review in VS Code Extensions view
-3. See `docs/EXTENSION_AUDIT_GUIDE.md` for detailed instructions
+1. Manually review in VS Code/Cursor Extensions view (there is no bundled repo script to list all IDE extensions).
+2. See `docs/EXTENSION_AUDIT_GUIDE.md` for detailed instructions

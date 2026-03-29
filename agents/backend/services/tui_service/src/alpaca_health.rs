@@ -4,12 +4,11 @@
 //! status to the system health endpoint.
 
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::time::Duration;
 
 use chrono::Utc;
 use tokio::time;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 use api::credentials::{credential_source, CredentialKey};
 
@@ -48,12 +47,7 @@ impl AlpacaHealth {
         }
     }
 
-    pub fn with_connected(
-        mut self,
-        account_id: String,
-        equity: f64,
-        buying_power: f64,
-    ) -> Self {
+    pub fn with_connected(mut self, account_id: String, equity: f64, buying_power: f64) -> Self {
         self.connected = true;
         self.status = "ok".to_string();
         self.account_id = Some(account_id);
@@ -137,8 +131,7 @@ impl AlpacaHealthMonitor {
                     equity = %equity,
                     "Alpaca health check passed"
                 );
-                AlpacaHealth::new(is_paper)
-                    .with_connected(account_id, equity, buying_power)
+                AlpacaHealth::new(is_paper).with_connected(account_id, equity, buying_power)
             }
             Err(e) => {
                 warn!(
@@ -158,7 +151,10 @@ impl AlpacaHealthMonitor {
     }
 
     /// Spawn a background task that periodically checks health.
-    pub fn spawn_health_checks(self) -> tokio::task::JoinHandle<()> {
+    pub fn spawn_health_checks(
+        self,
+        event_tx: tokio::sync::mpsc::UnboundedSender<crate::events::AppEvent>,
+    ) -> tokio::task::JoinHandle<()> {
         tokio::spawn(async move {
             let mut interval = time::interval(Duration::from_secs(30));
             let mut monitor = self;
@@ -166,6 +162,26 @@ impl AlpacaHealthMonitor {
             loop {
                 interval.tick().await;
                 monitor.check_all().await;
+
+                let _ = event_tx.send(crate::events::AppEvent::AlpacaHealthUpdate {
+                    is_paper: monitor.paper_health.is_paper,
+                    connected: monitor.paper_health.connected,
+                    account_id: monitor.paper_health.account_id.clone(),
+                    equity: monitor.paper_health.equity,
+                    buying_power: monitor.paper_health.buying_power,
+                    status: monitor.paper_health.status.clone(),
+                    last_error: monitor.paper_health.last_error.clone(),
+                });
+
+                let _ = event_tx.send(crate::events::AppEvent::AlpacaHealthUpdate {
+                    is_paper: monitor.live_health.is_paper,
+                    connected: monitor.live_health.connected,
+                    account_id: monitor.live_health.account_id.clone(),
+                    equity: monitor.live_health.equity,
+                    buying_power: monitor.live_health.buying_power,
+                    status: monitor.live_health.status.clone(),
+                    last_error: monitor.live_health.last_error.clone(),
+                });
             }
         })
     }
@@ -179,37 +195,34 @@ impl Default for AlpacaHealthMonitor {
 
 /// Fetch account info from Alpaca API.
 async fn fetch_account_info(is_paper: bool) -> Result<(String, f64, f64), anyhow::Error> {
-    // This would use the alpaca_api_client crate
-    // For now, return a placeholder that indicates the API is accessible
-    
-    // In the actual implementation, this would:
-    // 1. Get credentials from keyring
-    // 2. Make API call to Alpaca
-    // 3. Parse response
-    // 4. Return account info
-    
-    // Placeholder implementation:
-    Ok(("PA-XXXXXX".to_string(), 100000.0, 200000.0))
+    use api::AlpacaPositionSource;
+
+    let source = AlpacaPositionSource::from_paper(is_paper)
+        .ok_or_else(|| anyhow::anyhow!("Alpaca credentials not configured"))?;
+
+    let account = source.fetch_account().await?;
+
+    Ok((account.account_id, account.equity, account.buying_power))
 }
 
 /// Convert AlpacaHealth to NatsTransportHealthState for publishing.
 pub fn to_transport_health(health: &AlpacaHealth) -> nats_adapter::NatsTransportHealthState {
     use nats_adapter::NatsTransportHealthState;
-    
+
     let mut extra = HashMap::new();
-    
+
     if let Some(ref account_id) = health.account_id {
         extra.insert("account_id".to_string(), account_id.clone());
     }
-    
+
     if let Some(equity) = health.equity {
         extra.insert("equity".to_string(), format!("{:.2}", equity));
     }
-    
+
     if let Some(buying_power) = health.buying_power {
         extra.insert("buying_power".to_string(), format!("{:.2}", buying_power));
     }
-    
+
     let status = if health.connected {
         NatsTransportHealthState::connected(None, health.last_check)
             .with_extra("source", health.source_name())
@@ -222,11 +235,8 @@ pub fn to_transport_health(health: &AlpacaHealth) -> nats_adapter::NatsTransport
         )
         .with_extra("source", health.source_name())
     };
-    
-    NatsTransportHealthState {
-        extra,
-        ..status
-    }
+
+    NatsTransportHealthState { extra, ..status }
 }
 
 #[cfg(test)]
@@ -243,9 +253,9 @@ mod tests {
 
     #[test]
     fn test_alpaca_health_with_connected() {
-        let health = AlpacaHealth::new(true)
-            .with_connected("PA-123".to_string(), 100000.0, 200000.0);
-        
+        let health =
+            AlpacaHealth::new(true).with_connected("PA-123".to_string(), 100000.0, 200000.0);
+
         assert!(health.connected);
         assert_eq!(health.status, "ok");
         assert_eq!(health.account_id, Some("PA-123".to_string()));
@@ -254,9 +264,8 @@ mod tests {
 
     #[test]
     fn test_alpaca_health_with_error() {
-        let health = AlpacaHealth::new(false)
-            .with_error("API timeout".to_string());
-        
+        let health = AlpacaHealth::new(false).with_error("API timeout".to_string());
+
         assert!(!health.connected);
         assert_eq!(health.status, "error");
         assert_eq!(health.last_error, Some("API timeout".to_string()));

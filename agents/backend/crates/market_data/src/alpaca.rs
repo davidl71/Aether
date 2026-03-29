@@ -1,11 +1,16 @@
 //! Alpaca market data source.
 //! Provides market data and position data from Alpaca API.
 
+use std::sync::Arc;
+use std::time::Duration;
+
 use async_trait::async_trait;
-use tracing::debug;
+use chrono::Utc;
+use tokio::sync::Mutex;
+use tracing::{debug, warn};
 
 use crate::model::{MarketDataSource, MarketDataSourceFactory};
-use common::MarketDataEvent;
+use crate::{MarketDataEvent, MarketDataEventBuilder};
 
 /// Alpaca quote data
 #[derive(Debug, Clone)]
@@ -21,23 +26,54 @@ pub struct AlpacaQuote {
 /// Alpaca market data source.
 pub struct AlpacaSource {
     is_paper: bool,
+    symbols: Arc<Vec<String>>,
+    poll_interval: Duration,
+    state: Mutex<AlpacaState>,
+}
+
+struct AlpacaState {
+    idx: usize,
 }
 
 impl AlpacaSource {
-    /// Create new Alpaca source from environment variables.
-    pub fn from_env() -> Option<Self> {
-        let has_key = std::env::var("APCA_API_KEY_ID").is_ok();
-        let has_secret = std::env::var("APCA_API_SECRET_KEY").is_ok();
-        
-        if !has_key || !has_secret {
-            return None;
+    /// Creates a new AlpacaSource polling the given symbols.
+    pub fn new<I, S>(is_paper: bool, symbols: I, poll_interval: Duration) -> anyhow::Result<Self>
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let symbols_vec: Vec<String> = symbols.into_iter().map(Into::into).collect();
+        if symbols_vec.is_empty() {
+            anyhow::bail!("at least one symbol must be configured");
         }
-        
+
+        Ok(Self {
+            is_paper,
+            symbols: Arc::new(symbols_vec),
+            poll_interval,
+            state: Mutex::new(AlpacaState { idx: 0 }),
+        })
+    }
+
+    /// Create new Alpaca source from environment.
+    /// Credentials are resolved by the TUI/backend via credential management
+    /// (keyring, env, or file) and passed as APCA_API_KEY_ID/APCA_API_SECRET_KEY.
+    pub fn from_env() -> Option<(bool, String, String)> {
+        let key_id = std::env::var("APCA_API_KEY_ID").ok()?;
+        let secret_key = std::env::var("APCA_API_SECRET_KEY").ok()?;
+
         let is_paper = std::env::var("APCA_API_BASE_URL")
             .map(|url| url.contains("paper"))
             .unwrap_or(true);
-        
-        Some(Self { is_paper })
+
+        Some((is_paper, key_id, secret_key))
+    }
+
+    async fn next_symbol(&self) -> String {
+        let mut state = self.state.lock().await;
+        let idx = state.idx % self.symbols.len();
+        state.idx = state.idx.wrapping_add(1);
+        self.symbols[idx].clone()
     }
 
     /// Check if this is paper trading.
@@ -57,13 +93,14 @@ impl AlpacaSource {
     /// Fetch latest quote for a symbol (synchronous API call).
     pub fn get_quote_sync(&self, symbol: &str) -> Result<AlpacaQuote, Box<dyn std::error::Error>> {
         use alpaca_api_client::market_data::stocks::LatestQuotesQuery;
-        
+
         let query = LatestQuotesQuery::new(vec![symbol]);
         let quotes = query.send()?;
-        
-        let quote = quotes.get(symbol)
+
+        let quote = quotes
+            .get(symbol)
             .ok_or_else(|| format!("No quote returned for {}", symbol))?;
-        
+
         Ok(AlpacaQuote {
             symbol: symbol.to_string(),
             bid_price: quote.bp,
@@ -78,8 +115,52 @@ impl AlpacaSource {
 #[async_trait]
 impl MarketDataSource for AlpacaSource {
     async fn next(&self) -> anyhow::Result<MarketDataEvent> {
-        debug!("Alpaca market data source - full implementation pending");
-        Ok(MarketDataEvent::default())
+        tokio::time::sleep(self.poll_interval).await;
+        let symbol = self.next_symbol().await;
+
+        let _is_paper = self.is_paper;
+        let symbol_clone = symbol.clone();
+        let quote_result = tokio::task::spawn_blocking(move || {
+            use alpaca_api_client::market_data::stocks::LatestQuotesQuery;
+            let query = LatestQuotesQuery::new(vec![&symbol_clone]);
+            query.send()
+        })
+        .await?;
+
+        match quote_result {
+            Ok(quotes) => {
+                if let Some(quote) = quotes.get(&symbol) {
+                    let bid = quote.bp as f64;
+                    let ask = quote.ap as f64;
+
+                    debug!(
+                        "{} quote for {}: bid={:.2}, ask={:.2}",
+                        self.source_name(),
+                        symbol,
+                        bid,
+                        ask
+                    );
+
+                    let event = MarketDataEventBuilder::default()
+                        .symbol(symbol)
+                        .bid(bid)
+                        .ask(ask)
+                        .timestamp(Utc::now())
+                        .source(self.source_name())
+                        .source_priority(if self.is_paper { 55u32 } else { 75u32 })
+                        .build()?;
+
+                    Ok(event)
+                } else {
+                    warn!("Alpaca returned no quote for {}", symbol);
+                    anyhow::bail!("no quote returned from Alpaca for {}", symbol)
+                }
+            }
+            Err(e) => {
+                warn!("Alpaca API error for {}: {}", symbol, e);
+                anyhow::bail!("Alpaca API error: {}", e)
+            }
+        }
     }
 }
 
@@ -97,16 +178,17 @@ impl MarketDataSourceFactory for AlpacaSourceFactory {
 
     fn create(
         &self,
-        _symbols: &[String],
-        _interval: std::time::Duration,
+        symbols: &[String],
+        interval: std::time::Duration,
     ) -> anyhow::Result<Box<dyn MarketDataSource>> {
-        let source = AlpacaSource::from_env()
+        let (is_paper, _key_id, _secret_key) = AlpacaSource::from_env()
             .ok_or_else(|| anyhow::anyhow!(
-                "Alpaca credentials not found. Set APCA_API_KEY_ID and APCA_API_SECRET_KEY environment variables. \
-                For paper trading: https://paper-api.alpaca.markets \
-                For live trading: https://api.alpaca.markets"
+                "Alpaca credentials not configured. Set via TUI Settings > Sources or configure APCA_API_KEY_ID \
+                and APCA_API_SECRET_KEY environment variables. Paper: https://paper-api.alpaca.markets \
+                Live: https://api.alpaca.markets"
             ))?;
-        
+
+        let source = AlpacaSource::new(is_paper, symbols.iter().cloned(), interval)?;
         Ok(Box::new(source))
     }
 }
@@ -118,7 +200,7 @@ pub fn resolve_alpaca_credentials() -> Option<(String, String, bool)> {
     let is_paper = std::env::var("APCA_API_BASE_URL")
         .map(|url| url.contains("paper"))
         .unwrap_or(true);
-    
+
     Some((key_id, secret_key, is_paper))
 }
 
@@ -128,10 +210,16 @@ mod tests {
 
     #[test]
     fn test_alpaca_source_name() {
-        let paper = AlpacaSource { is_paper: true };
-        assert_eq!(paper.source_name(), "alpaca_paper");
-        
-        let live = AlpacaSource { is_paper: false };
-        assert_eq!(live.source_name(), "alpaca_live");
+        let source = AlpacaSource::new(true, vec!["AAPL"], Duration::from_secs(1)).unwrap();
+        assert_eq!(source.source_name(), "alpaca_paper");
+
+        let source = AlpacaSource::new(false, vec!["AAPL"], Duration::from_secs(1)).unwrap();
+        assert_eq!(source.source_name(), "alpaca_live");
+    }
+
+    #[test]
+    fn test_alpaca_source_new_requires_symbols() {
+        let result = AlpacaSource::new(true, Vec::<String>::new(), Duration::from_secs(1));
+        assert!(result.is_err());
     }
 }

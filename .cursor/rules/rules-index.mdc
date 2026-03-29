@@ -12,7 +12,7 @@ Use this to pick the right rule for the current task.
 | `ai-editors-skills-subagents.mdc` | Canonical context (AGENTS.md, CLAUDE.md), skills, subagents, multi-editor setup |
 | **Project skills** | Reusable workflows: `.cursor/skills/` (git pull with WIP, add native module, before-commit, trading safety, build from clean). See `.cursor/skills/README.md`. |
 | **Subagents** | When to use which: docs/archive/SUBAGENTS_REFERENCE.md, .cursor/skills/when-to-use-subagents.md (mcp_task: code-reviewer, trading-reviewer, refactor, test-writer, generalPurpose; exarp-go; Claude agents) |
-| `ai-context-standards.mdc` | Map of context files, which rule when, OpenCode/Claude/Cursor commands; see docs/EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md |
+| `ai-context-standards.mdc` | Map of context files, which rule when, OpenCode/Claude/Codex/Cursor commands; see `docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md` |
 | `just-cmake-shortcuts.mdc` | Prefer Just/CMake commands when suggesting (just build, build:ai-friendly, just pre-push, just sanity, just tag-ok, git:pull-safe, r for repo root; proto C++ at build) |
 | `regression-sanity.mdc` | Regression/sanity checks: when to suggest `just pre-push`, `just sanity`, or before-commit checklist |
 | `documentation.mdc` | @docs usage, global docs, API/architecture references (auto when editing `docs/**/*.md`) |
@@ -33,5 +33,12 @@ Use this to pick the right rule for the current task.
 | `sequential-thinking.mdc` | Understand HOW (steps); use after Tractatus |
 | `auto-reprime.mdc` | Session prime / handoff with exarp-go |
 | `project-scorecard.mdc` | Generate project scorecard (on request) |
+| `context-compression.mdc` | When to compress conversation context at workflow milestones |
+| `workspace-build-before-commit.mdc` | Full `agents/backend` `cargo build` before commit; cross-crate / orphan-module pitfalls |
+| `work-without-xcode.mdc` | macOS: limited workflow when Xcode CLI tools unavailable |
+| `stub-must-have-task.mdc` | Stubs (`todo!`, empty returns, STUB) must have exarp/Todo2 task |
+| `no-new-duplicate-types.mdc` | Prefer `common` + `From` impls; no orphaned position/order/account types |
+| `keep-type-comparison-docs.mdc` | Keep `docs/BACKEND_TYPE_COMPARISON.md` in sync (auto-attached globs) |
+| **OpenCode instruction parity** | `opencode.json` → `.opencode/rules/*.md`; same Rust patterns in `AGENTS.md` (`derive_builder`, shared types) and `.opencode/rules/derive-builder-pattern.md`, `shared-types-pattern.md` |
 
-Full setup: docs/archive/AI_EDITOR_SETUP.md. OpenCode + exarp-go patterns: docs/archive/EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md.
+Full setup: `docs/archive/AI_EDITOR_SETUP.md`. exarp-go across editors: `docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md`.

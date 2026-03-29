@@ -106,22 +106,29 @@
     // See https://docs.alpaca.markets/
     // Use separate credentials for paper vs live accounts.
     // Trading endpoints differ by environment; market-data endpoint is separate.
+    //
+    // Environment variables (set via CLI cred commands or directly):
+    //   APCA_API_KEY_ID       - API key ID (shared for paper/live)
+    //   APCA_API_SECRET_KEY   - API secret (shared for paper/live)
+    //   APCA_API_BASE_URL     - Determines paper vs live:
+    //                           https://paper-api.alpaca.markets (paper)
+    //                           https://api.alpaca.markets (live)
     "data_client_config": {
-      "api_key_id": "${ALPACA_PAPER_API_KEY_ID}",
-      "api_secret_key": "${ALPACA_PAPER_API_SECRET_KEY}",
+      "api_key_id": "${APCA_API_KEY_ID}",
+      "api_secret_key": "${APCA_API_SECRET_KEY}",
       "base_url": "https://paper-api.alpaca.markets",
       "data_base_url": "https://data.alpaca.markets",
       "paper": true
     },
     "exec_client_config": {
-      "api_key_id": "${ALPACA_PAPER_API_KEY_ID}",
-      "api_secret_key": "${ALPACA_PAPER_API_SECRET_KEY}",
+      "api_key_id": "${APCA_API_KEY_ID}",
+      "api_secret_key": "${APCA_API_SECRET_KEY}",
       "base_url": "https://paper-api.alpaca.markets",
       "paper": true
     },
     "live_example": {
-      "api_key_id": "${ALPACA_LIVE_API_KEY_ID}",
-      "api_secret_key": "${ALPACA_LIVE_API_SECRET_KEY}",
+      "api_key_id": "${APCA_API_KEY_ID}",
+      "api_secret_key": "${APCA_API_SECRET_KEY}",
       "base_url": "https://api.alpaca.markets",
       "data_base_url": "https://data.alpaca.markets",
       "paper": false

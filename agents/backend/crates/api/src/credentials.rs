@@ -85,10 +85,10 @@ impl CredentialKey {
             Self::FredApiKey => "FRED_API_KEY",
             Self::FmpApiKey => "FMP_API_KEY",
             Self::PolygonApiKey => "POLYGON_API_KEY",
-            Self::AlpacaPaperApiKeyId => "ALPACA_PAPER_API_KEY_ID",
-            Self::AlpacaPaperSecretKey => "ALPACA_PAPER_API_SECRET_KEY",
-            Self::AlpacaLiveApiKeyId => "ALPACA_LIVE_API_KEY_ID",
-            Self::AlpacaLiveSecretKey => "ALPACA_LIVE_API_SECRET_KEY",
+            Self::AlpacaPaperApiKeyId => "APCA_API_KEY_ID",
+            Self::AlpacaPaperSecretKey => "APCA_API_SECRET_KEY",
+            Self::AlpacaLiveApiKeyId => "APCA_API_KEY_ID",
+            Self::AlpacaLiveSecretKey => "APCA_API_SECRET_KEY",
             Self::TastytradeApiKey => "TASTYTRADE_API_KEY",
             Self::TastytradeAccount => "TASTYTRADE_ACCOUNT",
             Self::TaseApiKey => "TASE_API_KEY",
@@ -97,9 +97,27 @@ impl CredentialKey {
 
     const fn legacy_env_vars(&self) -> &'static [&'static str] {
         match self {
-            // Preserve historical generic Alpaca env vars as the paper/default identity.
-            Self::AlpacaPaperApiKeyId => &["ALPACA_API_KEY_ID", "ALPACA_API_KEY"],
-            Self::AlpacaPaperSecretKey => &["ALPACA_API_SECRET_KEY", "ALPACA_SECRET_KEY"],
+            // Preserve historical prefixed Alpaca env vars as legacy fallbacks.
+            Self::AlpacaPaperApiKeyId => &[
+                "ALPACA_PAPER_API_KEY_ID",
+                "ALPACA_API_KEY_ID",
+                "ALPACA_API_KEY",
+            ],
+            Self::AlpacaPaperSecretKey => &[
+                "ALPACA_PAPER_API_SECRET_KEY",
+                "ALPACA_API_SECRET_KEY",
+                "ALPACA_SECRET_KEY",
+            ],
+            Self::AlpacaLiveApiKeyId => &[
+                "ALPACA_LIVE_API_KEY_ID",
+                "ALPACA_API_KEY_ID",
+                "ALPACA_API_KEY",
+            ],
+            Self::AlpacaLiveSecretKey => &[
+                "ALPACA_LIVE_API_SECRET_KEY",
+                "ALPACA_API_SECRET_KEY",
+                "ALPACA_SECRET_KEY",
+            ],
             _ => &[],
         }
     }

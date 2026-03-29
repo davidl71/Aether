@@ -276,4 +276,14 @@ pub enum AppEvent {
     YieldRefreshAck {
         ok: bool,
     },
+    /// Alpaca health status update (paper or live trading).
+    AlpacaHealthUpdate {
+        is_paper: bool,
+        connected: bool,
+        account_id: Option<String>,
+        equity: Option<f64>,
+        buying_power: Option<f64>,
+        status: String,
+        last_error: Option<String>,
+    },
 }

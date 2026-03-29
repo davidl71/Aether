@@ -4,7 +4,7 @@
 //! Note: api.admin.set_mode is deprecated in data-exploration mode.
 //! Snapshot operations use bounded parallelism to prevent memory pressure.
 
-use crate::handlers::{api_queue_group, handle_sub_parallel, concurrency_limit};
+use crate::handlers::{api_queue_group, concurrency_limit, handle_sub_parallel};
 use api::fetch_ib_positions;
 use api::SnapshotPublishReply;
 use bytes::Bytes;
@@ -20,13 +20,9 @@ const SUBJECT_SNAPSHOT_PUBLISH_NOW: &str = "api.snapshot.publish_now";
 const SUBJECT_IB_POSITIONS: &str = "api.ib.positions";
 
 /// Spawn all administrative NATS API handlers with bounded parallelism.
-pub fn spawn(
-    nc: Client,
-    state: SharedSnapshot,
-    backend_id: String,
-) {
+pub fn spawn(nc: Client, state: SharedSnapshot, backend_id: String) {
     let limit = concurrency_limit();
-    
+
     let nc_snapshot = nc.clone();
     let state_snapshot = state.clone();
     let snapshot_backend_id = backend_id.clone();
@@ -46,7 +42,12 @@ pub fn spawn(
 }
 
 /// Force-write current snapshot to NATS (point-in-time) with bounded parallelism.
-async fn run_snapshot_publish_now(nc: Client, state: SharedSnapshot, backend_id: String, limit: usize) {
+async fn run_snapshot_publish_now(
+    nc: Client,
+    state: SharedSnapshot,
+    backend_id: String,
+    limit: usize,
+) {
     let sub = match nc
         .queue_subscribe(SUBJECT_SNAPSHOT_PUBLISH_NOW.to_string(), api_queue_group())
         .await
@@ -57,9 +58,12 @@ async fn run_snapshot_publish_now(nc: Client, state: SharedSnapshot, backend_id:
             return;
         }
     };
-    info!("subscribed to api.snapshot.publish_now (force snapshot write, concurrency={})", limit);
+    info!(
+        "subscribed to api.snapshot.publish_now (force snapshot write, concurrency={})",
+        limit
+    );
     let subject = topics::snapshot::backend(&backend_id);
-    
+
     handle_sub_parallel(
         nc,
         sub,
@@ -88,9 +92,7 @@ async fn run_snapshot_publish_now(nc: Client, state: SharedSnapshot, backend_id:
                     Err(e) => {
                         let err = e.to_string();
                         serde_json::to_vec(&SnapshotPublishReply::failed_from_context(
-                            &command,
-                            subject,
-                            err,
+                            &command, subject, err,
                         ))
                         .unwrap_or_else(|_| b"{}".to_vec())
                     }
@@ -99,7 +101,8 @@ async fn run_snapshot_publish_now(nc: Client, state: SharedSnapshot, backend_id:
             }
         },
         limit,
-    ).await;
+    )
+    .await;
 }
 
 /// Handles api.ib.positions with bounded parallelism.
@@ -135,7 +138,8 @@ async fn run_ib_positions(nc: Client, limit: usize) {
             }
         },
         limit,
-    ).await;
+    )
+    .await;
 }
 
 /// Handles api.admin.set_mode with bounded parallelism.

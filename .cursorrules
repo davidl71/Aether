@@ -26,7 +26,7 @@ Comprehensive multi-asset synthetic financing optimization platform. Manages fin
 ## Build System
 
 ### Commands
-See `.cursor/commands.json` or `docs/CURSOR_PROJECT_COMMANDS.md` for complete command list. For Cursor rules, skills, and multi-editor setup see `.cursor/rules/` and `docs/AI_EDITOR_SETUP.md`. Canonical project guidelines: `AGENTS.md`, `CLAUDE.md`.
+See `.cursor/commands.json` or `docs/CURSOR_PROJECT_COMMANDS.md` for complete command list. For Cursor rules, skills, and multi-editor setup see `.cursor/rules/` and `docs/archive/AI_EDITOR_SETUP.md`. Canonical project guidelines: `AGENTS.md`; quick refs: `CLAUDE.md`, `CODEX.md`. Active code: Rust in `agents/backend/` (see `AGENTS.md` / `CLAUDE.md`).
 
 **Primary commands:**
 - `build:debug` - Build in debug mode

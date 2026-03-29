@@ -202,6 +202,39 @@ crates/nats_adapter/       ← imports from common (NOT api, avoids cycle)
 
 **Enforced by:** `.opencode/rules/shared-types-pattern.md`
 
+### Market Data Provider Factories
+
+All market data providers must use the factory pattern for discoverability and consistent initialization.
+
+**Quote Sources** - Use `MarketDataSourceFactory` or `SimpleMarketDataSourceFactory` trait:
+```rust
+// In market_data/src/{provider}.rs
+pub struct YahooFinanceSourceFactory;
+impl SimpleMarketDataSourceFactory for YahooFinanceSourceFactory {
+    fn name(&self) -> &'static str { "yahoo" }
+    fn create(&self, symbols: &[String], interval: Duration) -> anyhow::Result<Box<dyn MarketDataSource>> {
+        Ok(Box::new(YahooFinanceSource::new(symbols.to_vec(), interval)?))
+    }
+}
+```
+
+Register in `crates/market_data/src/lib.rs`:
+```rust
+pub fn provider_registry() -> &'static HashMap<&'static str, DynFactory> {
+    // Use create_provider("yahoo") to instantiate
+}
+```
+
+**Options Sources** - Use `OptionsDataSource` trait with `options_registry()`:
+```rust
+pub fn create_options_provider(name: &str) -> anyhow::Result<Box<dyn OptionsDataSource>> {
+    let registry = options_registry();
+    registry.get(name).ok_or_else(|| /* */)?()
+}
+```
+
+**Enforced by:** `docs/MARKET_DATA_PROVIDER_ARCHITECTURE.md`
+
 ### Proto Generation
 
 - Prost proto types are generated at build time via `nats_adapter/build.rs` from `proto/messages.proto`
@@ -305,3 +338,13 @@ context referenced by the agents and skills that follow.
 
 Use **`docs/AI_WORKFLOW.md`** for the preferred prompt structure, backlog
 hygiene, and thread-splitting defaults used in this repo.
+
+## Learned User Preferences
+
+- After changing task status in the DB or via exarp-go, run **`./scripts/run_exarp_go.sh task sync`** so `.todo2/state.todo2.json` and JSON-backed views stay aligned with SQLite.
+
+## Learned Workspace Facts
+
+- `scripts/run_exarp_go.sh` with **no** arguments starts stdio MCP mode; in a normal terminal it looks hung. For one-shot CLI use, always pass a subcommand (for example `task sync`, `task list`).
+- Todo2: treat **`.todo2/todo2.db` as canonical** for task status; **`.todo2/state.todo2.json`** mirrors the DB. After DB changes, run `./scripts/run_exarp_go.sh task sync`. If a JSON-backed UI still disagrees with SQLite, prefer the DB and treat it as a sync or tooling gap.
+- **RAM disk:** `workspace_ram_disk_manager.sh` is not in this repo; folder-open / Cursor RAM-disk tasks that called it were removed. For disk-caching workflows use **`scripts/setup_disk_caching.sh`** and CMake presets with **`*-ramdisk`** / `build-ramdisk`, not a missing workspace startup script.

@@ -1,0 +1,34 @@
+---
+description: No new orphaned Position/Order/Account types; prefer common + From conversions
+alwaysApply: false
+---
+
+# No new duplicate types
+
+**Rule:** Before adding a new `*Position*`, `*Order*`, `*Account*`, or `*Metrics*` struct, check whether an existing type can be reused. If a new type is needed, add at least one `From` conversion to or from an existing canonical type. Avoid orphaned duplicates.
+
+## Canonical examples (non-exhaustive)
+
+| Type | Location | Role |
+|------|----------|------|
+| `broker_engine::domain::Position` | `broker_engine/src/domain.rs` | Broker-agnostic position |
+| `common::PositionSnapshot` | `common/src/snapshot.rs` | NATS / proto snapshot |
+| `api::IbPositionDto`, `RuntimePositionDto`, … | `api/src/` | REST / runtime views |
+| `broker_engine::domain::AccountInfo` | `broker_engine/src/domain.rs` | Raw account |
+| `common::Metrics` | `common/src/snapshot.rs` | Snapshot metrics |
+
+## Adding a new snapshot-shaped type
+
+1. Prefer extending `common` types used by 2+ crates.
+2. If a new struct is required, place it in `crates/common/` when shared across `api` / `nats_adapter` / others (see `AGENTS.md` shared-types pattern).
+3. Add `From<…>` in both directions where conversions exist.
+4. Explain in the commit why a new type was necessary.
+
+## Quick checks
+
+```bash
+rg "pub struct.*Position" agents/backend/crates --type rust
+rg "pub struct.*Account|pub struct.*Metrics" agents/backend/crates --type rust
+```
+
+**Parity:** Same policy as `.opencode/rules/no-new-duplicate-types.md` (OpenCode). **Also see** `AGENTS.md` (shared types + `derive_builder` patterns) and `.opencode/rules/shared-types-pattern.md`.

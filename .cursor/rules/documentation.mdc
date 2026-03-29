@@ -14,7 +14,7 @@ See `docs/CURSOR_GLOBAL_DOCS.md` for complete guide on setting up global Docs in
 ### High-Priority Global Docs (Must-Have)
 - ✅ `docs/API_DOCUMENTATION_INDEX.md` - Complete index of all external APIs and libraries
 - ✅ `docs/archive/AI_EDITOR_SETUP.md` - OpenCode, Claude, Cursor, skills, subagents setup; canonical context (AGENTS.md, CLAUDE.md)
-- ✅ `docs/EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md` - OpenCode and exarp-go AI context interaction patterns (session prime, handoff, commands, hooks)
+- ✅ `docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md` - exarp-go session prime, handoff, tasks, scorecard across Cursor, Claude Code, OpenCode, Codex
 - ✅ `docs/CODEBASE_ARCHITECTURE.md` - System design and component interactions
 - ✅ `docs/COMMON_PATTERNS.md` - Coding patterns, conventions, and idioms
 - ✅ `docs/AI_FRIENDLY_CODE.md` - Best practices for writing AI-friendly code
@@ -32,8 +32,9 @@ See `docs/CURSOR_GLOBAL_DOCS.md` for complete guide on setting up global Docs in
 ## When to Reference Documentation
 
 ### AI setup and canonical context
-- **Multi-editor / skills / subagents:** Use `@docs AI_EDITOR_SETUP.md`
-- **Project guidelines:** AGENTS.md and CLAUDE.md (canonical; reference when answering project-wide questions)
+- **Multi-editor / skills / subagents:** Use `@docs archive/AI_EDITOR_SETUP.md`
+- **exarp-go across editors:** `@docs archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md`
+- **Project guidelines:** `AGENTS.md` (canonical); quick refs `CLAUDE.md`, `CODEX.md`
 
 ### API Usage
 - Use `@docs API_DOCUMENTATION_INDEX.md` when suggesting code using external APIs

@@ -1,0 +1,151 @@
+---
+description: When to compress conversation context at workflow milestones (Cursor; aligns with OpenCode)
+alwaysApply: false
+---
+
+# Context Compression Milestones
+
+**Sibling:** `.opencode/rules/context-compression.md` (OpenCode `opencode.json` instruction). Same milestones; OpenCode may reference editor-specific `compress()` APIs when available.
+
+## Rule
+
+Proactively compress conversation context at key workflow milestones to prevent token limit exhaustion and maintain AI performance.
+
+## When to Compress
+
+### Mandatory Compression Points
+
+| Milestone | Trigger | Action |
+|-----------|---------|--------|
+| **Task Complete** | Marking task Done in exarp-go | Compress all work on that task before starting next |
+| **Research Complete** | Exploration finished, findings summarized | Compress research phase before implementation |
+| **Build/Verification Done** | `cargo build/test` passes after changes | Compress implementation + verification as one unit |
+| **Documentation Written** | New docs created, existing docs updated | Compress docs work if >20 lines of conversation |
+| **Multi-file Refactor** | 3+ files changed in atomic operation | Compress after git commit or verification |
+| **Context Warning** | System indicates >75% context usage | Compress immediately (emergency recovery) |
+
+### Compression Workflow
+
+```
+Before: [Research] → [Implementation] → [Verification] → [Next Task]
+After:  [(compressed)] → [(compressed)] → [(compressed)] → Next Task
+```
+
+## How to Compress
+
+### Basic Command
+
+```
+compress(
+  topic="Brief description of work unit",
+  content=[{
+    startId: "mXXXX",    // First message of range
+    endId: "mYYYY",      // Last message to include
+    summary: "Detailed technical summary..."
+  }]
+)
+```
+
+### Summary Requirements
+
+- **Exhaustive**: Include all file paths changed, function signatures, decisions
+- **Actionable**: Future self should know what was done without re-reading
+- **Include placeholders**: Reference compressed blocks with `(bN)` notation
+- **Preserve intent**: For user messages, prefer direct quotes if short
+
+### Stop Conditions
+
+DO NOT compress if:
+- Raw context needed for immediate next edit
+- Compression target is still in progress
+- You need exact error messages or precise code references in next step
+
+## Batch Strategy
+
+### Single Large Compression (Preferred)
+
+When multiple related messages are stale, prefer one comprehensive compression:
+
+```
+compress(
+  topic="Implement Alpaca market data source",
+  content=[{
+    startId: "m0010",
+    endId: "m0150",
+    summary: "Full implementation of AlpacaSource::next() with round-robin polling, 
+              tokio blocking for sync API calls. Files: alpaca.rs, events.rs, 
+              app_updates.rs. Source priorities: paper=55, live=75. 
+              Build passes. (b2) (b4)"
+  }]
+)
+```
+
+### Multiple Independent Compressions
+
+When sections are truly independent:
+
+```
+compress(
+  topic="UX Foundation Tasks",
+  content=[
+    {startId: "m0010", endId: "m0050", summary: "..."},
+    {startId: "m0060", endId: "m0100", summary: "..."}
+  ]
+)
+```
+
+## Emergency Recovery
+
+If you see:
+> CRITICAL WARNING: MAX CONTEXT LIMIT REACHED
+
+**Immediately:**
+1. Finish any atomic operation in progress (single edit, single test)
+2. Compress the largest possible closed range
+3. Start from oldest stale content
+4. Include all compressed block placeholders `(bN)`
+5. Do NOT continue exploration until compression succeeds
+
+## Integration with exarp-go Workflow
+
+### Task Lifecycle Compression
+
+```
+[Todo] → [In Progress] → (compress research) → [Implementation] → 
+(compress impl) → [Review] → (compress verification) → [Done]
+```
+
+### Before Each New Task
+
+1. Check `exarp_prime()` for suggested_next
+2. Compress previous task's context if not already done
+3. Claim new task
+4. Start work with clean context window
+
+## Anti-Patterns
+
+❌ **Don't**: Compress during active debugging (you need error messages)
+❌ **Don't**: Let context hit 100% before acting
+❌ **Don't**: Create many tiny compressions (overhead > benefit)
+❌ **Don't**: Compress user intent poorly (loses nuance)
+
+✅ **Do**: Compress closed work units
+✅ **Do**: Batch related compression targets
+✅ **Do**: Keep summaries actionable and complete
+✅ **Do**: Verify placeholders `(bN)` are preserved
+
+## Example Compression Topics
+
+- "Research: TUI widget libraries evaluation"
+- "Implement: Alpaca health monitor with real API"
+- "Fix: CLI quote command type mismatch"
+- "Docs: Add data source integration guide"
+- "Cleanup: Remove archived web/ folder"
+
+## Verification
+
+After compression, verify:
+- Can you describe what was done without re-reading raw messages?
+- Are file paths and key decisions captured?
+- Would a fresh agent understand the state from summary alone?
+- Are all `(bN)` placeholders correctly referenced?

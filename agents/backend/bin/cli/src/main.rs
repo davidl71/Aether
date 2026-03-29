@@ -23,6 +23,9 @@ use api::loans::LoanRecord;
 use chrono::Utc;
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
+use market_data::{
+    BoxSpreadResult, OptionsDataSource, YahooOptionsSource,
+};
 use nats_adapter::{
     request_json_with_retry, request_json_with_retry_timeout, NatsClient, RetryConfig,
 };
@@ -45,8 +48,124 @@ impl OutputFormat {
         if *self == OutputFormat::Json {
             println!("{}", serde_json::to_string_pretty(value)?);
         }
-        Ok(())
+    Ok(())
+}
+
+async fn run_box(symbol: String, dte: f64, width: f64, json: bool) -> Result<()> {
+    use market_data::yahoo::{YahooHistorySource, YahooOptionsSource};
+
+    println!(
+        "Calculating box spread for {} (DTE: {}, width: ${})",
+        symbol, dte as i32, width
+    );
+
+    let options = YahooOptionsSource::new();
+    let history = YahooHistorySource::new();
+    let yahoo_symbol = symbol.to_uppercase();
+
+    // Get underlying price
+    let candles = history.get_history(&yahoo_symbol, Range::D1, Interval::D1).await?;
+    let spot = candles.first().map(|c| money_to_f64(&c.close)).unwrap_or(0.0);
+    if spot <= 0.0 {
+        return Err(anyhow::anyhow!("Could not determine underlying price for {}", symbol));
     }
+    println!("Underlying: ${:.2}", spot);
+
+    // Get expirations and find the one closest to requested DTE
+    let expirations = options.get_expirations(&yahoo_symbol).await?;
+    let today = chrono::Utc::now().date_naive();
+
+    let target_date = today + chrono::Duration::days(dte as i64);
+    let (expiration_ts, expiration_date) = expirations
+        .into_iter()
+        .filter_map(|ts| {
+            chrono::DateTime::from_timestamp(ts, 0).map(|dt| (ts, dt.date_naive()))
+        })
+        .min_by_key(|(_, date)| (*date - target_date).abs())
+        .ok_or_else(|| anyhow::anyhow!("No valid expirations found for {}", symbol))?;
+
+    let actual_dte = (expiration_date - today).num_days() as f64;
+    println!("Using expiration: {} (DTE: {})", expiration_date, actual_dte as i32);
+
+    // Get option chain
+    let chain = options.get_chain(&yahoo_symbol, expiration_ts).await?;
+    println!("Got {} calls, {} puts", chain.calls.len(), chain.puts.len());
+
+    // Find box legs (ITM call, OTM call, ITM put, OTM put)
+    let strike_low = (spot / width).floor() * width;
+    let strike_high = strike_low + width;
+
+    let c_low = chain
+        .calls
+        .iter()
+        .find(|o| (o.strike - strike_low).abs() < 0.01 && o.bid > 0.0 && o.ask > 0.0)
+        .ok_or_else(|| anyhow::anyhow!("Low call not found at strike {}", strike_low))?;
+    let c_high = chain
+        .calls
+        .iter()
+        .find(|o| (o.strike - strike_high).abs() < 0.01 && o.bid > 0.0 && o.ask > 0.0)
+        .ok_or_else(|| anyhow::anyhow!("High call not found at strike {}", strike_high))?;
+    let p_low = chain
+        .puts
+        .iter()
+        .find(|o| (o.strike - strike_low).abs() < 0.01 && o.bid > 0.0 && o.ask > 0.0)
+        .ok_or_else(|| anyhow::anyhow!("Low put not found at strike {}", strike_low))?;
+    let p_high = chain
+        .puts
+        .iter()
+        .find(|o| (o.strike - strike_high).abs() < 0.01 && o.bid > 0.0 && o.ask > 0.0)
+        .ok_or_else(|| anyhow::anyhow!("High put not found at strike {}", strike_high))?;
+
+    println!(
+        "Legs: C${:.0} ${:.2}/${:.2} | C${:.0} ${:.2}/${:.2} | P${:.0} ${:.2}/${:.2} | P${:.0} ${:.2}/${:.2}",
+        c_low.strike, c_low.bid, c_low.ask,
+        c_high.strike, c_high.bid, c_high.ask,
+        p_low.strike, p_low.bid, p_low.ask,
+        p_high.strike, p_high.bid, p_high.ask
+    );
+
+    // Calculate box spread
+    let result = BoxSpreadResult::from_quotes(
+        (c_low.bid, c_low.ask),
+        (c_high.bid, c_high.ask),
+        (p_low.bid, p_low.ask),
+        (p_high.bid, p_high.ask),
+        width,
+        actual_dte,
+    )
+    .ok_or_else(|| anyhow::anyhow!("Failed to calculate box spread"))?;
+
+    if json {
+        println!("{{");
+        println!("  \"symbol\": \"{}\",", symbol);
+        println!("  \"dte\": {},", actual_dte as i32);
+        println!("  \"width\": {},", width);
+        println!("  \"strike_low\": {},", strike_low);
+        println!("  \"strike_high\": {},", strike_high);
+        println!("  \"buy_rate\": {:.4},", result.buy_rate * 100.0);
+        println!("  \"sell_rate\": {:.4},", result.sell_rate * 100.0);
+        println!("  \"mid_rate\": {:.4},", result.mid_rate * 100.0);
+        println!("  \"net_debit\": {:.2},", result.net_debit);
+        println!("  \"net_credit\": {:.2},", result.net_credit);
+        println("}}");
+    } else {
+        println!();
+        println!("=== Box Spread Result ===");
+        println!("Symbol:   {}", symbol);
+        println!("DTE:      {}", actual_dte as i32);
+        println!("Width:    ${}", width);
+        println!("Strikes:  ${:.0} / ${:.0}", strike_low, strike_high);
+        println!();
+        println!("Buy rate:  {:.2}% (annualized)", result.buy_rate * 100.0);
+        println!("Sell rate: {:.2}% (annualized)", result.sell_rate * 100.0);
+        println!("Mid rate:  {:.2}% (annualized)", result.mid_rate * 100.0);
+        println!();
+        println!("Net debit:  ${:.2}", result.net_debit);
+        println!("Net credit: ${:.2}", result.net_credit);
+    }
+
+    Ok(())
+}
 }
 
 #[derive(Parser, Debug)]
@@ -182,6 +301,21 @@ enum Commands {
         #[command(subcommand)]
         sub: AlpacaCmd,
     },
+    // /// Calculate box spread synthetic yield for a given symbol/DTE/width
+    // Box {
+    //     /// Symbol (e.g., SPX, SPY)
+    //     #[arg(short, long, default_value = "SPX")]
+    //     symbol: String,
+    //     /// Days to expiration (e.g., 30, 45, 60)
+    //     #[arg(short, long, default_value_t = 30_f64)]
+    //     dte: f64,
+    //     /// Strike width in dollars (e.g., 25, 50)
+    //     #[arg(short, long, default_value_t = 25.0)]
+    //     width: f64,
+    //     /// Output as JSON
+    //     #[arg(long)]
+    //     json: bool,
+    // },
 }
 
 #[derive(Subcommand, Debug)]
@@ -409,9 +543,10 @@ fn main() -> Result<()> {
             } => run_discount_bank_import(&path, exchange_rate, format, json)?,
         },
         Commands::Cred { sub } => run_cred(sub)?,
-        Commands::Alpaca { sub } => {
-            tokio::runtime::Runtime::new()?.block_on(run_alpaca(sub))?
-        }
+        Commands::Alpaca { sub } => tokio::runtime::Runtime::new()?.block_on(run_alpaca(sub))?,
+        // Commands::Box { symbol, dte, width, json } => {
+        //     tokio::runtime::Runtime::new()?.block_on(run_box(symbol, dte, width, json))?
+        // }
     }
 
     Ok(())
@@ -1481,36 +1616,45 @@ fn trading_loop(_config: &config::Config) -> Result<()> {
 }
 
 async fn run_alpaca(sub: AlpacaCmd) -> Result<()> {
-    use api::credentials::{get_credential, CredentialKey};
     use api::alpaca_positions::AlpacaPositionSource;
+    use api::credentials::{get_credential, CredentialKey};
 
     match sub {
         AlpacaCmd::Quote { symbol, live, json } => {
             use market_data::alpaca::AlpacaSource;
-            
-            let source = if live {
+
+            let is_paper = !live;
+            let (key_id, secret) = if live {
                 let key_id = get_credential(CredentialKey::AlpacaLiveApiKeyId)
                     .ok_or_else(|| anyhow::anyhow!("Alpaca live key not found"))?;
                 let secret = get_credential(CredentialKey::AlpacaLiveSecretKey)
                     .ok_or_else(|| anyhow::anyhow!("Alpaca live secret not found"))?;
-                std::env::set_var("APCA_API_KEY_ID", key_id);
-                std::env::set_var("APCA_API_SECRET_KEY", secret);
-                std::env::set_var("APCA_API_BASE_URL", "https://api.alpaca.markets");
-                AlpacaSource::from_env()
-                    .ok_or_else(|| anyhow::anyhow!("Failed to create Alpaca source"))?
+                (key_id, secret)
             } else {
                 let key_id = get_credential(CredentialKey::AlpacaPaperApiKeyId)
                     .ok_or_else(|| anyhow::anyhow!("Alpaca paper key not found"))?;
                 let secret = get_credential(CredentialKey::AlpacaPaperSecretKey)
                     .ok_or_else(|| anyhow::anyhow!("Alpaca paper secret not found"))?;
-                std::env::set_var("APCA_API_KEY_ID", key_id);
-                std::env::set_var("APCA_API_SECRET_KEY", secret);
-                std::env::set_var("APCA_API_BASE_URL", "https://paper-api.alpaca.markets");
-                AlpacaSource::from_env()
-                    .ok_or_else(|| anyhow::anyhow!("Failed to create Alpaca source"))?
+                (key_id, secret)
             };
 
-            println!("Fetching quote for {} from Alpaca {}...", symbol, if live { "LIVE" } else { "PAPER" });
+            // Set environment variables for the Alpaca API client
+            std::env::set_var("APCA_API_KEY_ID", key_id);
+            std::env::set_var("APCA_API_SECRET_KEY", secret);
+            let base_url = if live {
+                "https://api.alpaca.markets"
+            } else {
+                "https://paper-api.alpaca.markets"
+            };
+            std::env::set_var("APCA_API_BASE_URL", base_url);
+
+            let source = AlpacaSource::new(is_paper, vec![&symbol], std::time::Duration::from_secs(1))?;
+
+            println!(
+                "Fetching quote for {} from Alpaca {}...",
+                symbol,
+                if live { "LIVE" } else { "PAPER" }
+            );
             match source.get_quote_sync(&symbol) {
                 Ok(quote) => {
                     if json {
@@ -1577,7 +1721,10 @@ async fn run_alpaca(sub: AlpacaCmd) -> Result<()> {
                         println!("Buying Power: ${:.2}", account.buying_power);
                         println!("Equity: ${:.2}", account.equity);
                         println!("Portfolio Value: ${:.2}", account.portfolio_value);
-                        println!("Environment: {}", if source.is_paper() { "Paper" } else { "Live" });
+                        println!(
+                            "Environment: {}",
+                            if source.is_paper() { "Paper" } else { "Live" }
+                        );
                     }
                 }
                 Err(e) => {
@@ -1620,8 +1767,10 @@ async fn run_alpaca(sub: AlpacaCmd) -> Result<()> {
                         } else {
                             println!("Open Positions:");
                             for pos in positions {
-                                println!("  {}: {} shares @ ${:.2} (market value: ${:.2})",
-                                    pos.symbol, pos.quantity, pos.cost_basis, pos.market_value);
+                                println!(
+                                    "  {}: {} shares @ ${:.2} (market value: ${:.2})",
+                                    pos.symbol, pos.quantity, pos.cost_basis, pos.market_value
+                                );
                             }
                         }
                     }

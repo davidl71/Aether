@@ -1,0 +1,33 @@
+---
+description: Update docs/BACKEND_TYPE_COMPARISON.md when broker/common/api/proto surfaces change
+alwaysApply: false
+globs:
+  - agents/backend/crates/broker_engine/**/*.rs
+  - agents/backend/crates/common/**/*.rs
+  - agents/backend/crates/api/**/*.rs
+  - agents/backend/crates/nats_adapter/**/*.rs
+  - proto/**/*.proto
+---
+
+# Keep type comparison docs current
+
+**Rule:** After adding a type, trait method, adapter, conversion, proto message, or NATS topic that affects cross-backend comparisons, update `docs/BACKEND_TYPE_COMPARISON.md` in the same change when practical.
+
+## When to update
+
+| Change | Doc touch |
+|--------|-----------|
+| New `BrokerEngine` trait method | Comparative tables — per-adapter coverage |
+| New adapter | Adapter columns / rows |
+| New `*Position*` / `*Order*` type | Position/order tables + conversions |
+| New proto / topic | Proto / messaging section |
+
+## Quick consistency checks
+
+```bash
+rg "pub struct.*Position" agents/backend/crates --type rust
+rg "async fn " agents/backend/crates/broker_engine/src/traits.rs
+rg "From<.*> for|impl From" agents/backend/crates/common --type rust
+```
+
+**Parity:** Same policy as `.opencode/rules/keep-type-comparison-docs.md` (OpenCode).

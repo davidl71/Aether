@@ -62,18 +62,15 @@ use tracing_subscriber::{
     fmt::writer::BoxMakeWriter, layer::SubscriberExt, util::SubscriberInitExt,
 };
 
+mod alpaca_health;
 mod app;
 mod app_config;
 mod circuit_breaker;
 mod config;
-mod alpaca_health;
 mod config_watcher;
 mod dirty_flags;
 mod discoverability;
 mod events;
-mod mouse;
-mod portfolio_summary;
-mod scrollable_table;
 mod expiry_buckets;
 mod input;
 mod input_loans;
@@ -81,11 +78,14 @@ mod input_settings;
 mod input_shell;
 mod input_tabs;
 mod input_views;
-mod models;
 mod mode;
+mod models;
+mod mouse;
 mod nats;
 mod option_symbol;
 mod pane;
+mod portfolio_summary;
+mod scrollable_table;
 mod ui;
 mod workspace;
 
@@ -388,7 +388,7 @@ async fn main() -> color_eyre::Result<()> {
 
     let alpaca_health_monitor = crate::alpaca_health::AlpacaHealthMonitor::new();
     tokio::spawn(async move {
-        alpaca_health_monitor.spawn_health_checks().await;
+        alpaca_health_monitor.spawn_health_checks(event_tx.clone());
     });
 
     // Spawn config file watcher — hot-reloads TuiConfig on disk changes
@@ -447,10 +447,7 @@ fn init_terminal(use_alternate_screen: bool) -> color_eyre::Result<ratatui::Defa
             execute!(stdout, EnterAlternateScreen).context("enter alternate screen")?;
             ALT_SCREEN_ACTIVE.store(true, Ordering::SeqCst);
         }
-        execute!(
-            stdout,
-            crossterm::event::EnableMouseCapture
-        ).context("enable mouse capture")?;
+        execute!(stdout, crossterm::event::EnableMouseCapture).context("enable mouse capture")?;
         execute!(stdout, Clear(ClearType::All)).context("clear screen")?;
         ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(stdout))
             .context("create terminal backend")

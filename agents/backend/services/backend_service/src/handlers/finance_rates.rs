@@ -47,12 +47,9 @@ const REFERENCE_SPOT_ENV_PREFIX: &str = "YIELD_CURVE_REFERENCE_SPOT_";
 const DEFAULT_REFERENCE_SPOT: f64 = 6000.0;
 
 /// Spawn Finance Rates NATS API handlers with bounded parallelism.
-pub async fn spawn(
-    nc: Client,
-    yield_curve_refresh_tx: Option<tokio::sync::mpsc::Sender<()>>,
-) {
+pub async fn spawn(nc: Client, yield_curve_refresh_tx: Option<tokio::sync::mpsc::Sender<()>>) {
     let limit = finance_concurrency_limit();
-    
+
     // Timeout so FRED/New York Fed calls don't hang and cause NATS request timeouts
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))

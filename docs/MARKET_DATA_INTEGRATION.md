@@ -27,36 +27,39 @@ Data sources are ranked by priority (higher = more trusted):
 | Source | Priority | Type | Status |
 |--------|----------|------|--------|
 | TWS (`ib_adapter`) | 100 | Streaming | Active backend path |
+| Alpaca Live | 75 | Polling | Implemented |
 | Polygon | 70 | WebSocket | Available |
 | FMP | 60 | Polling (batch) | Implemented |
+| Alpaca Paper | 55 | Polling | Implemented |
 | Yahoo | 50 | Polling | Default |
 | Mock | 0 | Generated | Testing only |
 
-Alpaca is not part of the active backend data-source path today. If we add it
-later, the source-only boundary note lives in [ALPACA_SOURCE_ARCHITECTURE.md](./ALPACA_SOURCE_ARCHITECTURE.md).
+Alpaca follows the source-only boundary defined in [ALPACA_SOURCE_ARCHITECTURE.md](./ALPACA_SOURCE_ARCHITECTURE.md).
+Paper and live environments have separate priorities (55 vs 75) to allow
+fine-grained source selection in the aggregator.
 
 ### Event Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     MarketDataAggregator                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                  │
-│  │ TWS Loop    │  │ FMP Loop    │  │ Yahoo Loop  │                  │
-│  │ (priority=100)│  │ (priority=60)│  │ (priority=50)│                  │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘                  │
-│         │                │                │                          │
-│         └────────────────┼────────────────┘                          │
-│                          ▼                                          │
-│              ┌───────────────────────┐                              │
-│              │  process_event()      │                              │
-│              │  Select highest       │                              │
-│              │  priority per symbol  │                              │
-│              └───────────┬───────────┘                              │
-│                          ▼                                          │
-│              ┌───────────────────────┐                              │
-│              │  get_quote(symbol)    │  → Best quote for strategy  │
-│              └───────────────────────┘                              │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         MarketDataAggregator                                │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐    │
+│  │ TWS Loop    │  │ Alpaca Loop │  │ FMP Loop    │  │ Yahoo Loop      │    │
+│  │ (priority=100)│  │ (priority=75)│  │ (priority=60)│  │ (priority=50)│    │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘    │
+│         │                │                │                │             │
+│         └────────────────┴────────────────┴────────────────┘             │
+│                                         ▼                                │
+│                          ┌───────────────────────┐                       │
+│                          │  process_event()      │                       │
+│                          │  Select highest       │                       │
+│                          │  priority per symbol  │                       │
+│                          └───────────┬───────────┘                       │
+│                                      ▼                                   │
+│                          ┌───────────────────────┐                       │
+│                          │  get_quote(symbol)    │  → Best quote        │
+│                          └───────────────────────┘                       │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -84,7 +87,35 @@ pub async fn batch_quote(&self, symbols: &[String]) -> anyhow::Result<Vec<FmpQuo
 **Files Modified**:
 - `agents/backend/crates/market_data/src/fmp.rs`
 
-### 2. Multi-Source Aggregation
+### 2. Alpaca Market Data Source
+
+**Implementation** (`market_data/src/alpaca.rs`):
+- Polling-based source using `alpaca_api_client` crate
+- Separate priorities for paper (55) and live (75) environments
+- Round-robin symbol polling with configurable interval
+- Health monitoring via `AlpacaHealthMonitor` in TUI
+
+**Credentials**: Resolved via TUI credential management (keyring/env/file)
+and passed as `APCA_API_KEY_ID`/`APCA_API_SECRET_KEY` environment variables.
+
+```rust
+// Alpaca source creation
+let source = AlpacaSource::new(is_paper, symbols, poll_interval)?;
+
+// Async polling implementation
+async fn next(&self) -> anyhow::Result<MarketDataEvent> {
+    tokio::time::sleep(self.poll_interval).await;
+    let symbol = self.next_symbol().await;
+    // Fetch via alpaca_api_client...
+}
+```
+
+**Files**:
+- `agents/backend/crates/market_data/src/alpaca.rs` - Market data source
+- `agents/backend/crates/api/src/alpaca_positions.rs` - Position/account fetcher
+- `agents/backend/services/tui_service/src/alpaca_health.rs` - Health monitoring
+
+### 3. Multi-Source Aggregation
 
 **Implementation** (`market_data/src/aggregator/sqlite_aggregator.rs`):
 - In-memory aggregator with `Arc<RwLock<HashMap<Symbol, Quote>>>`
@@ -108,7 +139,7 @@ pub fn process_event(&self, event: &MarketDataEvent) -> bool {
 }
 ```
 
-### 3. TWS Integration
+### 4. TWS Integration
 
 **Challenge**: broker-backed TWS market data is push-based and must be bridged
 into the aggregator used by the backend.
@@ -118,7 +149,7 @@ into the aggregator used by the backend.
 - the active provider is `IbAdapter`
 - the remaining gap is service-side event-consumer wiring
 
-### 4. Yield Curve Source Labels
+### 5. Yield Curve Source Labels
 
 The backend-service yield curve writer now stores source-annotated JSON
 opportunities for the common fallback paths:
@@ -233,12 +264,19 @@ pub fn effective_rate(&self, current_shir: Option<f64>) -> f64 {
 
 | Component | Status | Notes |
 |-----------|--------|-------|
+| **Market Data Sources** |||
+| Alpaca Market Data | ✅ Done | Polling source with paper/live priority separation (55/75) |
 | FMP Batch Quotes | ✅ Done | 5x efficiency improvement |
-| Multi-Source Aggregator | ✅ Done | Priority-based selection |
 | Yahoo Source | ✅ Done | Default polling source |
 | Polygon Source | ✅ Done | WebSocket available |
 | TWS Broker Loop | ⚠️ Partial | `IbAdapter` emits ticks, but backend loop still needs proper consumer wiring |
 | YatWS Integration | 🔄 Experimental | Not part of active backend startup path |
+| **Position Sources** |||
+| Alpaca Positions | ✅ Done | `AlpacaPositionSource` with paper/live account support |
+| IB Positions | ✅ Done | Via `ib_adapter` |
+| **Infrastructure** |||
+| Multi-Source Aggregator | ✅ Done | Priority-based selection |
+| Alpaca Health Monitor | ✅ Done | TUI health checks with account info display |
 | FMP Symbol Discovery | ✅ Done | `/stable/stock-list` and `/stable/search-symbol` |
 | FMP Treasury Rates | ✅ Done | `/stable/treasury-rates` - all maturities |
 | FMP SOFR Rates | ✅ Done | `/stable/sofr-rates` overnight |
@@ -253,10 +291,16 @@ pub fn effective_rate(&self, current_shir: Option<f64>) -> f64 {
 ## Key Files
 
 ### Core Implementation
+- `agents/backend/crates/market_data/src/alpaca.rs` - Alpaca market data source
 - `agents/backend/crates/market_data/src/fmp.rs` - FMP client + batch quotes
 - `agents/backend/crates/market_data/src/aggregator/sqlite_aggregator.rs` - Multi-source aggregator
 - `agents/backend/crates/market_data/src/lib.rs` - Provider registry
 - `agents/backend/services/backend_service/src/main.rs` - Service orchestration
+
+### Alpaca Integration
+- `agents/backend/crates/market_data/src/alpaca.rs` - Market data source (polling)
+- `agents/backend/crates/api/src/alpaca_positions.rs` - Position/account fetcher
+- `agents/backend/services/tui_service/src/alpaca_health.rs` - Health monitoring
 
 ### Proto Definitions
 - `proto/messages.proto` - `source` and `source_priority` fields added

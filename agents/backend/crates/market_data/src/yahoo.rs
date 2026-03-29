@@ -155,9 +155,29 @@ impl YahooOptionsSource {
             client: YfClient::default(),
         }
     }
+
+    /// Create from environment - no API key needed for Yahoo
+    pub fn from_env() -> Self {
+        Self::new()
+    }
 }
 
 impl Default for YahooOptionsSource {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Factory for Yahoo options source (no config required)
+pub struct YahooOptionsSourceFactory;
+
+impl YahooOptionsSourceFactory {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Default for YahooOptionsSourceFactory {
     fn default() -> Self {
         Self::new()
     }

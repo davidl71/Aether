@@ -108,7 +108,7 @@ async fn handle_sub_with_import(
     client: ReqwestClient,
 ) {
     use futures::StreamExt;
-    
+
     while let Some(msg) = sub.next().await {
         let reply = match msg.reply {
             Some(r) => r,

@@ -5,7 +5,7 @@ Total scripts: 116 (after deduplication)
 
 ## Recent Deduplication (2026-03-04)
 
-### Removed Scripts (12 total)
+### Removed Scripts (historical log; counts are approximate)
 
 **Duplicates consolidated:**
 
@@ -15,24 +15,23 @@ Total scripts: 116 (after deduplication)
 4. ~~`automate_documentation_link_fixing.py` → `exarp_fix_documentation_links.py`~~ **Removed.** Use exarp-go for docs health/link fixing.
 5. `update_global_docs.sh` → Use `sync_global_docs.py`
 6. `collect_system_info.sh` → Use `collect_system_info_python.py`
-7. `setup_ramdisk.sh` → Use `workspace_ram_disk_manager.sh`
-8. `setup_ram_optimization.sh` → Use `workspace_ram_disk_manager.sh`
+7. `setup_ramdisk.sh`, `setup_ram_optimization.sh`, `workspace_ram_disk_manager.sh` → **Removed or absent from repo.** Use `setup_disk_caching.sh` for cache layout; optional CMake `*-ramdisk` presets use a `build-ramdisk` binary directory.
 
 **Removed as unused:**
-9. `test_ona_connectivity.sh` - ONA integration not in use
-10. `install_scancode_env.sh` - Not referenced
-11. `install_shellspec.sh` - Not used
-12. `check_build_status.sh` - Not used
+8. `test_ona_connectivity.sh` - ONA integration not in use
+9. `install_scancode_env.sh` - Not referenced
+10. `install_shellspec.sh` - Not used
+11. `check_build_status.sh` - Not used
 
 ## Active Script Categories
 
-### Build Scripts (5)
+### Build Scripts
 
 - `build_fast.sh` - Fast builds with sccache ✅ PRIMARY
 - `build_distributed.sh` - Distributed builds with distcc
-- `build_ramdisk.sh` - Build on ramdisk for performance
 - `build_universal.sh` - Universal binary (arm64 + x86_64)
 - `build_with_logging.sh` - Build with detailed logging
+- ~~`build_ramdisk.sh`~~ **Removed** – use CMake presets `*-ramdisk` (`binaryDir`: `build-ramdisk`) if you want a separate build tree
 
 ### Test Scripts (7)
 
@@ -81,9 +80,9 @@ Total scripts: 116 (after deduplication)
 - `install_deb_repo.sh` - Install Debian repository
 - `install_global_kit.sh` - Install global kit
 
-### Setup (7)
+### Setup
 
-- `workspace_ram_disk_manager.sh` - RAM disk management ✅ CONSOLIDATED
+- `setup_disk_caching.sh` - Disk-based dev caches (replaces RAM-disk helper scripts)
 - `setup_platform_settings.sh` - Platform-specific settings
 - `setup_pre_commit_hook.sh` - Git pre-commit hooks
 - `setup_worktree.sh` - REMOVED (native build retired; use `git worktree add`)
@@ -165,8 +164,9 @@ If you were using removed scripts:
 | ~~`automate_documentation_link_fixing.py` / `exarp_fix_documentation_links.py`~~ | **Removed** | Use exarp-go MCP/CLI |
 | `update_global_docs.sh` | `sync_global_docs.py` | Direct replacement |
 | `collect_system_info.sh` | `collect_system_info_python.py` | Direct replacement |
-| `setup_ramdisk.sh` | `workspace_ram_disk_manager.sh` | `setup` subcommand |
-| `setup_ram_optimization.sh` | `workspace_ram_disk_manager.sh` | `optimize` subcommand |
+| `setup_ramdisk.sh` | `setup_disk_caching.sh` | `enable` / `disable` / `status` |
+| `setup_ram_optimization.sh` | `setup_disk_caching.sh` | same |
+| `workspace_ram_disk_manager.sh` | **Removed** | Use `setup_disk_caching.sh` + CMake `*-ramdisk` presets |
 
 ## Maintenance
 

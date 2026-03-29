@@ -48,18 +48,23 @@ This project provides standard context files that AI coding assistants automatic
 | `trading-reviewer` | `.claude/agents/trading-reviewer.md` | Financial code correctness and safety audit |
 | `refactor` | `.claude/agents/refactor.md` | Safe incremental refactoring with test verification |
 
-### OpenCode Custom Commands
+### OpenCode custom commands (this repo)
 
-| Command | File | Purpose |
-|---------|------|---------|
-| `project:prime-context` | `.opencode/commands/prime-context.md` | Load key files and recent git history |
-| `project:build` | `.opencode/commands/build.md` | Configure (if needed) and build |
-| `project:test` | `.opencode/commands/test.md` | Run full test suite |
-| `project:test-one` | `.opencode/commands/test-one.md` | Run a single test by name |
-| `project:lint` | `.opencode/commands/lint.md` | Run all linters |
-| `project:review-file` | `.opencode/commands/review-file.md` | Review a file for correctness and safety |
-| `project:write-tests` | `.opencode/commands/write-tests.md` | Generate tests for an active source file using current project conventions |
-| `project:ai-context` | `.opencode/commands/ai-context.md` | Load AGENTS.md, CLAUDE.md, ARCHITECTURE.md for canonical context |
+Commands live under `.opencode/commands/*.md` (names match OpenCode slash commands):
+
+| Command file | Purpose |
+|--------------|---------|
+| `daily.md` | Daily automation / hygiene workflow |
+| `setup.md` | Environment / project setup |
+| `welcome.md` | Onboarding / context primer |
+| `wave-runner.md`, `wave-status.md`, `wave-tui.md` | Wave runner batch execution (TUI-related) |
+| `omo-shortcuts.md`, `omo-status.md` | Oh-My-OpenCode shortcuts and status |
+
+**OpenCode `instructions`:** `opencode.json` loads `.opencode/rules/exarp-go.md`, `lint-after-generation.md`, `regression-sanity.md`, `derive-builder-pattern.md`, `shared-types-pattern.md`, `context-compression.md`. **Cursor parity:** `.cursor/rules/` includes matching ideas — `lint-generated-files.mdc`, `regression-sanity.mdc`, `context-compression.mdc`, plus `workspace-build-before-commit.mdc`, `stub-must-have-task.mdc`, `no-new-duplicate-types.mdc`, `keep-type-comparison-docs.mdc`, `work-without-xcode.mdc`; `derive_builder` / shared types remain canonical in `AGENTS.md` and `.opencode/rules/*.md`.
+
+### Cursor custom commands
+
+Project commands: `.cursor/commands.json` (e.g. `build`, `test:run`, `lint:run`, `git:pull-safe`, MLX/Ollama review). See `docs/CURSOR_PROJECT_COMMANDS.md` if present.
 
 ### Skills & subagents
 
@@ -68,7 +73,7 @@ This project provides standard context files that AI coding assistants automatic
 | Cursor / plugin skills | AGENTS.md, relevant quick reference, `.cursor/rules/` | Use Skill tool; project root = workspace root |
 | Subagents (mcp_task, exarp-go, Claude agents) | Pass in prompt: project root + “Canonical guidelines: AGENTS.md plus the relevant quick reference” | They do not auto-load workspace context |
 
-Full setup and command parity: [docs/archive/AI_EDITOR_SETUP.md](docs/archive/AI_EDITOR_SETUP.md). See also [docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md) for exarp-go usage patterns shared across editors.
+Full setup and command parity: [docs/archive/AI_EDITOR_SETUP.md](docs/archive/AI_EDITOR_SETUP.md). exarp-go across Cursor, Claude, OpenCode, Codex: [docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md).
 
 ### Which rule when
 
@@ -78,7 +83,10 @@ Full setup and command parity: [docs/archive/AI_EDITOR_SETUP.md](docs/archive/AI
 | C++ tests | `cpp-tests.mdc` | Catch2 conventions |
 | Python | `python-code.mdc` | Style, uv, pytest |
 | Automation / Todo2 / docs health | `project-automation.mdc`, `automation-tool-suggestions.mdc` | exarp-go, task alignment |
-| Canonical context, skills, subagents | `ai-editors-skills-subagents.mdc`, docs/archive/AI_EDITOR_SETUP.md | AGENTS.md plus tool quick refs, multi-editor setup |
+| Canonical context, skills, subagents | `ai-editors-skills-subagents.mdc`, docs/archive/AI_EDITOR_SETUP.md | AGENTS.md plus CLAUDE.md / CODEX.md, multi-editor setup |
+| Context compression | `context-compression.mdc` | When to compress at workflow milestones (see `.opencode/rules/context-compression.md`) |
+| Rust workspace commit / types / stubs | `workspace-build-before-commit.mdc`, `no-new-duplicate-types.mdc`, `stub-must-have-task.mdc`, `keep-type-comparison-docs.mdc` | Same intent as `.opencode/rules/*.md` |
+| macOS without Xcode CLI | `work-without-xcode.mdc` | Limited verification path until `cc` works |
 | Documentation references | `documentation.mdc` | @docs, global docs |
 | Git / pre-commit / exarp-go hooks | `hooks.mdc` | pre-commit, setup_pre_commit_hook.sh, setup_hooks |
 | Security before code gen | `semgrep.mdc` | security_check |
@@ -95,7 +103,7 @@ Full setup and command parity: [docs/archive/AI_EDITOR_SETUP.md](docs/archive/AI
 ## Context Hierarchy
 
 1. **`AGENTS.md`** — Authoritative source of project guidelines
-2. **`CLAUDE.md` / `CODEX.md`** — Tool-specific quick references
+2. **`CLAUDE.md` / `CODEX.md`** — Claude Code and Codex quick references (Rust workspace path, build commands)
 3. **Tool-specific files** — Add invocation hints, not duplicate policy
 4. **`.cursor/rules/`** — Context-specific rules with glob patterns
 5. **`.claude/agents/`** — Specialized sub-agents for repeated workflows

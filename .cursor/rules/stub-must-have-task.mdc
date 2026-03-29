@@ -1,0 +1,54 @@
+---
+description: Stubs (empty Vec, None, todo!, STUB comments) must be tracked in exarp-go / Todo2
+alwaysApply: false
+---
+
+# Stub must have a task
+
+**Rule:** Any function that is a stub (`Vec::new()`, `None`, `todo!()`, `unimplemented!()`, or contains `// STUB` / unqualified `// TODO` implying not implemented) **must** have a tracked task (exarp-go / Todo2). Untracked stubs should be implemented, removed, or task-filed before merge.
+
+## Patterns that usually indicate a stub
+
+```rust
+fn example() -> Vec<Foo> {
+    Vec::new()
+}
+
+fn maybe() -> Option<Bar> {
+    None
+}
+
+// STUB: not implemented
+async fn fetch(...) { ... }
+
+fn resolve(...) -> i64 {
+    todo!()
+}
+```
+
+## What to do
+
+| Situation | Action |
+|-----------|--------|
+| Stub + task | Keep task accurate; implement or update |
+| Stub, no task | Create task before leaving the change |
+| Wrong approach | Remove stub; implement the real path |
+
+## New code that cannot be finished yet
+
+Reference the task id in code:
+
+```rust
+// TODO(T-…): implement …
+pub async fn resolve_conid(...) -> Result<i64, BrokerError> {
+    todo!("tracked in T-…")
+}
+```
+
+## Discovery
+
+```bash
+rg "// STUB|// TODO.*not implemented" agents/backend --type rust
+```
+
+**Parity:** Same policy as `.opencode/rules/stub-must-have-task.md` (OpenCode).

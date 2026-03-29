@@ -469,6 +469,26 @@ impl OptionsDataSource for PolygonOptionsSource {
     }
 }
 
+/// Factory for Polygon options source (requires API key)
+pub struct PolygonOptionsSourceFactory;
+
+impl PolygonOptionsSourceFactory {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub fn create(&self) -> anyhow::Result<Box<dyn OptionsDataSource>> {
+        let source = PolygonOptionsSource::from_env()?;
+        Ok(Box::new(source))
+    }
+}
+
+impl Default for PolygonOptionsSourceFactory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // Polygon /v3/snapshot/options response shapes
 #[derive(Debug, serde::Deserialize)]
 struct OptionSnapshotPage {

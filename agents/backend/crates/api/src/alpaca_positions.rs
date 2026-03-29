@@ -32,16 +32,34 @@ impl AlpacaPositionSource {
     pub fn from_env() -> Option<Self> {
         let has_key = std::env::var("APCA_API_KEY_ID").is_ok();
         let has_secret = std::env::var("APCA_API_SECRET_KEY").is_ok();
-        
+
         if !has_key || !has_secret {
             return None;
         }
-        
+
         let is_paper = std::env::var("APCA_API_BASE_URL")
             .map(|url| url.contains("paper"))
             .unwrap_or(true);
-        
+
         Some(Self { is_paper })
+    }
+
+    /// Create new position source for paper or live trading.
+    /// Returns None if credentials are not configured for the requested environment.
+    pub fn from_paper(is_paper: bool) -> Option<Self> {
+        use crate::credentials::{credential_source, CredentialKey};
+
+        let key = if is_paper {
+            CredentialKey::AlpacaPaperApiKeyId
+        } else {
+            CredentialKey::AlpacaLiveApiKeyId
+        };
+
+        if credential_source(key).is_some() {
+            Some(Self { is_paper })
+        } else {
+            None
+        }
     }
 
     /// Check if this is paper trading environment.
@@ -61,27 +79,31 @@ impl AlpacaPositionSource {
     /// Fetch all open positions.
     pub fn fetch_positions_sync(&self) -> Result<Vec<AlpacaPosition>, anyhow::Error> {
         use alpaca_api_client::trading::positions::PositionsQuery;
-        
+
         let query = PositionsQuery::new(self.account_type());
-        let positions = query.get_all_open_positions()
+        let positions = query
+            .get_all_open_positions()
             .map_err(|e| anyhow::anyhow!("Failed to fetch positions: {}", e))?;
-        
-        Ok(positions.into_iter().map(|p| AlpacaPosition {
-            symbol: p.symbol,
-            quantity: p.qty.parse().unwrap_or(0.0) as i32,
-            cost_basis: p.cost_basis.parse().unwrap_or(0.0),
-            market_value: p.market_value.parse().unwrap_or(0.0),
-            unrealized_pl: p.unrealized_pl.parse().unwrap_or(0.0),
-        }).collect())
+
+        Ok(positions
+            .into_iter()
+            .map(|p| AlpacaPosition {
+                symbol: p.symbol,
+                quantity: p.qty.parse().unwrap_or(0.0) as i32,
+                cost_basis: p.cost_basis.parse().unwrap_or(0.0),
+                market_value: p.market_value.parse().unwrap_or(0.0),
+                unrealized_pl: p.unrealized_pl.parse().unwrap_or(0.0),
+            })
+            .collect())
     }
 
     /// Fetch account information.
     pub fn fetch_account_sync(&self) -> Result<AlpacaAccountInfo, anyhow::Error> {
         use alpaca_api_client::trading::account::get_account;
-        
+
         let account = get_account(self.account_type())
             .map_err(|e| anyhow::anyhow!("Failed to fetch account: {}", e))?;
-        
+
         Ok(AlpacaAccountInfo {
             account_id: account.id,
             cash: account.cash.parse().unwrap_or(0.0),
@@ -95,17 +117,13 @@ impl AlpacaPositionSource {
     /// Fetch all open positions (async wrapper).
     pub async fn fetch_positions(&self) -> Result<Vec<AlpacaPosition>, anyhow::Error> {
         let source = self.clone();
-        tokio::task::spawn_blocking(move || {
-            source.fetch_positions_sync()
-        }).await?
+        tokio::task::spawn_blocking(move || source.fetch_positions_sync()).await?
     }
 
     /// Fetch account information (async wrapper).
     pub async fn fetch_account(&self) -> Result<AlpacaAccountInfo, anyhow::Error> {
         let source = self.clone();
-        tokio::task::spawn_blocking(move || {
-            source.fetch_account_sync()
-        }).await?
+        tokio::task::spawn_blocking(move || source.fetch_account_sync()).await?
     }
 }
 

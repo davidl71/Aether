@@ -43,7 +43,7 @@ Decisions on which uncommitted paths to add to version control and which to igno
 - **Python**
   - `python/integration/` – box_spread_models, broker_positions, cache_client, discount_bank_*, ledger_queries, nats_helper.
 - **Scripts**
-  - `scripts/git-hooks/prepare-commit-msg`, `scripts/git_pull_safe.sh`, `scripts/service.sh`, `scripts/setup_ramdisk.sh`, `scripts/start_all_services.sh`, `scripts/stop_all_services.sh`, `scripts/verify_toolchain.sh`, `scripts/with_nix.sh`.
+  - `scripts/git-hooks/prepare-commit-msg`, `scripts/git_pull_safe.sh`, `scripts/service.sh`, `scripts/setup_disk_caching.sh`, `scripts/start_all_services.sh`, `scripts/stop_all_services.sh`, `scripts/verify_toolchain.sh`, `scripts/with_nix.sh`.
 - **Editor / AI config (shared)**
   - `.cursor/hooks/session-prime.sh`, `.cursor/skills/*.md`, `.opencode/commands/*.md`, `.claude/commands/`.
 - **Nix**

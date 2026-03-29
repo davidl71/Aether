@@ -261,30 +261,6 @@
       "category": "setup"
     },
     {
-      "name": "setup:ramdisk",
-      "description": "Setup RAM disk for faster builds",
-      "command": "./scripts/workspace_ram_disk_manager.sh startup",
-      "category": "setup"
-    },
-    {
-      "name": "ramdisk:status",
-      "description": "Check RAM disk status",
-      "command": "./scripts/workspace_ram_disk_manager.sh status",
-      "category": "setup"
-    },
-    {
-      "name": "ramdisk:save",
-      "description": "Save RAM disk contents to disk",
-      "command": "./scripts/workspace_ram_disk_manager.sh save",
-      "category": "setup"
-    },
-    {
-      "name": "ramdisk:shutdown",
-      "description": "Save and shutdown RAM disk",
-      "command": "./scripts/workspace_ram_disk_manager.sh shutdown",
-      "category": "setup"
-    },
-    {
       "name": "docs:list",
       "description": "List all global docs paths for Cursor setup",
       "command": "./scripts/list_global_docs.sh",

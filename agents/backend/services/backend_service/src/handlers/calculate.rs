@@ -4,7 +4,7 @@
 //! Parallelism: Uses spawn_cpu_work for CPU-intensive calculations to avoid
 //! blocking the async runtime.
 
-use crate::handlers::{api_queue_group, handle_sub_parallel, spawn_cpu_work, concurrency_limit};
+use crate::handlers::{api_queue_group, concurrency_limit, handle_sub_parallel, spawn_cpu_work};
 use api::quant::{
     calculate_box_spread, calculate_greeks, calculate_historical_volatility, calculate_iv,
     calculate_jelly_roll, calculate_ratio_spread, calculate_risk_metrics, calculate_strategy,
@@ -27,7 +27,7 @@ const SUBJECT_CALCULATE_RATIO_SPREAD: &str = "api.calculate.ratio_spread";
 /// CPU-intensive calculations run on the blocking thread pool.
 pub async fn spawn(nc: Client) {
     let limit = concurrency_limit();
-    
+
     let sub_greeks = match nc
         .queue_subscribe(SUBJECT_CALCULATE_GREEKS.to_string(), api_queue_group())
         .await
@@ -138,7 +138,7 @@ pub async fn spawn(nc: Client) {
         },
         limit,
     ));
-    
+
     let nc_iv = nc.clone();
     tokio::spawn(handle_sub_parallel(
         nc_iv,
@@ -157,7 +157,7 @@ pub async fn spawn(nc: Client) {
         },
         limit,
     ));
-    
+
     let nc_hv = nc.clone();
     tokio::spawn(handle_sub_parallel(
         nc_hv,
@@ -172,11 +172,12 @@ pub async fn spawn(nc: Client) {
                         ))
                     }
                 };
-            spawn_cpu_work(move || calculate_result(calculate_historical_volatility(&request))).await
+            spawn_cpu_work(move || calculate_result(calculate_historical_volatility(&request)))
+                .await
         },
         limit,
     ));
-    
+
     let nc_risk = nc.clone();
     tokio::spawn(handle_sub_parallel(
         nc_risk,
@@ -195,7 +196,7 @@ pub async fn spawn(nc: Client) {
         },
         limit,
     ));
-    
+
     let nc_strategy = nc.clone();
     tokio::spawn(handle_sub_parallel(
         nc_strategy,
@@ -214,7 +215,7 @@ pub async fn spawn(nc: Client) {
         },
         limit,
     ));
-    
+
     let nc_box = nc.clone();
     tokio::spawn(handle_sub_parallel(
         nc_box,
@@ -233,7 +234,7 @@ pub async fn spawn(nc: Client) {
         },
         limit,
     ));
-    
+
     let nc_jelly = nc.clone();
     tokio::spawn(handle_sub_parallel(
         nc_jelly,
@@ -252,7 +253,7 @@ pub async fn spawn(nc: Client) {
         },
         limit,
     ));
-    
+
     let nc_ratio = nc.clone();
     tokio::spawn(handle_sub_parallel(
         nc_ratio,

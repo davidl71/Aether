@@ -225,27 +225,27 @@ check-yield:
 
 # Set a named credential (see `just cred-list` for the full set)
 cred-set name value:
-    @cd agents/backend && cargo run -p cli -- cred set {{name}} {{value}}
+	@cd agents/backend && cargo run -q -p cli -- cred set {{name}} {{value}}
 
 # Set FRED API key (prompts for value)
 cred-set-fred:
-    @cd agents/backend && cargo run -p cli -- cred set fred
+	@cd agents/backend && cargo run -q -p cli -- cred set fred >/dev/null 2>&1
 
 # Set FMP API key
 cred-set-fmp:
-    @cd agents/backend && cargo run -p cli -- cred set fmp
+	@cd agents/backend && cargo run -q -p cli -- cred set fmp >/dev/null 2>&1
 
 # Set Polygon API key
 cred-set-polygon:
-    @cd agents/backend && cargo run -p cli -- cred set polygon
+	@cd agents/backend && cargo run -q -p cli -- cred set polygon >/dev/null 2>&1
 
 # Set Alpaca paper credentials
 cred-set-alpaca-paper:
-    @cd agents/backend && cargo run -p cli -- cred set alpaca-paper-key && cargo run -p cli -- cred set alpaca-paper-secret
+	@cd agents/backend && cargo run -q -p cli -- cred set alpaca-paper-key >/dev/null 2>&1 && cargo run -q -p cli -- cred set alpaca-paper-secret >/dev/null 2>&1
 
 # Set Alpaca live credentials
 cred-set-alpaca-live:
-    @cd agents/backend && cargo run -p cli -- cred set alpaca-live-key && cargo run -p cli -- cred set alpaca-live-secret
+	@cd agents/backend && cargo run -q -p cli -- cred set alpaca-live-key >/dev/null 2>&1 && cargo run -q -p cli -- cred set alpaca-live-secret >/dev/null 2>&1
 
 # Set both Alpaca paper and live credentials
 cred-set-alpaca:
@@ -254,7 +254,7 @@ cred-set-alpaca:
 
 # Set Tastytrade credentials
 cred-set-tastytrade:
-    @cd agents/backend && cargo run -p cli -- cred set tastytrade-key && cargo run -p cli -- cred set tastytrade-account
+    @cd agents/backend && cargo run -q -p cli -- cred set tastytrade-key >/dev/null 2>&1 && cargo run -q -p cli -- cred set tastytrade-account >/dev/null 2>&1
 
 # Get a credential value (shows masked output)
 cred-get name:

@@ -13,6 +13,8 @@ use serde::{Deserialize, Serialize};
 pub enum DataSource {
     Nautilus,
     Tws,
+    AlpacaLive,
+    AlpacaPaper,
     Polygon,
     Fmp,
     Yahoo,
@@ -24,6 +26,8 @@ impl DataSource {
         match self {
             Self::Nautilus => 100,
             Self::Tws => 100,
+            Self::AlpacaLive => 75,
+            Self::AlpacaPaper => 55,
             Self::Polygon => 70,
             Self::Fmp => 60,
             Self::Yahoo => 50,
@@ -35,6 +39,8 @@ impl DataSource {
         match s.to_lowercase().as_str() {
             "nautilus" => Some(Self::Nautilus),
             "tws" => Some(Self::Tws),
+            "alpaca_live" | "alpaca-live" => Some(Self::AlpacaLive),
+            "alpaca_paper" | "alpaca-paper" => Some(Self::AlpacaPaper),
             "polygon" => Some(Self::Polygon),
             "fmp" => Some(Self::Fmp),
             "yahoo" => Some(Self::Yahoo),
@@ -49,6 +55,8 @@ impl std::fmt::Display for DataSource {
         match self {
             Self::Nautilus => write!(f, "nautilus"),
             Self::Tws => write!(f, "tws"),
+            Self::AlpacaLive => write!(f, "alpaca_live"),
+            Self::AlpacaPaper => write!(f, "alpaca_paper"),
             Self::Polygon => write!(f, "polygon"),
             Self::Fmp => write!(f, "fmp"),
             Self::Yahoo => write!(f, "yahoo"),

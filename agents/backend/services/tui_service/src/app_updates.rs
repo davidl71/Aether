@@ -335,6 +335,35 @@ impl App {
                 }
                 self.mark_dirty();
             }
+            AppEvent::AlpacaHealthUpdate {
+                is_paper,
+                connected,
+                account_id: _,
+                equity: _,
+                buying_power: _,
+                status,
+                last_error,
+            } => {
+                let state = if connected {
+                    ConnectionState::Connected
+                } else if status == "not_configured" {
+                    ConnectionState::Retrying
+                } else {
+                    ConnectionState::Retrying
+                };
+                let detail = if connected {
+                    "Connected".to_string()
+                } else {
+                    last_error.unwrap_or_else(|| status.clone())
+                };
+                let conn_status = ConnectionStatus::new(state, detail);
+                if is_paper {
+                    self.alpaca_paper_status = conn_status;
+                } else {
+                    self.alpaca_live_status = conn_status;
+                }
+                self.mark_dirty();
+            }
         }
     }
 

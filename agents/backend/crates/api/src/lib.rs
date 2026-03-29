@@ -18,6 +18,7 @@ pub mod state;
 mod strategy_controller;
 pub mod yield_curve_proto;
 
+pub use alpaca_positions::{AlpacaAccountInfo, AlpacaPositionSource};
 pub use commands::{
     CommandContext, CommandEvent, CommandReply, CommandStatus, SnapshotPublishReply,
 };
@@ -27,7 +28,6 @@ pub use health::{
     SharedHealthAggregate,
 };
 pub use ib_positions::{fetch_ib_positions, fetch_ib_positions_all, IbPositionDto};
-pub use alpaca_positions::{AlpacaPositionSource, AlpacaAccountInfo};
 pub use loans::{LoanAggregationInput, LoanRecord, LoanRepository, LoanStatus, LoanType};
 pub use shared_config::{
     load_shared_config, read_shared_config_at, validate_shared_config, write_example_shared_config,
