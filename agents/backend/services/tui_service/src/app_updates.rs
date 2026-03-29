@@ -9,6 +9,9 @@ impl App {
                 &mut s.inner.positions,
                 self.config.positions_sort,
             );
+            if let Some(ref t) = s.inner.nats_transport {
+                self.nats_transport = t.clone();
+            }
             s.refresh_display_dto();
         }
         unsafe {

@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use common::snapshot as cmn;
 
+use crate::NatsTransportHealthState;
+
 // ---------------------------------------------------------------------------
 // Api-only types (not shared)
 // ---------------------------------------------------------------------------
@@ -113,6 +115,9 @@ pub struct SystemSnapshot {
     pub risk: cmn::RiskStatus,
     #[serde(default)]
     pub market_data_source: Option<String>,
+    /// Backend NATS transport telemetry (snapshot publisher / primary client).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nats_transport: Option<NatsTransportHealthState>,
 }
 
 impl std::fmt::Debug for SystemSnapshot {
@@ -131,6 +136,7 @@ impl std::fmt::Debug for SystemSnapshot {
             .field("decisions", &self.decisions)
             .field("alerts", &self.alerts)
             .field("risk", &self.risk)
+            .field("nats_transport", &self.nats_transport)
             .finish()
     }
 }
@@ -152,6 +158,7 @@ impl Default for SystemSnapshot {
             alerts: vec![Alert::info("Backend initialising")],
             risk: cmn::RiskStatus::default(),
             market_data_source: None,
+            nats_transport: None,
         }
     }
 }

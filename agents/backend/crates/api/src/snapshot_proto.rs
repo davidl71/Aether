@@ -16,6 +16,7 @@ use crate::state::{
     Alert, AlertLevel, CandleSnapshot, HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot,
     RiskStatus, StrategyDecisionSnapshot, SymbolSnapshot, SystemSnapshot,
 };
+use crate::NatsTransportHealthState;
 
 // ---------------------------------------------------------------------------
 // Timestamp helpers
@@ -148,6 +149,44 @@ fn risk_to_proto(r: &RiskStatus) -> pb::RiskStatus {
     }
 }
 
+fn none_if_empty(s: String) -> Option<String> {
+    if s.is_empty() {
+        None
+    } else {
+        Some(s)
+    }
+}
+
+fn nats_transport_to_proto(t: &NatsTransportHealthState) -> pb::NatsTransportHealth {
+    pb::NatsTransportHealth {
+        connected: t.connected,
+        status: t.status.clone(),
+        updated_at: t.updated_at.clone(),
+        url: t.url.clone().unwrap_or_default(),
+        error: t.error.clone().unwrap_or_default(),
+        hint: t.hint.clone().unwrap_or_default(),
+        extra: t.extra.clone(),
+        reconnect_count: t.reconnect_count,
+        last_rtt_ms: t.last_rtt_ms,
+        active_subscriptions: t.active_subscriptions,
+    }
+}
+
+fn nats_transport_from_proto(p: pb::NatsTransportHealth) -> NatsTransportHealthState {
+    NatsTransportHealthState {
+        connected: p.connected,
+        status: p.status,
+        updated_at: p.updated_at,
+        url: none_if_empty(p.url),
+        error: none_if_empty(p.error),
+        hint: none_if_empty(p.hint),
+        extra: p.extra,
+        reconnect_count: p.reconnect_count,
+        last_rtt_ms: p.last_rtt_ms,
+        active_subscriptions: p.active_subscriptions,
+    }
+}
+
 /// Converts in-memory `SystemSnapshot` to protobuf for NATS and REST.
 pub fn snapshot_to_proto(snap: &SystemSnapshot) -> pb::SystemSnapshot {
     pb::SystemSnapshot {
@@ -165,6 +204,7 @@ pub fn snapshot_to_proto(snap: &SystemSnapshot) -> pb::SystemSnapshot {
         alerts: snap.alerts.iter().map(alert_to_proto).collect(),
         risk: Some(risk_to_proto(&snap.risk)),
         market_data_source: snap.market_data_source.clone().unwrap_or_default(),
+        nats_transport: snap.nats_transport.as_ref().map(nats_transport_to_proto),
     }
 }
 
@@ -318,6 +358,7 @@ pub fn system_snapshot_from_proto(p: pb::SystemSnapshot) -> SystemSnapshot {
         } else {
             Some(p.market_data_source)
         },
+        nats_transport: p.nats_transport.map(nats_transport_from_proto),
     }
 }
 
@@ -388,5 +429,34 @@ pub fn runtime_snapshot_dto_from_proto(p: pb::SystemSnapshot) -> RuntimeSnapshot
         risk: p.risk.map(risk_from_proto).unwrap_or_default(),
         scenarios: Vec::new(),
         yield_benchmarks: None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+
+    #[test]
+    fn nats_transport_round_trips_through_proto() {
+        let mut snap = SystemSnapshot::default();
+        let mut t =
+            NatsTransportHealthState::connected(Some("nats://127.0.0.1:4222".into()), Utc::now())
+                .with_subject("snapshot.test")
+                .with_role("snapshot-publisher");
+        t.last_rtt_ms = Some(12);
+        t.reconnect_count = 3;
+        t.active_subscriptions = Some(2);
+        snap.nats_transport = Some(t);
+
+        let pb = snapshot_to_proto(&snap);
+        let back = system_snapshot_from_proto(pb);
+        let nt = back.nats_transport.expect("missing transport");
+        assert!(nt.connected);
+        assert_eq!(nt.last_rtt_ms, Some(12));
+        assert_eq!(nt.reconnect_count, 3);
+        assert_eq!(nt.active_subscriptions, Some(2));
+        assert_eq!(nt.subject(), Some("snapshot.test"));
+        assert_eq!(nt.role(), Some("snapshot-publisher"));
     }
 }

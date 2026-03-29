@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use api::{BackendHealthState, NatsTransportHealthState, SharedHealthAggregate};
@@ -13,16 +14,21 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
             return;
         };
 
+        // Full reconnect cycles (connect/subscribe/stream end → backoff). Monotonic for this task.
+        let reconnect_cycles = AtomicU64::new(0);
+
         loop {
             match async_nats::connect(&nats_url).await {
                 Ok(client) => {
                     {
                         let mut health = state.write().await;
                         health.nats_connected = true;
-                        health.transport =
+                        let mut t =
                             NatsTransportHealthState::connected(Some(nats_url.clone()), Utc::now())
                                 .with_subject(topics::system::health())
                                 .with_role("subscriber");
+                        t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+                        health.transport = t;
                     }
                     info!(
                         "health aggregation subscribed to {}",
@@ -40,18 +46,20 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                                     state.write().await.backends.insert(backend, mapped);
                                 }
                                 let mut health = state.write().await;
-                                let transport = health
+                                let mut transport = health
                                     .transport
                                     .observed(Utc::now())
                                     .with_subject(topics::system::health())
                                     .with_role("subscriber");
+                                transport.reconnect_count =
+                                    reconnect_cycles.load(Ordering::Relaxed);
                                 health.transport = transport;
                             }
                         }
                         Err(err) => {
                             let mut health = state.write().await;
                             health.nats_connected = false;
-                            health.transport = NatsTransportHealthState::disconnected(
+                            let mut t = NatsTransportHealthState::disconnected(
                                 Some(nats_url.clone()),
                                 Utc::now(),
                                 Some(err.to_string()),
@@ -59,6 +67,8 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                             )
                             .with_subject(topics::system::health())
                             .with_role("subscriber");
+                            t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+                            health.transport = t;
                             warn!(%err, "failed to subscribe to system.health");
                         }
                     }
@@ -66,7 +76,7 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                     {
                         let mut health = state.write().await;
                         health.nats_connected = false;
-                        health.transport = NatsTransportHealthState::disconnected(
+                        let mut t = NatsTransportHealthState::disconnected(
                             Some(nats_url.clone()),
                             Utc::now(),
                             None,
@@ -74,12 +84,14 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                         )
                         .with_subject(topics::system::health())
                         .with_role("subscriber");
+                        t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+                        health.transport = t;
                     }
                 }
                 Err(err) => {
                     let mut health = state.write().await;
                     health.nats_connected = false;
-                    health.transport = NatsTransportHealthState::disconnected(
+                    let mut t = NatsTransportHealthState::disconnected(
                         Some(nats_url.clone()),
                         Utc::now(),
                         Some(err.to_string()),
@@ -87,10 +99,17 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                     )
                     .with_subject(topics::system::health())
                     .with_role("subscriber");
+                    t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+                    health.transport = t;
                     warn!(%err, "failed to connect health aggregation to NATS");
                 }
             }
 
+            reconnect_cycles.fetch_add(1, Ordering::Relaxed);
+            {
+                let mut health = state.write().await;
+                health.transport.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+            }
             tokio::time::sleep(Duration::from_secs(2)).await;
         }
     });

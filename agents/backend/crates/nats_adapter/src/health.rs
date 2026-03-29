@@ -3,14 +3,14 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use chrono::{DateTime, TimeDelta, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tokio::time;
 use tracing::warn;
 
 use crate::{encode_envelope, proto::v1 as pb, topics, NatsClient};
 
 /// Transport-health DTO for a NATS connection or subscription.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct NatsTransportHealthState {
     pub connected: bool,
     pub status: String,
@@ -21,6 +21,13 @@ pub struct NatsTransportHealthState {
     pub error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hint: Option<String>,
+    /// Reconnect cycles (subscriber) or cumulative publish/flush failures (publisher), depending on role.
+    #[serde(default)]
+    pub reconnect_count: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_rtt_ms: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active_subscriptions: Option<u32>,
     #[serde(flatten)]
     pub extra: HashMap<String, String>,
 }
@@ -47,6 +54,9 @@ impl NatsTransportHealthState {
             url,
             error: None,
             hint: None,
+            reconnect_count: 0,
+            last_rtt_ms: None,
+            active_subscriptions: None,
             extra: HashMap::new(),
         }
     }
@@ -69,6 +79,9 @@ impl NatsTransportHealthState {
             url,
             error,
             hint,
+            reconnect_count: 0,
+            last_rtt_ms: None,
+            active_subscriptions: None,
             extra: HashMap::new(),
         }
     }

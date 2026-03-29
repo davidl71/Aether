@@ -215,6 +215,20 @@ message Metrics {
   bool nats_ok = 10;
 }
 
+// NATS transport telemetry for the backend snapshot (publisher path + optional subscriber stats).
+message NatsTransportHealth {
+  bool connected = 1;
+  string status = 2;
+  string updated_at = 3;  // RFC3339
+  string url = 4;
+  string error = 5;
+  string hint = 6;
+  map<string, string> extra = 7;
+  uint64 reconnect_count = 8;
+  optional uint64 last_rtt_ms = 9;
+  optional uint32 active_subscriptions = 10;
+}
+
 message SystemSnapshot {
   google.protobuf.Timestamp generated_at = 1;
   google.protobuf.Timestamp started_at = 2;
@@ -230,6 +244,7 @@ message SystemSnapshot {
   repeated Alert alerts = 12;
   RiskStatus risk = 13;
   string market_data_source = 14;
+  optional NatsTransportHealth nats_transport = 15;
 }
 
 // Backend health payload for system.health NATS and REST /api/health.

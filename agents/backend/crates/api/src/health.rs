@@ -290,6 +290,7 @@ mod tests {
             error: None,
             hint: None,
             extra: HashMap::new(),
+            ..Default::default()
         };
 
         let effective = transport.effective_at(now, TimeDelta::seconds(45));
