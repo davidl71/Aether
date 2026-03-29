@@ -8,18 +8,17 @@ use std::sync::Arc;
 use crate::handlers::{api_queue_group, handle_sub};
 use market_data::FmpClient;
 use nats_adapter::async_nats::Client;
+use nats_adapter::topics;
 use serde_json::Value;
 use tracing::warn;
-
-const SUBJECT_FMP_INCOME_STATEMENT: &str = "api.fmp.income_statement";
-const SUBJECT_FMP_BALANCE_SHEET: &str = "api.fmp.balance_sheet";
-const SUBJECT_FMP_CASH_FLOW: &str = "api.fmp.cash_flow";
-const SUBJECT_FMP_QUOTE: &str = "api.fmp.quote";
 
 /// Spawn FMP NATS API handlers (configured).
 pub async fn spawn(nc: Client, fmp: Arc<FmpClient>) {
     let sub_income = match nc
-        .queue_subscribe(SUBJECT_FMP_INCOME_STATEMENT.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::fmp::INCOME_STATEMENT.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -29,7 +28,10 @@ pub async fn spawn(nc: Client, fmp: Arc<FmpClient>) {
         }
     };
     let sub_balance = match nc
-        .queue_subscribe(SUBJECT_FMP_BALANCE_SHEET.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::fmp::BALANCE_SHEET.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -39,7 +41,7 @@ pub async fn spawn(nc: Client, fmp: Arc<FmpClient>) {
         }
     };
     let sub_cash = match nc
-        .queue_subscribe(SUBJECT_FMP_CASH_FLOW.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::fmp::CASH_FLOW.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -49,7 +51,7 @@ pub async fn spawn(nc: Client, fmp: Arc<FmpClient>) {
         }
     };
     let sub_quote = match nc
-        .queue_subscribe(SUBJECT_FMP_QUOTE.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::fmp::QUOTE.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -112,7 +114,10 @@ pub async fn spawn(nc: Client, fmp: Arc<FmpClient>) {
 /// Spawn FMP NATS API handlers (unconfigured - returns error responses).
 pub async fn spawn_unconfigured(nc: Client) {
     let sub_income = match nc
-        .queue_subscribe(SUBJECT_FMP_INCOME_STATEMENT.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::fmp::INCOME_STATEMENT.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -122,7 +127,10 @@ pub async fn spawn_unconfigured(nc: Client) {
         }
     };
     let sub_balance = match nc
-        .queue_subscribe(SUBJECT_FMP_BALANCE_SHEET.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::fmp::BALANCE_SHEET.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -132,7 +140,7 @@ pub async fn spawn_unconfigured(nc: Client) {
         }
     };
     let sub_cash = match nc
-        .queue_subscribe(SUBJECT_FMP_CASH_FLOW.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::fmp::CASH_FLOW.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -142,7 +150,7 @@ pub async fn spawn_unconfigured(nc: Client) {
         }
     };
     let sub_quote = match nc
-        .queue_subscribe(SUBJECT_FMP_QUOTE.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::fmp::QUOTE.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,

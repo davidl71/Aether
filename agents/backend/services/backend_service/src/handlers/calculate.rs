@@ -12,16 +12,8 @@ use api::quant::{
     RatioSpreadRequest, RiskMetricsRequest, StrategyRequest,
 };
 use nats_adapter::async_nats::Client;
+use nats_adapter::topics;
 use tracing::warn;
-
-const SUBJECT_CALCULATE_GREEKS: &str = "api.calculate.greeks";
-const SUBJECT_CALCULATE_IV: &str = "api.calculate.iv";
-const SUBJECT_CALCULATE_HISTORICAL_VOLATILITY: &str = "api.calculate.historical_volatility";
-const SUBJECT_CALCULATE_RISK_METRICS: &str = "api.calculate.risk_metrics";
-const SUBJECT_CALCULATE_STRATEGY: &str = "api.calculate.strategy";
-const SUBJECT_CALCULATE_BOX_SPREAD: &str = "api.calculate.box_spread";
-const SUBJECT_CALCULATE_JELLY_ROLL: &str = "api.calculate.jelly_roll";
-const SUBJECT_CALCULATE_RATIO_SPREAD: &str = "api.calculate.ratio_spread";
 
 /// Spawn Calculate NATS API handlers with parallel processing.
 /// CPU-intensive calculations run on the blocking thread pool.
@@ -29,7 +21,10 @@ pub async fn spawn(nc: Client) {
     let limit = concurrency_limit();
 
     let sub_greeks = match nc
-        .queue_subscribe(SUBJECT_CALCULATE_GREEKS.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::calculate::GREEKS.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -39,7 +34,7 @@ pub async fn spawn(nc: Client) {
         }
     };
     let sub_iv = match nc
-        .queue_subscribe(SUBJECT_CALCULATE_IV.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::calculate::IV.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -50,7 +45,7 @@ pub async fn spawn(nc: Client) {
     };
     let sub_hv = match nc
         .queue_subscribe(
-            SUBJECT_CALCULATE_HISTORICAL_VOLATILITY.to_string(),
+            topics::api::calculate::HISTORICAL_VOLATILITY.to_string(),
             api_queue_group(),
         )
         .await
@@ -63,7 +58,7 @@ pub async fn spawn(nc: Client) {
     };
     let sub_risk = match nc
         .queue_subscribe(
-            SUBJECT_CALCULATE_RISK_METRICS.to_string(),
+            topics::api::calculate::RISK_METRICS.to_string(),
             api_queue_group(),
         )
         .await
@@ -75,7 +70,10 @@ pub async fn spawn(nc: Client) {
         }
     };
     let sub_strategy = match nc
-        .queue_subscribe(SUBJECT_CALCULATE_STRATEGY.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::calculate::STRATEGY.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -85,7 +83,10 @@ pub async fn spawn(nc: Client) {
         }
     };
     let sub_box = match nc
-        .queue_subscribe(SUBJECT_CALCULATE_BOX_SPREAD.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::calculate::BOX_SPREAD.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -95,7 +96,10 @@ pub async fn spawn(nc: Client) {
         }
     };
     let sub_jelly = match nc
-        .queue_subscribe(SUBJECT_CALCULATE_JELLY_ROLL.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::calculate::JELLY_ROLL.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -106,7 +110,7 @@ pub async fn spawn(nc: Client) {
     };
     let sub_ratio = match nc
         .queue_subscribe(
-            SUBJECT_CALCULATE_RATIO_SPREAD.to_string(),
+            topics::api::calculate::RATIO_SPREAD.to_string(),
             api_queue_group(),
         )
         .await

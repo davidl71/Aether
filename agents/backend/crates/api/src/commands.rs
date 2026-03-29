@@ -106,7 +106,23 @@ pub struct CommandEvent {
     pub error: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+impl CommandEvent {
+    /// Maps a NATS JSON `CommandEvent` (no `ok` field) into `CommandReply` for the TUI status model.
+    pub fn to_reply(&self) -> CommandReply {
+        let ok = !matches!(self.status, CommandStatus::Failed);
+        CommandReply {
+            command_id: self.command_id.clone(),
+            issued_at: self.issued_at.clone(),
+            ok,
+            action: self.action.clone(),
+            status: self.status.clone(),
+            message: self.message.clone(),
+            error: self.error.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum CommandStatus {
     Accepted,

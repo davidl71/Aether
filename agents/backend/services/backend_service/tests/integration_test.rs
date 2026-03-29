@@ -251,7 +251,7 @@ async fn test_api_request_reply_benchmarks() {
 
     let response: Value = request_json_with_timeout(
         &client,
-        "api.finance_rates.benchmarks",
+        topics::api::finance_rates::BENCHMARKS,
         &(),
         Duration::from_secs(5),
     )

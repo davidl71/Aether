@@ -19,7 +19,8 @@
 //!    disconnect, idle timeout). Detail shows "NATS subscription ended".
 
 use api::{
-    backend_health_from_message, BackendHealthState, CommandReply, NatsTransportHealthState,
+    backend_health_from_message, command_reply_from_system_command_event, BackendHealthState,
+    CommandReply, NatsTransportHealthState,
 };
 use chrono::Utc;
 use futures::StreamExt;
@@ -301,24 +302,34 @@ pub async fn run_candle_subscriber(
 
 /// Run a command-event subscriber on `system.commands.>` and emit `AppEvent::CommandStatus`.
 ///
-/// This is best-effort: if backend-side command events are not published yet,
-/// the subscription simply stays idle and the existing request/reply path
-/// continues to drive the status area.
+/// Prefers protobuf `NatsEnvelope(SystemCommandEvent)` (matches backend publisher). Falls back
+/// to JSON `CommandReply` or `CommandEvent` for older publishers.
 pub async fn run_command_subscriber(
     client: NatsClient,
     event_tx: mpsc::UnboundedSender<AppEvent>,
 ) -> anyhow::Result<()> {
-    let subject = "system.commands.>";
+    let subject = topics::system::all_commands();
     let mut sub = client.client().subscribe(subject.to_string()).await?;
     info!(subject = %subject, "Subscribed to system command events");
 
     while let Some(msg) = sub.next().await {
-        match serde_json::from_slice::<CommandReply>(&msg.payload) {
-            Ok(reply) => {
-                let _ = event_tx.send(AppEvent::CommandStatus(reply));
+        let reply = if let Ok(proto) = extract_proto_payload::<pb::SystemCommandEvent>(&msg.payload)
+        {
+            command_reply_from_system_command_event(proto)
+        } else if let Ok(reply) = serde_json::from_slice::<CommandReply>(&msg.payload) {
+            Some(reply)
+        } else if let Ok(ev) = serde_json::from_slice::<api::CommandEvent>(&msg.payload) {
+            Some(ev.to_reply())
+        } else {
+            None
+        };
+
+        match reply {
+            Some(r) => {
+                let _ = event_tx.send(AppEvent::CommandStatus(r));
             }
-            Err(e) => {
-                debug!(error = %e, "Failed to decode system command event payload");
+            None => {
+                debug!("Failed to decode system command event (not proto envelope or JSON)");
             }
         }
     }
@@ -398,7 +409,7 @@ pub async fn run_yield_kv_watcher(
 pub async fn send_yield_refresh(client: &NatsClient) -> anyhow::Result<()> {
     client
         .client()
-        .publish("api.yield_curve.refresh", "{}".into())
+        .publish(topics::api::yield_curve::REFRESH, "{}".into())
         .await
         .map_err(|e| anyhow::anyhow!("yield refresh publish failed: {e}"))
 }

@@ -109,14 +109,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         .and_then(|s| s.get("strike_width"))
                         .and_then(|v| v.as_f64())
                         .unwrap_or(4.0);
-                    let payload = match yield_curve_from_opportunities(
+                    let Some(yc) = yield_curve_from_opportunities(
                         &opportunities,
                         symbol,
                         strike_width,
-                    ) {
-                        Some(yc) => encode_yield_curve_to_bytes(&yc),
-                        None => serde_json::to_vec(&opportunities).unwrap_or_default(),
+                    ) else {
+                        warn!(
+                            %symbol,
+                            opp_count = opportunities.len(),
+                            "yield_curve_from_opportunities produced no proto curve; skipping KV write"
+                        );
+                        continue;
                     };
+                    let payload = encode_yield_curve_to_bytes(&yc);
                     if let Err(e) = kv.put(key.as_str(), Bytes::from(payload)).await {
                         warn!(%key, error = %e, "KV put failed");
                     } else {

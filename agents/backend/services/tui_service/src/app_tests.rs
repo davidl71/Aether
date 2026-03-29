@@ -40,6 +40,7 @@ fn make_app() -> (
         None,
         None,
         None,
+        None,
     );
     (app, snap_tx, event_tx)
 }
@@ -117,6 +118,7 @@ fn config_hot_reload_updates_app_config() {
         event_rx,
         config_rx,
         health_rx,
+        None,
         None,
         None,
         None,
@@ -395,7 +397,30 @@ fn help_overlay_documents_mode_aware_bindings() {
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Key bindings"));
-    assert!(content.contains("macOS Cmd"));
+    assert!(content.contains("⌘⇧P"));
+    assert!(content.contains("command palette"));
+    assert!(content.contains("8 Disc"));
+    assert!(content.contains(":"));
+}
+
+#[test]
+fn macos_cmd_shift_p_toggles_command_palette() {
+    let (mut app, _, _) = make_app();
+    assert!(!app.command_palette.visible);
+    app.handle_key(KeyEvent {
+        code: KeyCode::Char('p'),
+        modifiers: KeyModifiers::SUPER | KeyModifiers::SHIFT,
+        kind: KeyEventKind::Press,
+        ..KeyEvent::from(KeyCode::Char('p'))
+    });
+    assert!(app.command_palette.visible);
+    app.handle_key(KeyEvent {
+        code: KeyCode::Char('p'),
+        modifiers: KeyModifiers::SUPER | KeyModifiers::SHIFT,
+        kind: KeyEventKind::Press,
+        ..KeyEvent::from(KeyCode::Char('p'))
+    });
+    assert!(!app.command_palette.visible);
 }
 
 #[test]

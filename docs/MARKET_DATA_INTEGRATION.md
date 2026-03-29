@@ -18,6 +18,28 @@ Aether's market data architecture has been enhanced with:
 
 ---
 
+## Which source for what (operator guide)
+
+Use this table to choose or interpret data sources in config and the TUI. Numeric **priority** (higher wins when multiple sources emit the same symbol) is summarized in the next section; this table is **intent**, not priority math.
+
+| Need | Typical source | Notes |
+|------|----------------|-------|
+| Live IBKR quotes when TWS/Gateway is connected | **TWS** (`ib_adapter`) | Highest trust in the aggregator when wired; streaming path. |
+| US equities without TWS | **Alpaca** (live or paper) | Polling; paper vs live changes priority (see table below). Requires credentials. |
+| Options chains (expirations / strikes) for Yahoo path | **Yahoo** | `OptionsDataSource` in `market_data`; used where chains are required. |
+| Options chains via Polygon | **Polygon** | When API key and websocket path are configured. |
+| Batch US quotes with fundamentals API | **FMP** | Batch quote + fundamentals; good for watchlists with rate limits in mind. |
+| Quick default / no API keys | **Yahoo** | Default quote polling in many setups. |
+| SOFR / Treasury benchmarks, curve inputs | **FMP** + **finance_rates** pipeline | See § FMP treasury & SOFR and backend `api.finance_rates.*` ([NATS_TOPICS_REGISTRY.md](./NATS_TOPICS_REGISTRY.md)). |
+| Israeli SHIR (loan effective rates) | **SHIR** fetch in integration layer | See implementation sections below. |
+| Automated tests / no network | **Mock** | Priority 0; not for production. |
+| Alpaca account positions (read) | **`AlpacaPositionSource`** (`api` crate) | Not the same trait stack as `MarketDataSource`; see provider matrix in [MARKET_DATA_PROVIDER_ARCHITECTURE.md](./MARKET_DATA_PROVIDER_ARCHITECTURE.md). |
+| IB positions (read) | **`IbPositionSource`** (`api` crate) | Same as above; uses broker adapter, not the quote registry. |
+
+For **trait layout, factories, and known gaps** (options factories, position unification), see [MARKET_DATA_PROVIDER_ARCHITECTURE.md](./MARKET_DATA_PROVIDER_ARCHITECTURE.md).
+
+---
+
 ## Architecture Overview
 
 ### Source Priority System

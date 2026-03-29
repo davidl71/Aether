@@ -10,7 +10,7 @@ use serde_json::Value;
 use crate::finance_rates::{BoxSpreadInput, CurveResponse, RatePointResponse};
 
 /// Decode KV value as `YieldCurve` proto and convert to `CurveResponse`. Returns `None` if bytes
-/// are not valid proto (caller can fall back to JSON).
+/// are not valid proto.
 pub fn curve_response_from_proto_bytes(bytes: &[u8], symbol: &str) -> Option<CurveResponse> {
     let yc = YieldCurve::decode(bytes).ok()?;
     Some(curve_response_from_proto(&yc, symbol))

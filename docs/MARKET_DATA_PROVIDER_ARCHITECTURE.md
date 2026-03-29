@@ -3,6 +3,8 @@
 **Date**: 2026-03-26
 **Status**: Analysis Complete - Refactoring Proposed
 
+For an **operator-oriented “which source for what”** summary (intent and typical use cases), see [MARKET_DATA_INTEGRATION.md § Which source for what](./MARKET_DATA_INTEGRATION.md#which-source-for-what-operator-guide).
+
 ---
 
 ## 1. Current Trait Architecture

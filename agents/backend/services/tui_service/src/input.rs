@@ -48,6 +48,11 @@ pub enum Action {
     LoansScrollPageUp,
     LoansScrollPageDown,
     LoansNewLoan,
+    LoansBulkImportFocus,
+    LoansImportPathChar(char),
+    LoansImportPathBackspace,
+    LoansImportPathEnter,
+    LoansImportPathEscape,
     DiscountBankScrollUp,
     DiscountBankScrollDown,
     DiscountBankScrollPageUp,
@@ -91,7 +96,7 @@ pub enum Action {
     SettingsScrollDown,
     SettingsAddSymbol,
     SettingsEditConfig,
-    SettingsEditAlpaca,
+    SettingsEditCredential,
     SettingsDelete,
     SettingsReset,
     LogScrollUp,
@@ -138,6 +143,16 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         return None;
     }
 
+    // macOS: Cmd+Shift+P opens command palette (VS Code–style); must run before plain Cmd handler.
+    if key
+        .modifiers
+        .contains(KeyModifiers::SUPER | KeyModifiers::SHIFT)
+    {
+        if matches!(key.code, KeyCode::Char('p') | KeyCode::Char('P')) {
+            return Some(Action::CommandPalette);
+        }
+    }
+
     // Handle macOS Cmd (Super) key shortcuts
     if key.modifiers.contains(KeyModifiers::SUPER) {
         return handle_macos_cmd_key(key.code);
@@ -158,7 +173,7 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         InputMode::Help | InputMode::DetailPopup => return Some(Action::NoOp),
         InputMode::SettingsEditConfig
         | InputMode::SettingsAddSymbol
-        | InputMode::SettingsAlpacaCredential => return Some(Action::NoOp),
+        | InputMode::SettingsCredentialEntry => return Some(Action::NoOp),
         InputMode::LoanForm => return loan_form_key_action(key.code),
         _ => {}
     }

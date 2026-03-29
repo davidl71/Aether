@@ -41,7 +41,9 @@ use std::{
 
 use api::discount_bank::{DiscountBankBalanceDto, DiscountBankTransactionsListDto};
 use api::finance_rates::{BenchmarksResponse, CurveResponse};
-use api::loans::LoanRecord;
+use api::loans::{
+    parse_loans_import_file_json, LoanRecord, LoansBulkImportRequest, LoansBulkImportResponse,
+};
 use color_eyre::eyre::Context;
 use crossterm::{
     event::{EventStream, KeyEventKind, MouseEvent, MouseEventKind},
@@ -53,7 +55,7 @@ use crossterm::{
 };
 use futures::StreamExt;
 use nats_adapter::{
-    request_json_with_retry, request_json_with_retry_timeout, NatsClient, RetryConfig,
+    request_json_with_retry, request_json_with_retry_timeout, topics, NatsClient, RetryConfig,
 };
 use serde_json::json;
 use std::collections::HashMap;
@@ -201,6 +203,8 @@ async fn main() -> color_eyre::Result<()> {
     let (loans_fetch_tx, loans_fetch_rx) = mpsc::unbounded_channel();
     let (loans_result_tx, loans_result_rx) = mpsc::unbounded_channel();
     let (loan_create_tx, loan_create_rx) = mpsc::unbounded_channel();
+    let (loan_bulk_import_tx, loan_bulk_import_rx) =
+        mpsc::unbounded_channel::<std::path::PathBuf>();
     let (fmp_fetch_tx, fmp_fetch_rx) = mpsc::unbounded_channel::<String>();
     let (fmp_result_tx, fmp_result_rx) = mpsc::unbounded_channel::<Result<FmpDetail, String>>();
     let (greeks_fetch_tx, greeks_fetch_rx) = mpsc::unbounded_channel::<GreeksFetchRequest>();
@@ -360,9 +364,27 @@ async fn main() -> color_eyre::Result<()> {
 
     // Spawn loan creator: receives LoanRecord, sends to api.loans.create, refreshes list
     let nats_url_loan_create = config.nats_url.clone();
+    let loans_result_tx_creator = loans_result_tx.clone();
     tokio::spawn(async move {
-        run_loan_creator(nats_url_loan_create, loan_create_rx, loans_result_tx).await;
+        run_loan_creator(
+            nats_url_loan_create,
+            loan_create_rx,
+            loans_result_tx_creator,
+        )
+        .await;
     });
+
+    let nats_url_loan_bulk = config.nats_url.clone();
+    let loans_result_tx_bulk = loans_result_tx.clone();
+    tokio::spawn(async move {
+        run_loan_bulk_importer(
+            nats_url_loan_bulk,
+            loan_bulk_import_rx,
+            loans_result_tx_bulk,
+        )
+        .await;
+    });
+    drop(loans_result_tx);
 
     // Spawn FMP fetcher: receives symbol, requests quote + income statement, forwards result
     let nats_url_fmp = config.nats_url.clone();
@@ -415,6 +437,7 @@ async fn main() -> color_eyre::Result<()> {
         Some(yield_refresh_tx),
         Some(loans_fetch_tx),
         Some(loan_create_tx),
+        Some(loan_bulk_import_tx),
         Some(fmp_fetch_tx),
         Some(greeks_fetch_tx),
         Some(discount_bank_fetch_tx),
@@ -492,7 +515,7 @@ async fn run_discount_bank_fetcher(
         let balance_res = match NatsClient::connect(&nats_url).await {
             Ok(nc) => request_json_with_retry::<(), Result<DiscountBankBalanceDto, String>>(
                 &nc,
-                "api.discount_bank.balance",
+                topics::api::discount_bank::BALANCE,
                 &(),
             )
             .await
@@ -506,7 +529,7 @@ async fn run_discount_bank_fetcher(
                 Result<DiscountBankTransactionsListDto, String>,
             >(
                 &nc,
-                "api.discount_bank.transactions",
+                topics::api::discount_bank::TRANSACTIONS,
                 &json!({ "limit": 50 }),
             )
             .await
@@ -528,7 +551,7 @@ async fn run_loans_fetcher(
         let res = match NatsClient::connect(&nats_url).await {
             Ok(nc) => request_json_with_retry::<(), Result<Vec<LoanRecord>, String>>(
                 &nc,
-                "api.loans.list",
+                topics::api::loans::LIST,
                 &(),
             )
             .await
@@ -541,6 +564,73 @@ async fn run_loans_fetcher(
 }
 
 /// Creates a new loan via NATS api.loans.create, then refreshes the loans list.
+/// Reads a JSON file (`{ "loans": [...] }` or legacy loan file), posts `api.loans.import_bulk`, refreshes list.
+async fn run_loan_bulk_importer(
+    nats_url: String,
+    mut rx: mpsc::UnboundedReceiver<std::path::PathBuf>,
+    result_tx: mpsc::UnboundedSender<Result<Vec<LoanRecord>, String>>,
+) {
+    while let Some(path) = rx.recv().await {
+        let text = match tokio::fs::read_to_string(&path).await {
+            Ok(t) => t,
+            Err(e) => {
+                let _ = result_tx.send(Err(format!("bulk import: read {}: {e}", path.display())));
+                continue;
+            }
+        };
+        let loans = match parse_loans_import_file_json(&text) {
+            Ok(l) => l,
+            Err(e) => {
+                let _ = result_tx.send(Err(format!("bulk import: parse {}: {e}", path.display())));
+                continue;
+            }
+        };
+        let req = LoansBulkImportRequest { loans };
+        let res: Result<Result<LoansBulkImportResponse, String>, String> =
+            match NatsClient::connect(&nats_url).await {
+                Ok(nc) => request_json_with_retry(&nc, topics::api::loans::IMPORT_BULK, &req)
+                    .await
+                    .map_err(|e| e.to_string()),
+                Err(e) => Err(e.to_string()),
+            };
+
+        let inner = match res {
+            Err(e) => {
+                let _ = result_tx.send(Err(e));
+                continue;
+            }
+            Ok(v) => v,
+        };
+
+        match inner {
+            Err(e) => {
+                let _ = result_tx.send(Err(e));
+            }
+            Ok(summary) => {
+                if !summary.errors.is_empty() {
+                    tracing::warn!(
+                        applied = summary.applied,
+                        errors = summary.errors.len(),
+                        "loans bulk import completed with row errors"
+                    );
+                }
+                let refresh_res = match NatsClient::connect(&nats_url).await {
+                    Ok(nc) => request_json_with_retry::<(), Result<Vec<LoanRecord>, String>>(
+                        &nc,
+                        topics::api::loans::LIST,
+                        &(),
+                    )
+                    .await
+                    .map_err(|e| e.to_string())
+                    .and_then(|r| r),
+                    Err(e) => Err(e.to_string()),
+                };
+                let _ = result_tx.send(refresh_res);
+            }
+        }
+    }
+}
+
 async fn run_loan_creator(
     nats_url: String,
     mut rx: mpsc::UnboundedReceiver<LoanRecord>,
@@ -548,7 +638,7 @@ async fn run_loan_creator(
 ) {
     while let Some(loan) = rx.recv().await {
         let res: Result<Result<(), String>, String> = match NatsClient::connect(&nats_url).await {
-            Ok(nc) => request_json_with_retry(&nc, "api.loans.create", &loan)
+            Ok(nc) => request_json_with_retry(&nc, topics::api::loans::CREATE, &loan)
                 .await
                 .map_err(|e| e.to_string()),
             Err(e) => Err(e.to_string()),
@@ -570,7 +660,7 @@ async fn run_loan_creator(
                 let refresh_res = match NatsClient::connect(&nats_url).await {
                     Ok(nc) => request_json_with_retry::<(), Result<Vec<LoanRecord>, String>>(
                         &nc,
-                        "api.loans.list",
+                        topics::api::loans::LIST,
                         &(),
                     )
                     .await
@@ -620,7 +710,7 @@ async fn run_benchmarks_fetcher(
                 const BENCHMARKS_TIMEOUT: Duration = Duration::from_secs(15);
                 match request_json_with_retry_timeout::<(), BenchmarksResponse>(
                     &nc,
-                    "api.finance_rates.benchmarks",
+                    topics::api::finance_rates::BENCHMARKS,
                     &(),
                     BENCHMARKS_TIMEOUT,
                     RetryConfig::default(),
@@ -756,14 +846,14 @@ async fn run_fmp_fetcher(
                 // Fetch quote
                 let quote_res = request_json_with_retry::<_, serde_json::Value>(
                     &nc,
-                    "api.fmp.quote",
+                    topics::api::fmp::QUOTE,
                     &serde_json::json!({ "symbol": symbol, "limit": 1 }),
                 )
                 .await;
                 // Fetch income statement
                 let income_res = request_json_with_retry::<_, serde_json::Value>(
                     &nc,
-                    "api.fmp.income_statement",
+                    topics::api::fmp::INCOME_STATEMENT,
                     &serde_json::json!({ "symbol": symbol, "limit": 1 }),
                 )
                 .await;
@@ -810,7 +900,7 @@ async fn run_greeks_fetcher(
                 // Step 1: compute IV
                 let iv_res = request_json_with_retry::<_, serde_json::Value>(
                     &nc,
-                    "api.calculate.iv",
+                    topics::api::calculate::IV,
                     &serde_json::json!({
                         "market_price": req.market_price,
                         "underlying_price": req.underlying,
@@ -831,7 +921,7 @@ async fn run_greeks_fetcher(
                 // Step 2: compute greeks with IV
                 let greeks_res = request_json_with_retry::<_, serde_json::Value>(
                     &nc,
-                    "api.calculate.greeks",
+                    topics::api::calculate::GREEKS,
                     &serde_json::json!({
                         "underlying_price": req.underlying,
                         "strike_price": req.strike,

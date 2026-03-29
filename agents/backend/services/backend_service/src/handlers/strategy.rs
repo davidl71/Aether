@@ -10,15 +10,9 @@ use std::sync::Arc;
 use crate::handlers::{api_queue_group, handle_sub};
 use api::{CommandContext, CommandEvent, ScenarioDto};
 use broker_engine::BrokerEngine;
-use bytes::Bytes;
 use nats_adapter::async_nats::Client;
-use nats_adapter::topics;
+use nats_adapter::{encode_envelope, topics};
 use tracing::warn;
-
-const SUBJECT_STRATEGY_START: &str = "api.strategy.start";
-const SUBJECT_STRATEGY_STOP: &str = "api.strategy.stop";
-const SUBJECT_STRATEGY_CANCEL_ALL: &str = "api.strategy.cancel_all";
-const SUBJECT_STRATEGY_EXECUTE: &str = "api.strategy.execute";
 
 use crate::shared_state::SharedSnapshot;
 
@@ -30,7 +24,7 @@ pub async fn spawn(
     _broker_engine: Option<Arc<dyn BrokerEngine>>,
 ) {
     let sub_start = match nc
-        .queue_subscribe(SUBJECT_STRATEGY_START.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::strategy::START.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -40,7 +34,7 @@ pub async fn spawn(
         }
     };
     let sub_stop = match nc
-        .queue_subscribe(SUBJECT_STRATEGY_STOP.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::strategy::STOP.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -50,7 +44,10 @@ pub async fn spawn(
         }
     };
     let sub_cancel_all = match nc
-        .queue_subscribe(SUBJECT_STRATEGY_CANCEL_ALL.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::strategy::CANCEL_ALL.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -60,7 +57,10 @@ pub async fn spawn(
         }
     };
     let sub_execute = match nc
-        .queue_subscribe(SUBJECT_STRATEGY_EXECUTE.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::strategy::EXECUTE.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -173,15 +173,16 @@ async fn execute_scenario_reply(nc: &Client, body: Option<Vec<u8>>) -> Vec<u8> {
 
 async fn publish_command_event(nc: &Client, action: &str, event: &CommandEvent) {
     let subject = topics::system::commands(action);
-    let body = match serde_json::to_vec(event) {
-        Ok(bytes) => bytes,
+    let proto = api::system_command_event_to_proto(event);
+    let body = match encode_envelope("backend_service", "SystemCommandEvent", &proto) {
+        Ok(b) => b,
         Err(e) => {
-            warn!(action = %action, error = %e, "serialize command event failed");
+            warn!(action = %action, error = %e, "encode command event envelope failed");
             return;
         }
     };
 
-    if let Err(e) = nc.publish(subject.clone(), Bytes::from(body)).await {
+    if let Err(e) = nc.publish(subject.clone(), body).await {
         warn!(action = %action, subject = %subject, error = %e, "publish command event failed");
     }
 }

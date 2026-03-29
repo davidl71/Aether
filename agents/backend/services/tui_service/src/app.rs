@@ -126,8 +126,9 @@ pub enum InputMode {
     DetailPopup,
     SettingsEditConfig,
     SettingsAddSymbol,
-    SettingsAlpacaCredential,
+    SettingsCredentialEntry,
     LoanForm,
+    LoanImportPath,
     ChartSearch,
     OrdersFilter,
     LogPanel,
@@ -526,9 +527,11 @@ pub struct App {
     pub settings_config_key_index: usize,
     /// Selected row in Settings → Alpaca credential table.
     pub settings_alpaca_row: usize,
-    /// When set with `settings_alpaca_buffer`, user is editing this Alpaca credential.
-    pub settings_alpaca_edit_key: Option<api::credentials::CredentialKey>,
-    pub settings_alpaca_buffer: Option<String>,
+    /// Selected row in Settings → Data sources table (FMP, Polygon, …).
+    pub settings_sources_row: usize,
+    /// When set with `settings_credential_buffer`, user is editing this API key (Alpaca or Sources row).
+    pub settings_credential_edit_key: Option<api::credentials::CredentialKey>,
+    pub settings_credential_buffer: Option<String>,
     /// Last fetched box spread curve for the selected symbol.
     pub yield_curve: Option<CurveResponse>,
     /// Box spread curves for all watchlist symbols (keyed by symbol), populated by batch fetch.
@@ -563,6 +566,10 @@ pub struct App {
     pub loan_entry: Option<LoanEntryState>,
     /// Sender to create a new loan via NATS api.loans.create; None when not wired.
     pub loan_create_tx: Option<mpsc::UnboundedSender<LoanRecord>>,
+    /// Buffer for bulk-import file path on Loans tab (`b`); None when not editing.
+    pub loan_import_path: Option<String>,
+    /// Sender to bulk-import loans from a JSON file path (reads file, NATS `api.loans.import_bulk`).
+    pub loan_bulk_import_tx: Option<mpsc::UnboundedSender<std::path::PathBuf>>,
     /// Last fetched Discount Bank balance (NATS api.discount_bank.balance).
     pub discount_bank_balance: Option<Result<DiscountBankBalanceDto, String>>,
     /// Last fetched Discount Bank transactions (NATS api.discount_bank.transactions).
@@ -604,6 +611,7 @@ impl App {
         yield_refresh_tx: Option<mpsc::UnboundedSender<()>>,
         loans_fetch_tx: Option<mpsc::UnboundedSender<()>>,
         loan_create_tx: Option<mpsc::UnboundedSender<LoanRecord>>,
+        loan_bulk_import_tx: Option<mpsc::UnboundedSender<std::path::PathBuf>>,
         fmp_fetch_tx: Option<mpsc::UnboundedSender<String>>,
         greeks_fetch_tx: Option<mpsc::UnboundedSender<GreeksFetchRequest>>,
         discount_bank_fetch_tx: Option<mpsc::UnboundedSender<()>>,
@@ -671,8 +679,9 @@ impl App {
             config_overrides: HashMap::new(),
             settings_config_key_index: 0,
             settings_alpaca_row: 0,
-            settings_alpaca_edit_key: None,
-            settings_alpaca_buffer: None,
+            settings_sources_row: 0,
+            settings_credential_edit_key: None,
+            settings_credential_buffer: None,
             yield_curve: None,
             yield_curves_all: HashMap::new(),
             yield_benchmarks: None,
@@ -690,6 +699,8 @@ impl App {
             loans_fetch_tx,
             loan_entry: None,
             loan_create_tx,
+            loan_import_path: None,
+            loan_bulk_import_tx,
             discount_bank_balance: None,
             discount_bank_transactions: None,
             discount_bank_fetch_pending: false,
@@ -780,8 +791,8 @@ impl App {
             InputMode::Help
         } else if self.detail_popup.is_some() {
             InputMode::DetailPopup
-        } else if self.settings_alpaca_buffer.is_some() {
-            InputMode::SettingsAlpacaCredential
+        } else if self.settings_credential_buffer.is_some() {
+            InputMode::SettingsCredentialEntry
         } else if self.settings_add_symbol_input.is_some() {
             if self.settings_edit_config_key.is_some() {
                 InputMode::SettingsEditConfig
@@ -790,6 +801,8 @@ impl App {
             }
         } else if self.loan_entry.is_some() {
             InputMode::LoanForm
+        } else if self.loan_import_path.is_some() {
+            InputMode::LoanImportPath
         } else if self.chart_search_visible {
             InputMode::ChartSearch
         } else if self.order_filter_active {
@@ -807,8 +820,9 @@ impl App {
         self.app_mode = match input_mode {
             InputMode::SettingsEditConfig
             | InputMode::SettingsAddSymbol
-            | InputMode::SettingsAlpacaCredential
+            | InputMode::SettingsCredentialEntry
             | InputMode::LoanForm
+            | InputMode::LoanImportPath
             | InputMode::ChartSearch
             | InputMode::OrdersFilter => AppMode::Edit,
             InputMode::Help | InputMode::DetailPopup | InputMode::LogPanel => AppMode::View,
@@ -1077,11 +1091,11 @@ impl App {
                 self.detail_popup = None;
                 return;
             }
-            InputMode::SettingsAlpacaCredential => {
-                if let Some(ref mut buf) = self.settings_alpaca_buffer {
+            InputMode::SettingsCredentialEntry => {
+                if let Some(ref mut buf) = self.settings_credential_buffer {
                     match key.code {
                         KeyCode::Enter => {
-                            if let Some(ck) = self.settings_alpaca_edit_key.take() {
+                            if let Some(ck) = self.settings_credential_edit_key.take() {
                                 let val = buf.trim();
                                 let res = if val.is_empty() {
                                     api::credentials::delete_credential(ck)
@@ -1107,15 +1121,15 @@ impl App {
                                     }
                                 }
                             }
-                            self.settings_alpaca_buffer = None;
+                            self.settings_credential_buffer = None;
                         }
                         KeyCode::Esc => {
                             self.set_command_status(CommandStatusView::success(
                                 "settings",
-                                "Alpaca edit cancelled.",
+                                "Credential edit cancelled.",
                             ));
-                            self.settings_alpaca_edit_key = None;
-                            self.settings_alpaca_buffer = None;
+                            self.settings_credential_edit_key = None;
+                            self.settings_credential_buffer = None;
                         }
                         KeyCode::Backspace => {
                             buf.pop();

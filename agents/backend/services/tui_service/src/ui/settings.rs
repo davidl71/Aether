@@ -16,7 +16,8 @@ mod symbols_section;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders},
+    text::{Line, Span},
+    widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
 
@@ -29,7 +30,9 @@ pub(crate) use alpaca_section::{
 pub(crate) use config_section::render_settings_config_section;
 pub(crate) use health_section::render_settings_health_section;
 pub(crate) use hint_section::render_settings_hint_section;
-pub(crate) use sources_section::render_settings_sources_section;
+pub(crate) use sources_section::{
+    credential_key_for_sources_row, render_settings_sources_section, SOURCES_TABLE_ROW_COUNT,
+};
 pub(crate) use symbols_section::render_settings_symbols_section;
 
 #[derive(Clone, Copy)]
@@ -111,6 +114,60 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
     render_settings_sources_section(f, app, sources);
     render_settings_alpaca_section(f, app, alpaca);
     render_settings_hint_section(f, app, hint);
+    render_settings_credential_modal_if_any(f, app, area);
+}
+
+fn settings_modal_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let w = (r.width * percent_x) / 100;
+    let h = (r.height * percent_y) / 100;
+    let x = r.x + (r.width.saturating_sub(w)) / 2;
+    let y = r.y + (r.height.saturating_sub(h)) / 2;
+    Rect::new(x, y, w, h)
+}
+
+/// Centered overlay for any API key edit (Alpaca rows or Data sources rows).
+fn render_settings_credential_modal_if_any(f: &mut Frame, app: &App, area: Rect) {
+    if app.settings_credential_buffer.is_none() {
+        return;
+    }
+    let key = app
+        .settings_credential_edit_key
+        .map(|k| k.display_name())
+        .unwrap_or("API key");
+    let buf = app.settings_credential_buffer.as_deref().unwrap_or("");
+    let modal_area = settings_modal_rect(85, 40, area);
+    let edit = Paragraph::new(vec![
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Edit ", Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                key,
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(": ", Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                format!("{buf}_"),
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]),
+        Line::from(""),
+        Line::from(Span::styled(
+            "[Enter] save to keyring/file  [Esc] cancel",
+            Style::default().fg(Color::DarkGray),
+        )),
+    ])
+    .block(
+        Block::default()
+            .title(format!(" {key} — edit "))
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan)),
+    );
+    f.render_widget(Clear, modal_area);
+    f.render_widget(edit, modal_area);
 }
 
 pub(super) fn section_active(app: &App, section: SettingsSection) -> bool {

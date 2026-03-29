@@ -1,3 +1,4 @@
+use api::credentials::CredentialKey;
 use ratatui::{
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
@@ -11,9 +12,23 @@ use crate::workspace::SettingsSection;
 
 use super::{section_active, section_block};
 
+/// Rows in [`settings_source_rows`] / [`credential_key_for_sources_row`] (yahoo → alpaca_live).
+pub(crate) const SOURCES_TABLE_ROW_COUNT: usize = 9;
+
+/// Credential editable from Settings → Sources (`e` / `d` on a row with a key).
+pub(crate) fn credential_key_for_sources_row(row: usize) -> Option<CredentialKey> {
+    match row {
+        1 => Some(CredentialKey::FmpApiKey),
+        3 => Some(CredentialKey::PolygonApiKey),
+        4 => Some(CredentialKey::TaseApiKey),
+        5 => Some(CredentialKey::FredApiKey),
+        _ => None,
+    }
+}
+
 pub(crate) fn render_settings_sources_section(f: &mut Frame, app: &App, area: Rect) {
     let sources_block = section_block(
-        "Data sources (credential origin: env / keyring / file / built-in)",
+        "Data sources (e edit / d clear on FMP Polygon TASE FRED rows)",
         section_active(app, SettingsSection::Sources),
     );
     let source_rows = settings_source_rows(app);
@@ -112,7 +127,8 @@ fn settings_source_rows(app: &App) -> Vec<Row<'static>> {
 
     sources
         .iter()
-        .map(|s| {
+        .enumerate()
+        .map(|(idx, s)| {
             let scope = credential_scope(s.name);
             let has_cred = match s.name {
                 "yahoo" | "tws" | "mock" => true,
@@ -145,8 +161,18 @@ fn settings_source_rows(app: &App) -> Vec<Row<'static>> {
                 Color::Red
             };
 
+            let row_active =
+                section_active(app, SettingsSection::Sources) && app.settings_sources_row == idx;
+            let name_style = if row_active {
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default()
+            };
+
             Row::new([
-                Cell::from(s.name),
+                Cell::from(s.name).style(name_style),
                 Cell::from(s.priority),
                 Cell::from(credential_label).style(Style::default().fg(cred_color)),
                 Cell::from(status_label).style(Style::default().fg(status_color)),

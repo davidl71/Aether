@@ -41,6 +41,10 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
         render_loan_entry_form(f, app, area, entry);
         return;
     }
+    if let Some(ref path_buf) = app.loan_import_path {
+        render_loan_import_path(f, area, path_buf.as_str());
+        return;
+    }
 
     let block = Block::default()
         .title(" Loans (api.loans.list) ")
@@ -54,7 +58,7 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
             let hint_area = Rect::new(inner.x, inner.y + inner.height - 1, inner.width, 1);
             f.render_widget(
                 Paragraph::new(Line::from(Span::styled(
-                    " n = new loan ",
+                    " n=new  b=bulk JSON ",
                     Style::default().fg(Color::DarkGray),
                 ))),
                 hint_area,
@@ -156,11 +160,48 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
 
     // Hint line
     let hint = Line::from(Span::styled(
-        " ↑↓ scroll  n = new loan ",
+        " ↑↓ scroll  n=new  b=bulk JSON ",
         Style::default().fg(Color::DarkGray),
     ));
     let hint_area = Rect::new(inner.x, inner.y + inner.height - 1, inner.width, 1);
     f.render_widget(Paragraph::new(hint), hint_area);
+}
+
+fn render_loan_import_path(f: &mut Frame, area: Rect, path_input: &str) {
+    let block = Block::default()
+        .title(" Bulk import loans (api.loans.import_bulk) ")
+        .borders(Borders::ALL);
+    f.render_widget(block, area);
+    let inner = Rect::new(
+        area.x + 2,
+        area.y + 2,
+        area.width.saturating_sub(4),
+        area.height.saturating_sub(4),
+    );
+    let lines = vec![
+        Line::from(Span::styled(
+            "JSON file: { \"loans\": [ ... ] } or legacy { version, last_updated, loans }",
+            Style::default().fg(Color::DarkGray),
+        )),
+        Line::from(""),
+        Line::from(Span::styled(
+            format!(
+                "Path: {}",
+                if path_input.is_empty() {
+                    " "
+                } else {
+                    path_input
+                }
+            ),
+            Style::default().fg(Color::Yellow),
+        )),
+        Line::from(""),
+        Line::from(Span::styled(
+            "Enter = submit  Esc = cancel",
+            Style::default().fg(Color::DarkGray),
+        )),
+    ];
+    f.render_widget(Paragraph::new(lines), inner);
 }
 
 fn render_loan_entry_form(f: &mut Frame, _app: &App, area: Rect, entry: &LoanEntryState) {

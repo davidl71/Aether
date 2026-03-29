@@ -19,6 +19,7 @@ use helpers::{
     reference_spot_for_report, DEFAULT_REFERENCE_SPOT,
 };
 use nats_adapter::async_nats::Client;
+use nats_adapter::topics;
 use tracing::{debug, warn};
 use tws_yield_curve;
 
@@ -33,15 +34,6 @@ fn finance_concurrency_limit() -> usize {
         .min(concurrency_limit())
 }
 
-const SUBJECT_FINANCE_RATES_EXTRACT: &str = "api.finance_rates.extract";
-const SUBJECT_FINANCE_RATES_BUILD_CURVE: &str = "api.finance_rates.build_curve";
-const SUBJECT_FINANCE_RATES_COMPARE: &str = "api.finance_rates.compare";
-const SUBJECT_FINANCE_RATES_YIELD_CURVE: &str = "api.finance_rates.yield_curve";
-const SUBJECT_FINANCE_RATES_BENCHMARKS: &str = "api.finance_rates.benchmarks";
-const SUBJECT_FINANCE_RATES_SOFR: &str = "api.finance_rates.sofr";
-const SUBJECT_FINANCE_RATES_TREASURY: &str = "api.finance_rates.treasury";
-const SUBJECT_YIELD_CURVE_REFRESH: &str = "api.yield_curve.refresh";
-
 /// Spawn Finance Rates NATS API handlers with bounded parallelism.
 pub async fn spawn(nc: Client, yield_curve_refresh_tx: Option<tokio::sync::mpsc::Sender<()>>) {
     let limit = finance_concurrency_limit();
@@ -55,7 +47,7 @@ pub async fn spawn(nc: Client, yield_curve_refresh_tx: Option<tokio::sync::mpsc:
         let nc_refresh = nc.clone();
         tokio::spawn(async move {
             let mut sub = match nc_refresh
-                .subscribe(SUBJECT_YIELD_CURVE_REFRESH.to_string())
+                .subscribe(topics::api::yield_curve::REFRESH.to_string())
                 .await
             {
                 Ok(s) => s,
@@ -76,7 +68,10 @@ pub async fn spawn(nc: Client, yield_curve_refresh_tx: Option<tokio::sync::mpsc:
     }
 
     let sub_extract = match nc
-        .queue_subscribe(SUBJECT_FINANCE_RATES_EXTRACT.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::finance_rates::EXTRACT.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -87,7 +82,7 @@ pub async fn spawn(nc: Client, yield_curve_refresh_tx: Option<tokio::sync::mpsc:
     };
     let sub_build = match nc
         .queue_subscribe(
-            SUBJECT_FINANCE_RATES_BUILD_CURVE.to_string(),
+            topics::api::finance_rates::BUILD_CURVE.to_string(),
             api_queue_group(),
         )
         .await
@@ -99,7 +94,10 @@ pub async fn spawn(nc: Client, yield_curve_refresh_tx: Option<tokio::sync::mpsc:
         }
     };
     let sub_compare = match nc
-        .queue_subscribe(SUBJECT_FINANCE_RATES_COMPARE.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::finance_rates::COMPARE.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -110,7 +108,7 @@ pub async fn spawn(nc: Client, yield_curve_refresh_tx: Option<tokio::sync::mpsc:
     };
     let sub_yield = match nc
         .queue_subscribe(
-            SUBJECT_FINANCE_RATES_YIELD_CURVE.to_string(),
+            topics::api::finance_rates::YIELD_CURVE.to_string(),
             api_queue_group(),
         )
         .await
@@ -123,7 +121,7 @@ pub async fn spawn(nc: Client, yield_curve_refresh_tx: Option<tokio::sync::mpsc:
     };
     let sub_benchmarks = match nc
         .queue_subscribe(
-            SUBJECT_FINANCE_RATES_BENCHMARKS.to_string(),
+            topics::api::finance_rates::BENCHMARKS.to_string(),
             api_queue_group(),
         )
         .await
@@ -135,7 +133,10 @@ pub async fn spawn(nc: Client, yield_curve_refresh_tx: Option<tokio::sync::mpsc:
         }
     };
     let sub_sofr = match nc
-        .queue_subscribe(SUBJECT_FINANCE_RATES_SOFR.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::finance_rates::SOFR.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -146,7 +147,7 @@ pub async fn spawn(nc: Client, yield_curve_refresh_tx: Option<tokio::sync::mpsc:
     };
     let sub_treasury = match nc
         .queue_subscribe(
-            SUBJECT_FINANCE_RATES_TREASURY.to_string(),
+            topics::api::finance_rates::TREASURY.to_string(),
             api_queue_group(),
         )
         .await

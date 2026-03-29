@@ -197,10 +197,13 @@ fn build_command_registry() -> Vec<Command> {
     vec![
         Command::new("quit", "Quit", Action::Quit)
             .description("Exit the application")
-            .keys(vec!["q".into()]),
+            .keys(vec!["q".into(), "⌘q".into()]),
         Command::new("help", "Show Help", Action::ShowHelp)
             .description("Show help overlay with key bindings")
-            .keys(vec!["?".into()]),
+            .keys(vec!["?".into(), "⌘/".into()]),
+        Command::new("command_palette", "Command Palette", Action::CommandPalette)
+            .description("Search and run commands")
+            .keys(vec![":".into(), "⌘⇧P".into()]),
         Command::new("tab_next", "Next Tab", Action::TabNext)
             .description("Switch to next tab")
             .keys(vec!["Tab".into()]),
@@ -209,34 +212,48 @@ fn build_command_registry() -> Vec<Command> {
             .keys(vec!["Shift+Tab".into()]),
         Command::new("jump_dashboard", "Jump to Dashboard", Action::JumpToTab(1))
             .description("Jump to Dashboard tab")
-            .keys(vec!["1".into()]),
+            .keys(vec!["1".into(), "⌘1".into()]),
         Command::new("jump_positions", "Jump to Positions", Action::JumpToTab(2))
             .description("Jump to Positions tab")
-            .keys(vec!["2".into()]),
+            .keys(vec!["2".into(), "⌘2".into()]),
         Command::new("jump_charts", "Jump to Charts", Action::JumpToTab(3))
             .description("Jump to Charts tab")
-            .keys(vec!["3".into()]),
+            .keys(vec!["3".into(), "⌘3".into()]),
         Command::new("jump_orders", "Jump to Orders", Action::JumpToTab(4))
             .description("Jump to Orders tab")
-            .keys(vec!["4".into()]),
+            .keys(vec!["4".into(), "⌘4".into()]),
         Command::new("jump_alerts", "Jump to Alerts", Action::JumpToTab(5))
             .description("Jump to Alerts tab")
-            .keys(vec!["5".into()]),
+            .keys(vec!["5".into(), "⌘5".into()]),
         Command::new("jump_yield", "Jump to Yield", Action::JumpToTab(6))
             .description("Jump to Yield Curve tab")
-            .keys(vec!["6".into()]),
+            .keys(vec!["6".into(), "⌘6".into()]),
         Command::new("jump_loans", "Jump to Loans", Action::JumpToTab(7))
             .description("Jump to Loans tab")
-            .keys(vec!["7".into()]),
+            .keys(vec!["7".into(), "⌘7".into()]),
+        Command::new(
+            "loans_bulk_import",
+            "Loans: bulk import from JSON file",
+            Action::LoansBulkImportFocus,
+        )
+        .description("Open path prompt; file is `{ \"loans\": [...] }` or legacy loan export")
+        .keys(vec!["b (Loans tab)".into()]),
+        Command::new(
+            "jump_discount_bank",
+            "Jump to Discount Bank",
+            Action::JumpToTab(8),
+        )
+        .description("Jump to Discount Bank tab")
+        .keys(vec!["8".into(), "⌘8".into()]),
         Command::new("jump_scenarios", "Jump to Scenarios", Action::JumpToTab(9))
             .description("Jump to Scenarios tab")
-            .keys(vec!["9".into()]),
+            .keys(vec!["9".into(), "⌘9".into()]),
         Command::new("jump_settings", "Jump to Settings", Action::JumpToTab(0))
             .description("Jump to Settings tab")
-            .keys(vec!["0".into()]),
+            .keys(vec!["0".into(), "⌘0".into()]),
         Command::new("split_pane", "Toggle Split Pane", Action::SplitPaneToggle)
             .description("Toggle split pane view")
-            .keys(vec!["p".into()]),
+            .keys(vec!["p".into(), "⌘p".into()]),
         Command::new("log_panel", "Toggle Log Panel", Action::ToggleLogPanel)
             .description("Toggle log panel overlay")
             .keys(vec!["`".into(), "~".into()]),

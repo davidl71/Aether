@@ -204,6 +204,36 @@ struct LoanFile {
     loans: Vec<LoanRecord>,
 }
 
+/// Request body for NATS `api.loans.import_bulk`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoansBulkImportRequest {
+    pub loans: Vec<LoanRecord>,
+}
+
+/// Per-row outcome for bulk loan import (validation or DB errors).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct BulkImportRowError {
+    pub index: usize,
+    pub loan_id: Option<String>,
+    pub message: String,
+}
+
+/// Summary returned after `import_bulk` / NATS `api.loans.import_bulk`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct LoansBulkImportResponse {
+    pub applied: usize,
+    pub errors: Vec<BulkImportRowError>,
+}
+
+/// Parse a JSON file that is either `{ "loans": [...] }` or the legacy `{ "version", "last_updated", "loans" }` shape.
+pub fn parse_loans_import_file_json(text: &str) -> Result<Vec<LoanRecord>, String> {
+    if let Ok(req) = serde_json::from_str::<LoansBulkImportRequest>(text) {
+        return Ok(req.loans);
+    }
+    let file: LoanFile = serde_json::from_str(text).map_err(|e| e.to_string())?;
+    Ok(file.loans)
+}
+
 #[derive(Clone)]
 pub struct LoanRepository {
     pool: SqlitePool,
@@ -388,6 +418,35 @@ impl LoanRepository {
             .map_err(|err| err.to_string())?;
 
         Ok(result.rows_affected() > 0)
+    }
+
+    /// Validate and upsert each loan; invalid rows are reported in `errors` without aborting the batch.
+    pub async fn import_bulk(&self, loans: Vec<LoanRecord>) -> LoansBulkImportResponse {
+        let mut applied = 0usize;
+        let mut errors = Vec::new();
+        for (index, loan) in loans.into_iter().enumerate() {
+            if let Err(msgs) = loan.validate() {
+                errors.push(BulkImportRowError {
+                    index,
+                    loan_id: if loan.loan_id.trim().is_empty() {
+                        None
+                    } else {
+                        Some(loan.loan_id.clone())
+                    },
+                    message: msgs.join("; "),
+                });
+                continue;
+            }
+            match self.upsert(&loan).await {
+                Ok(()) => applied += 1,
+                Err(e) => errors.push(BulkImportRowError {
+                    index,
+                    loan_id: Some(loan.loan_id.clone()),
+                    message: e.to_string(),
+                }),
+            }
+        }
+        LoansBulkImportResponse { applied, errors }
     }
 
     async fn upsert(&self, loan: &LoanRecord) -> anyhow::Result<()> {
@@ -604,7 +663,10 @@ fn loan_from_row(row: &sqlx::sqlite::SqliteRow) -> anyhow::Result<LoanRecord> {
 
 #[cfg(test)]
 mod tests {
-    use super::{loans_response_proto, LoanRecord, LoanStatus, LoanType};
+    use super::{
+        loans_response_proto, parse_loans_import_file_json, LoanRecord, LoanRepository, LoanStatus,
+        LoanType,
+    };
 
     fn sample_loan() -> LoanRecord {
         LoanRecord {
@@ -627,6 +689,41 @@ mod tests {
             last_update: "2025-01-15T00:00:00Z".into(),
             currency: "ILS".into(),
         }
+    }
+
+    #[test]
+    fn parse_loans_import_accepts_loans_wrapper_and_legacy_file() {
+        let wrap = r#"{"loans":[{"loan_id":"a","bank_name":"B","account_number":"1","loan_type":"SHIR_BASED","principal":1.0,"original_principal":1.0,"interest_rate":0.0,"spread":0.0,"base_cpi":0.0,"current_cpi":0.0,"origination_date":"2025-01-01T00:00:00Z","maturity_date":"2030-01-01T00:00:00Z","next_payment_date":"2025-02-01T00:00:00Z","monthly_payment":1.0,"payment_frequency_months":1,"status":"ACTIVE","last_update":"2025-01-15T00:00:00Z"}]}"#;
+        let loans = parse_loans_import_file_json(wrap).expect("wrapper");
+        assert_eq!(loans.len(), 1);
+        assert_eq!(loans[0].loan_id, "a");
+
+        let legacy = r#"{"version":"1","last_updated":"2025-01-01T00:00:00Z","loans":[{"loan_id":"b","bank_name":"B","account_number":"1","loan_type":"SHIR_BASED","principal":1.0,"original_principal":1.0,"interest_rate":0.0,"spread":0.0,"base_cpi":0.0,"current_cpi":0.0,"origination_date":"2025-01-01T00:00:00Z","maturity_date":"2030-01-01T00:00:00Z","next_payment_date":"2025-02-01T00:00:00Z","monthly_payment":1.0,"payment_frequency_months":1,"status":"ACTIVE","last_update":"2025-01-15T00:00:00Z"}]}"#;
+        let loans = parse_loans_import_file_json(legacy).expect("legacy");
+        assert_eq!(loans.len(), 1);
+        assert_eq!(loans[0].loan_id, "b");
+    }
+
+    #[tokio::test]
+    async fn import_bulk_skips_invalid_and_applies_valid() {
+        let path =
+            std::env::temp_dir().join(format!("aether_api_loans_bulk_{}.db", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        let repo = LoanRepository::load(path.clone()).await.expect("repo");
+        let good = sample_loan();
+        let mut good2 = sample_loan();
+        good2.loan_id = "loan-2".into();
+        let bad = LoanRecord {
+            loan_id: String::new(),
+            ..sample_loan()
+        };
+        let res = repo.import_bulk(vec![bad, good, good2]).await;
+        assert_eq!(res.applied, 2);
+        assert_eq!(res.errors.len(), 1);
+        assert_eq!(res.errors[0].index, 0);
+        let list = repo.list().await;
+        assert_eq!(list.len(), 2);
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]

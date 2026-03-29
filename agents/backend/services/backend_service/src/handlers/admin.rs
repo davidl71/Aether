@@ -7,17 +7,12 @@
 use crate::handlers::{api_queue_group, concurrency_limit, handle_sub_parallel};
 use api::fetch_ib_positions;
 use api::SnapshotPublishReply;
-use bytes::Bytes;
 use nats_adapter::async_nats::Client;
 use nats_adapter::{encode_envelope, topics};
 use serde_json::Value;
 use tracing::{info, warn};
 
 use crate::shared_state::SharedSnapshot;
-
-const SUBJECT_ADMIN_SET_MODE: &str = "api.admin.set_mode";
-const SUBJECT_SNAPSHOT_PUBLISH_NOW: &str = "api.snapshot.publish_now";
-const SUBJECT_IB_POSITIONS: &str = "api.ib.positions";
 
 /// Spawn all administrative NATS API handlers with bounded parallelism.
 pub fn spawn(nc: Client, state: SharedSnapshot, backend_id: String) {
@@ -49,7 +44,10 @@ async fn run_snapshot_publish_now(
     limit: usize,
 ) {
     let sub = match nc
-        .queue_subscribe(SUBJECT_SNAPSHOT_PUBLISH_NOW.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::snapshot::PUBLISH_NOW.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -108,7 +106,7 @@ async fn run_snapshot_publish_now(
 /// Handles api.ib.positions with bounded parallelism.
 async fn run_ib_positions(nc: Client, limit: usize) {
     let sub = match nc
-        .queue_subscribe(SUBJECT_IB_POSITIONS.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::ib::POSITIONS.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -145,7 +143,7 @@ async fn run_ib_positions(nc: Client, limit: usize) {
 /// Handles api.admin.set_mode with bounded parallelism.
 async fn run_admin_set_mode(nc: Client, _state: SharedSnapshot, limit: usize) {
     let sub = match nc
-        .queue_subscribe(SUBJECT_ADMIN_SET_MODE.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::admin::SET_MODE.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -186,15 +184,16 @@ async fn run_admin_set_mode(nc: Client, _state: SharedSnapshot, limit: usize) {
 
 async fn publish_command_event(nc: &Client, action: &str, event: &api::CommandEvent) {
     let subject = topics::system::commands(action);
-    let body = match serde_json::to_vec(event) {
-        Ok(bytes) => bytes,
+    let proto = api::system_command_event_to_proto(event);
+    let body = match encode_envelope("backend_service", "SystemCommandEvent", &proto) {
+        Ok(b) => b,
         Err(e) => {
-            warn!(action = %action, error = %e, "serialize command event failed");
+            warn!(action = %action, error = %e, "encode command event envelope failed");
             return;
         }
     };
 
-    if let Err(e) = nc.publish(subject.clone(), Bytes::from(body)).await {
+    if let Err(e) = nc.publish(subject.clone(), body).await {
         warn!(action = %action, subject = %subject, error = %e, "publish command event failed");
     }
 }

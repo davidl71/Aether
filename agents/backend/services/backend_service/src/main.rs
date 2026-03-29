@@ -16,8 +16,8 @@ use market_data::{
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use risk::{RiskCheck, RiskDecision, RiskEngine, RiskLimit, RiskViolation};
 use runtime_state::{
-    apply_market_event, apply_risk_status, apply_strategy_execution, RuntimeExecutionState,
-    RuntimeMarketState, RuntimeProducerDecision,
+    apply_market_event, apply_risk_status, legacy_apply_strategy_execution,
+    LegacyRuntimeExecutionState, RuntimeMarketState, RuntimeProducerDecision,
 };
 use serde::Deserialize;
 use strategy::model::TradeSide;
@@ -863,7 +863,7 @@ fn spawn_strategy_fanout(
             let (producer_decision, request) = {
                 let snapshot = state.read().await;
                 let market_state = RuntimeMarketState::from_snapshot(&snapshot);
-                let execution_state = RuntimeExecutionState::from_snapshot(&snapshot);
+                let execution_state = LegacyRuntimeExecutionState::from_snapshot(&snapshot);
                 let mark = market_state.mark_for_symbol(&symbol).unwrap_or(0.0);
                 let mark = if mark <= 0.0 { 1.0 } else { mark };
                 let strategy_decision = StrategyDecisionModel {
@@ -897,7 +897,8 @@ fn spawn_strategy_fanout(
                 let mut snapshot = state.write().await;
                 apply_risk_status(&mut snapshot, &outcome);
                 if outcome.allowed {
-                    let _ = apply_strategy_execution(&mut snapshot, decision_snapshot.clone());
+                    let _ =
+                        legacy_apply_strategy_execution(&mut snapshot, decision_snapshot.clone());
                 } else {
                     let alert = Alert::error(
                         outcome

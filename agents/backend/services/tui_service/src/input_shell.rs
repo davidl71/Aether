@@ -190,6 +190,9 @@ fn workspace_focus_target(app: &App, forward: bool) -> Option<Tab> {
 
 fn set_active_tab(app: &mut App, tab: Tab) {
     app.active_tab = tab;
+    if app.active_tab != Tab::Loans {
+        app.loan_import_path = None;
+    }
     if app.active_tab == Tab::Yield {
         app.sync_yield_curve_from_cache();
     } else if app.active_tab == Tab::Loans {

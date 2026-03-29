@@ -7,7 +7,7 @@ Get up and running with the Rust backend in minutes.
 - **Rust** 1.75+ (stable)
 - **macOS** 11+ / **Linux** / **Windows** 10/11 (64-bit)
 - **NATS** 2.10+ (for live state)
-- **IBKR TWS or IB Gateway** (for live trading)
+- **IBKR TWS or IB Gateway** (optional; for IB-backed market data and positions when configured)
 
 ## 1. Install Rust
 
@@ -58,9 +58,9 @@ nano config/config.json
 ```
 
 **Important:**
-- `tws.port: 7497` = Paper Trading (safe)
-- `tws.port: 7496` = Live Trading (real money!)
-- `dry_run: true` = Simulate without executing trades
+- `tws.port: 7497` = Paper Trading (default for development)
+- `tws.port: 7496` = Live session (real money — use only with explicit operational approval)
+- Default product direction is **read-only exploration**; see [DATA_EXPLORATION_MODE.md](./DATA_EXPLORATION_MODE.md). Legacy `dry_run` flags in example config refer to older execution paths.
 
 ## 5. Verify
 
@@ -122,3 +122,9 @@ cargo fetch
 **NATS connection issues:**
 - Ensure NATS is running on port 4222
 - Check `NATS_URL` env var if non-standard
+
+## Further reading
+
+- [NATS_TOPICS_REGISTRY.md](./NATS_TOPICS_REGISTRY.md) — `api.*` and system subjects (canonical: `nats_adapter::topics`).
+- [TWS_RUST_RUNBOOK.md](./TWS_RUST_RUNBOOK.md) — IBKR connectivity checklist for the Rust stack.
+- [MARKET_DATA_INTEGRATION.md](./MARKET_DATA_INTEGRATION.md) — quote sources and aggregator behavior.

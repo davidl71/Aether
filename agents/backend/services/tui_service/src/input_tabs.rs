@@ -11,7 +11,7 @@ pub(crate) fn tab_key_action(app: &App, key: KeyCode, input_mode: InputMode) -> 
         Tab::Settings => settings_key_action(app, key),
         Tab::Positions => positions_key_action(key),
         Tab::Orders => orders_key_action(key, input_mode),
-        Tab::Loans => loans_key_action(key),
+        Tab::Loans => loans_key_action(key, input_mode),
         Tab::DiscountBank => discount_bank_key_action(key),
         Tab::Alerts => alerts_key_action(key),
         Tab::Dashboard => dashboard_key_action(key),
@@ -86,13 +86,21 @@ fn orders_key_action(key: KeyCode, input_mode: InputMode) -> Option<Action> {
     }
 }
 
-fn loans_key_action(key: KeyCode) -> Option<Action> {
-    match key {
-        KeyCode::Up => Some(Action::LoansScrollUp),
-        KeyCode::Down => Some(Action::LoansScrollDown),
-        KeyCode::PageUp => Some(Action::LoansScrollPageUp),
-        KeyCode::PageDown => Some(Action::LoansScrollPageDown),
-        KeyCode::Char('n') | KeyCode::Char('N') => Some(Action::LoansNewLoan),
+fn loans_key_action(key: KeyCode, input_mode: InputMode) -> Option<Action> {
+    match (key, input_mode) {
+        (KeyCode::Esc, InputMode::LoanImportPath) => Some(Action::LoansImportPathEscape),
+        (KeyCode::Enter, InputMode::LoanImportPath) => Some(Action::LoansImportPathEnter),
+        (KeyCode::Backspace, InputMode::LoanImportPath) => Some(Action::LoansImportPathBackspace),
+        (KeyCode::Char(c), InputMode::LoanImportPath) if !c.is_control() => {
+            Some(Action::LoansImportPathChar(c))
+        }
+        (_, InputMode::LoanImportPath) => Some(Action::NoOp),
+        (KeyCode::Up, _) => Some(Action::LoansScrollUp),
+        (KeyCode::Down, _) => Some(Action::LoansScrollDown),
+        (KeyCode::PageUp, _) => Some(Action::LoansScrollPageUp),
+        (KeyCode::PageDown, _) => Some(Action::LoansScrollPageDown),
+        (KeyCode::Char('n') | KeyCode::Char('N'), _) => Some(Action::LoansNewLoan),
+        (KeyCode::Char('b') | KeyCode::Char('B'), _) => Some(Action::LoansBulkImportFocus),
         _ => None,
     }
 }

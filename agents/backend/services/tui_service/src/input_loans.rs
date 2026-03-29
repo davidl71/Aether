@@ -1,6 +1,8 @@
+use std::path::PathBuf;
+
 use crossterm::event::KeyCode;
 
-use crate::app::{App, LoanEntryState};
+use crate::app::{App, LoanEntryState, Tab};
 use crate::input::Action;
 use crate::ui::ToastLevel;
 
@@ -23,6 +25,48 @@ pub(crate) fn loan_form_key_action(key: KeyCode) -> Option<Action> {
 
 pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
     match action {
+        Action::LoansBulkImportFocus => {
+            app.loan_entry = None;
+            app.active_tab = Tab::Loans;
+            app.loan_import_path = Some(String::new());
+            app.request_loans_fetch();
+        }
+        Action::LoansImportPathEscape => {
+            app.loan_import_path = None;
+        }
+        Action::LoansImportPathChar(c) => {
+            if let Some(ref mut buf) = app.loan_import_path {
+                const MAX: usize = 4096;
+                if buf.len() < MAX {
+                    buf.push(c);
+                }
+            }
+        }
+        Action::LoansImportPathBackspace => {
+            if let Some(ref mut buf) = app.loan_import_path {
+                buf.pop();
+            }
+        }
+        Action::LoansImportPathEnter => {
+            let Some(buf) = app.loan_import_path.take() else {
+                return true;
+            };
+            let trimmed = buf.trim();
+            if trimmed.is_empty() {
+                app.push_toast("Enter a path to a loans JSON file.", ToastLevel::Warning);
+                return true;
+            }
+            let path = PathBuf::from(trimmed);
+            if let Some(ref tx) = app.loan_bulk_import_tx {
+                if tx.send(path).is_ok() {
+                    app.loans_fetch_pending = true;
+                } else {
+                    app.push_toast("Bulk import channel closed.", ToastLevel::Error);
+                }
+            } else {
+                app.push_toast("Loans bulk import is not wired.", ToastLevel::Error);
+            }
+        }
         Action::LoansScrollUp => {
             app.loans_scroll = app.loans_scroll.saturating_sub(1);
         }
@@ -52,6 +96,7 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
             }
         }
         Action::LoansNewLoan => {
+            app.loan_import_path = None;
             app.loan_entry = Some(LoanEntryState::new());
         }
         Action::LoansInputEscape => {

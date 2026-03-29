@@ -5,19 +5,18 @@ use crate::handlers::{api_queue_group, handle_sub};
 use api::discount_bank::{get_balance, get_bank_accounts, get_transactions, ImportPositionsQuery};
 use bytes::Bytes;
 use nats_adapter::async_nats::Client;
+use nats_adapter::topics;
 use reqwest::Client as ReqwestClient;
 use serde_json::Value;
 use tracing::warn;
 
-const SUBJECT_DISCOUNT_BANK_BALANCE: &str = "api.discount_bank.balance";
-const SUBJECT_DISCOUNT_BANK_TRANSACTIONS: &str = "api.discount_bank.transactions";
-const SUBJECT_DISCOUNT_BANK_BANK_ACCOUNTS: &str = "api.discount_bank.bank_accounts";
-const SUBJECT_DISCOUNT_BANK_IMPORT_POSITIONS: &str = "api.discount_bank.import_positions";
-
 /// Spawn Discount Bank NATS API handlers.
 pub async fn spawn(nc: Client) {
     let sub_balance = match nc
-        .queue_subscribe(SUBJECT_DISCOUNT_BANK_BALANCE.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::discount_bank::BALANCE.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -28,7 +27,7 @@ pub async fn spawn(nc: Client) {
     };
     let sub_tx = match nc
         .queue_subscribe(
-            SUBJECT_DISCOUNT_BANK_TRANSACTIONS.to_string(),
+            topics::api::discount_bank::TRANSACTIONS.to_string(),
             api_queue_group(),
         )
         .await
@@ -41,7 +40,7 @@ pub async fn spawn(nc: Client) {
     };
     let sub_accounts = match nc
         .queue_subscribe(
-            SUBJECT_DISCOUNT_BANK_BANK_ACCOUNTS.to_string(),
+            topics::api::discount_bank::BANK_ACCOUNTS.to_string(),
             api_queue_group(),
         )
         .await
@@ -54,7 +53,7 @@ pub async fn spawn(nc: Client) {
     };
     let sub_import = match nc
         .queue_subscribe(
-            SUBJECT_DISCOUNT_BANK_IMPORT_POSITIONS.to_string(),
+            topics::api::discount_bank::IMPORT_POSITIONS.to_string(),
             api_queue_group(),
         )
         .await

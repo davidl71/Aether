@@ -179,7 +179,8 @@ pub mod system {
         "system.alerts"
     }
 
-    /// Command lifecycle events: `system.commands.{action}`
+    /// Command lifecycle events: `system.commands.{action}`.
+    /// Payload: `NatsEnvelope` wrapping `SystemCommandEvent` (see `proto/messages.proto`).
     pub fn commands(action: &str) -> String {
         format!("system.commands.{}", action)
     }
@@ -255,6 +256,89 @@ pub mod snapshot {
     /// Subscribe to all backend snapshots: `snapshot.>`
     pub fn all() -> &'static str {
         "snapshot.>"
+    }
+}
+
+/// Backend HTTP-less RPC subjects (`api.*`) for `backend_service` handlers and clients (TUI, CLI, tools).
+///
+/// Keep these aligned with `docs/NATS_TOPICS_REGISTRY.md` when adding subjects.
+pub mod api {
+    /// `api.discount_bank.*`
+    pub mod discount_bank {
+        pub const BALANCE: &str = "api.discount_bank.balance";
+        pub const TRANSACTIONS: &str = "api.discount_bank.transactions";
+        pub const BANK_ACCOUNTS: &str = "api.discount_bank.bank_accounts";
+        pub const IMPORT_POSITIONS: &str = "api.discount_bank.import_positions";
+    }
+
+    /// `api.loans.*`
+    pub mod loans {
+        pub const LIST: &str = "api.loans.list";
+        pub const LIST_PROTO: &str = "api.loans.list.proto";
+        pub const GET: &str = "api.loans.get";
+        pub const CREATE: &str = "api.loans.create";
+        pub const UPDATE: &str = "api.loans.update";
+        pub const DELETE: &str = "api.loans.delete";
+        pub const IMPORT_BULK: &str = "api.loans.import_bulk";
+    }
+
+    /// `api.finance_rates.*`
+    pub mod finance_rates {
+        pub const EXTRACT: &str = "api.finance_rates.extract";
+        pub const BUILD_CURVE: &str = "api.finance_rates.build_curve";
+        pub const COMPARE: &str = "api.finance_rates.compare";
+        pub const YIELD_CURVE: &str = "api.finance_rates.yield_curve";
+        pub const BENCHMARKS: &str = "api.finance_rates.benchmarks";
+        pub const SOFR: &str = "api.finance_rates.sofr";
+        pub const TREASURY: &str = "api.finance_rates.treasury";
+    }
+
+    /// `api.yield_curve.*` (control plane; KV keys remain `yield_curve.{symbol}`).
+    pub mod yield_curve {
+        pub const REFRESH: &str = "api.yield_curve.refresh";
+    }
+
+    /// `api.fmp.*`
+    pub mod fmp {
+        pub const INCOME_STATEMENT: &str = "api.fmp.income_statement";
+        pub const BALANCE_SHEET: &str = "api.fmp.balance_sheet";
+        pub const CASH_FLOW: &str = "api.fmp.cash_flow";
+        pub const QUOTE: &str = "api.fmp.quote";
+    }
+
+    /// `api.calculate.*`
+    pub mod calculate {
+        pub const GREEKS: &str = "api.calculate.greeks";
+        pub const IV: &str = "api.calculate.iv";
+        pub const HISTORICAL_VOLATILITY: &str = "api.calculate.historical_volatility";
+        pub const RISK_METRICS: &str = "api.calculate.risk_metrics";
+        pub const STRATEGY: &str = "api.calculate.strategy";
+        pub const BOX_SPREAD: &str = "api.calculate.box_spread";
+        pub const JELLY_ROLL: &str = "api.calculate.jelly_roll";
+        pub const RATIO_SPREAD: &str = "api.calculate.ratio_spread";
+    }
+
+    /// `api.strategy.*` (read-only / deprecated handlers in data-exploration mode).
+    pub mod strategy {
+        pub const START: &str = "api.strategy.start";
+        pub const STOP: &str = "api.strategy.stop";
+        pub const CANCEL_ALL: &str = "api.strategy.cancel_all";
+        pub const EXECUTE: &str = "api.strategy.execute";
+    }
+
+    /// `api.admin.*`
+    pub mod admin {
+        pub const SET_MODE: &str = "api.admin.set_mode";
+    }
+
+    /// `api.snapshot.*` (NATS RPC). Distinct from [`crate::topics::snapshot`] (`snapshot.{backend_id}` stream).
+    pub mod snapshot {
+        pub const PUBLISH_NOW: &str = "api.snapshot.publish_now";
+    }
+
+    /// `api.ib.*`
+    pub mod ib {
+        pub const POSITIONS: &str = "api.ib.positions";
     }
 }
 
@@ -397,5 +481,18 @@ mod tests {
         assert_eq!(market_data::tick("SPY"), "market-data.tick.SPY");
         assert_eq!(strategy::signal("XSP"), "strategy.signal.XSP");
         assert_eq!(orders::status("ORD-123"), "orders.status.ORD-123");
+    }
+
+    #[test]
+    fn test_api_subjects_stable() {
+        assert_eq!(api::loans::LIST, "api.loans.list");
+        assert_eq!(api::loans::IMPORT_BULK, "api.loans.import_bulk");
+        assert_eq!(
+            api::finance_rates::BENCHMARKS,
+            "api.finance_rates.benchmarks"
+        );
+        assert_eq!(api::yield_curve::REFRESH, "api.yield_curve.refresh");
+        assert_eq!(api::snapshot::PUBLISH_NOW, "api.snapshot.publish_now");
+        assert_eq!(system::all_commands(), "system.commands.>");
     }
 }

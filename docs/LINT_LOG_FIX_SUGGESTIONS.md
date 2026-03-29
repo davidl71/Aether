@@ -1,6 +1,10 @@
 # Lint log fix suggestions
 
-Concrete code changes to fix the C++ errors reported in `logs/lint_ai_friendly.log`. Apply these so the full linter run passes.
+> **Scope:** Historical **native C++** tree only. Aether’s **active** codebase is **Rust-first** (`agents/backend/`); the root native binary and Catch2 suite described here are **not part of the current default build**. Keep this file only as a reference if you restore or lint archived C++ under `native/`.
+>
+> **Current verification:** Rust — `cd agents/backend && cargo test` / `cargo clippy`. See `AGENTS.md` and `CLAUDE.md`.
+
+Concrete code changes to fix the C++ errors reported in `logs/lint_ai_friendly.log`. Apply these so the full linter run passes **against a configured C++ tree**.
 
 ---
 

@@ -185,6 +185,23 @@ enum AlertLevel {
   ALERT_LEVEL_ERROR = 3;
 }
 
+// Command lifecycle on NATS `system.commands.{action}` (envelope-wrapped like snapshots).
+enum SystemCommandStatus {
+  SYSTEM_COMMAND_STATUS_UNSPECIFIED = 0;
+  SYSTEM_COMMAND_STATUS_ACCEPTED = 1;
+  SYSTEM_COMMAND_STATUS_COMPLETED = 2;
+  SYSTEM_COMMAND_STATUS_FAILED = 3;
+}
+
+message SystemCommandEvent {
+  string command_id = 1;
+  string issued_at = 2;
+  string action = 3;
+  SystemCommandStatus status = 4;
+  optional string message = 5;
+  optional string error = 6;
+}
+
 message Metrics {
   double net_liq = 1;
   double buying_power = 2;

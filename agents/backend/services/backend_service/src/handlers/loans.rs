@@ -5,23 +5,17 @@ use std::sync::Arc;
 
 use crate::handlers::{api_queue_group, handle_sub};
 use api::loans::loans_response_proto;
-use api::{LoanRecord, LoanRepository};
+use api::{LoanRecord, LoanRepository, LoansBulkImportRequest, LoansBulkImportResponse};
 use nats_adapter::async_nats::Client;
+use nats_adapter::topics;
 use prost::Message;
 use serde_json::Value;
 use tracing::{info, warn};
 
-const SUBJECT_LOANS_LIST: &str = "api.loans.list";
-const SUBJECT_LOANS_LIST_PROTO: &str = "api.loans.list.proto";
-const SUBJECT_LOANS_GET: &str = "api.loans.get";
-const SUBJECT_LOANS_CREATE: &str = "api.loans.create";
-const SUBJECT_LOANS_UPDATE: &str = "api.loans.update";
-const SUBJECT_LOANS_DELETE: &str = "api.loans.delete";
-
 /// Spawn Loans NATS API handlers.
 pub async fn spawn(nc: Client, repo: Arc<LoanRepository>) {
     let sub_list = match nc
-        .queue_subscribe(SUBJECT_LOANS_LIST.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::loans::LIST.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -31,7 +25,10 @@ pub async fn spawn(nc: Client, repo: Arc<LoanRepository>) {
         }
     };
     let sub_list_proto = match nc
-        .queue_subscribe(SUBJECT_LOANS_LIST_PROTO.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::loans::LIST_PROTO.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -41,7 +38,7 @@ pub async fn spawn(nc: Client, repo: Arc<LoanRepository>) {
         }
     };
     let sub_get = match nc
-        .queue_subscribe(SUBJECT_LOANS_GET.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::loans::GET.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -51,7 +48,7 @@ pub async fn spawn(nc: Client, repo: Arc<LoanRepository>) {
         }
     };
     let sub_create = match nc
-        .queue_subscribe(SUBJECT_LOANS_CREATE.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::loans::CREATE.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -61,7 +58,7 @@ pub async fn spawn(nc: Client, repo: Arc<LoanRepository>) {
         }
     };
     let sub_update = match nc
-        .queue_subscribe(SUBJECT_LOANS_UPDATE.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::loans::UPDATE.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -71,12 +68,25 @@ pub async fn spawn(nc: Client, repo: Arc<LoanRepository>) {
         }
     };
     let sub_delete = match nc
-        .queue_subscribe(SUBJECT_LOANS_DELETE.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::loans::DELETE.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
         Err(e) => {
             warn!(error = %e, "subscribe api.loans.delete failed");
+            return;
+        }
+    };
+    let sub_import_bulk = match nc
+        .queue_subscribe(
+            topics::api::loans::IMPORT_BULK.to_string(),
+            api_queue_group(),
+        )
+        .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(error = %e, "subscribe api.loans.import_bulk failed");
             return;
         }
     };
@@ -169,6 +179,30 @@ pub async fn spawn(nc: Client, repo: Arc<LoanRepository>) {
             }
         },
     ));
+    let repo_import = repo.clone();
+    tokio::spawn(handle_sub(
+        nc.clone(),
+        sub_import_bulk,
+        move |body: Option<Vec<u8>>| {
+            let repo = repo_import.clone();
+            async move {
+                let req: LoansBulkImportRequest =
+                    match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
+                        Some(r) => r,
+                        None => {
+                            let r: Result<LoansBulkImportResponse, String> = Err(
+                                "request body must be LoansBulkImportRequest { loans: [...] }"
+                                    .to_string(),
+                            );
+                            return serde_json::to_vec(&r).unwrap_or_else(|_| b"{}".to_vec());
+                        }
+                    };
+                let summary = repo.import_bulk(req.loans).await;
+                let r: Result<LoansBulkImportResponse, String> = Ok(summary);
+                serde_json::to_vec(&r).unwrap_or_else(|_| b"{}".to_vec())
+            }
+        },
+    ));
     tokio::spawn(handle_sub(nc, sub_delete, move |body: Option<Vec<u8>>| {
         let repo = repo.clone();
         async move {
@@ -188,7 +222,7 @@ pub async fn spawn(nc: Client, repo: Arc<LoanRepository>) {
 /// Spawn Loans NATS API handlers (unconfigured - returns error responses).
 pub async fn spawn_unconfigured(nc: Client) {
     let sub_list = match nc
-        .queue_subscribe(SUBJECT_LOANS_LIST.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::loans::LIST.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,
@@ -198,7 +232,10 @@ pub async fn spawn_unconfigured(nc: Client) {
         }
     };
     let sub_list_proto = match nc
-        .queue_subscribe(SUBJECT_LOANS_LIST_PROTO.to_string(), api_queue_group())
+        .queue_subscribe(
+            topics::api::loans::LIST_PROTO.to_string(),
+            api_queue_group(),
+        )
         .await
     {
         Ok(s) => s,
@@ -208,7 +245,7 @@ pub async fn spawn_unconfigured(nc: Client) {
         }
     };
     let sub_get = match nc
-        .queue_subscribe(SUBJECT_LOANS_GET.to_string(), api_queue_group())
+        .queue_subscribe(topics::api::loans::GET.to_string(), api_queue_group())
         .await
     {
         Ok(s) => s,

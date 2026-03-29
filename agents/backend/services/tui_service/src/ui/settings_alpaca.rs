@@ -3,7 +3,6 @@
 use ratatui::{
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span},
     widgets::{Cell, Row, Table},
     Frame,
 };
@@ -91,42 +90,5 @@ pub(crate) fn render_settings_alpaca_section(f: &mut Frame, app: &App, area: Rec
     )
     .block(block);
 
-    if app.settings_alpaca_edit_key.is_some() && app.settings_alpaca_buffer.is_some() {
-        let key = app
-            .settings_alpaca_edit_key
-            .map(|k| k.display_name())
-            .unwrap_or("Alpaca");
-        let buf = app.settings_alpaca_buffer.as_deref().unwrap_or("");
-        let edit = ratatui::widgets::Paragraph::new(vec![
-            Line::from(""),
-            Line::from(vec![
-                Span::styled("Edit ", Style::default().fg(Color::DarkGray)),
-                Span::styled(
-                    key,
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                ),
-                Span::styled(": ", Style::default().fg(Color::DarkGray)),
-                Span::styled(
-                    format!("{buf}_"),
-                    Style::default()
-                        .fg(Color::White)
-                        .add_modifier(Modifier::BOLD),
-                ),
-            ]),
-            Line::from(""),
-            Line::from(Span::styled(
-                "[Enter] save to keyring/file  [Esc] cancel",
-                Style::default().fg(Color::DarkGray),
-            )),
-        ])
-        .block(section_block(
-            "Alpaca — edit",
-            section_active(app, SettingsSection::Alpaca),
-        ));
-        f.render_widget(edit, area);
-    } else {
-        f.render_widget(table, area);
-    }
+    f.render_widget(table, area);
 }

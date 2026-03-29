@@ -314,14 +314,14 @@ impl From<&RuntimeProducerDecision> for RuntimeDecisionState {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct RuntimeExecutionState {
+pub struct LegacyRuntimeExecutionState {
     pub positions: Vec<RuntimePositionState>,
     pub historic: Vec<RuntimeHistoricPositionState>,
     pub orders: Vec<RuntimeOrderState>,
     pub decisions: Vec<RuntimeDecisionState>,
 }
 
-impl RuntimeExecutionState {
+impl LegacyRuntimeExecutionState {
     pub fn from_snapshot(snapshot: &SystemSnapshot) -> Self {
         Self {
             positions: snapshot
@@ -358,7 +358,7 @@ impl RuntimeExecutionState {
         decision: &StrategyDecisionSnapshot,
         order_id: String,
         account_id: &str,
-    ) -> RuntimeExecutionUpdate {
+    ) -> LegacyRuntimeExecutionUpdate {
         self.decisions.push(RuntimeDecisionState::from(decision));
         if self.decisions.len() > 50 {
             self.decisions.remove(0);
@@ -379,7 +379,7 @@ impl RuntimeExecutionState {
         decision: &RuntimeProducerDecision,
         order_id: String,
         account_id: &str,
-    ) -> RuntimeExecutionUpdate {
+    ) -> LegacyRuntimeExecutionUpdate {
         self.decisions.push(RuntimeDecisionState::from(decision));
         if self.decisions.len() > 50 {
             self.decisions.remove(0);
@@ -406,7 +406,7 @@ impl RuntimeExecutionState {
         created_at: DateTime<Utc>,
         order_id: String,
         account_id: &str,
-    ) -> RuntimeExecutionUpdate {
+    ) -> LegacyRuntimeExecutionUpdate {
         self.orders.push(RuntimeOrderState {
             id: order_id.clone(),
             symbol: symbol.to_string(),
@@ -439,7 +439,7 @@ impl RuntimeExecutionState {
                     closed_at: created_at,
                 });
 
-                RuntimeExecutionUpdate::ClosedPosition {
+                LegacyRuntimeExecutionUpdate::ClosedPosition {
                     symbol: position.symbol,
                     quantity: prev_qty,
                     cost_basis,
@@ -453,7 +453,7 @@ impl RuntimeExecutionState {
                 position.unrealized_pnl =
                     (position.mark - position.cost_basis) * position.quantity as f64;
 
-                RuntimeExecutionUpdate::ChangedPosition {
+                LegacyRuntimeExecutionUpdate::ChangedPosition {
                     symbol: symbol.to_string(),
                     quantity,
                     mark,
@@ -471,7 +471,7 @@ impl RuntimeExecutionState {
                 account_id: Some(account_id.to_string()),
             });
 
-            RuntimeExecutionUpdate::ChangedPosition {
+            LegacyRuntimeExecutionUpdate::ChangedPosition {
                 symbol: symbol.to_string(),
                 quantity,
                 mark,
@@ -561,7 +561,7 @@ impl RuntimeExecutionState {
 }
 
 #[derive(Clone, Debug)]
-pub enum RuntimeExecutionUpdate {
+pub enum LegacyRuntimeExecutionUpdate {
     ChangedPosition {
         symbol: String,
         quantity: i32,
@@ -713,17 +713,17 @@ pub fn apply_market_event(snapshot: &mut SystemSnapshot, event: &MarketDataEvent
     market_state.project_into_snapshot(snapshot);
 }
 
-/// Projects a legacy strategy decision snapshot into the read-only runtime
-/// model for demo/testing flows. This updates snapshot-visible positions and
-/// orders only; it does not place live broker orders.
-pub fn apply_strategy_execution(
+/// Projects a legacy strategy decision snapshot into the in-memory snapshot
+/// for demo/testing flows. Updates snapshot-visible positions and orders only;
+/// does not place live broker orders.
+pub fn legacy_apply_strategy_execution(
     snapshot: &mut SystemSnapshot,
     decision: StrategyDecisionSnapshot,
-) -> RuntimeExecutionUpdate {
+) -> LegacyRuntimeExecutionUpdate {
     snapshot.touch();
     snapshot.strategy = "RUNNING".into();
     let order_id = format!("ORD-{}", Utc::now().timestamp_millis());
-    let mut execution_state = RuntimeExecutionState::from_snapshot(snapshot);
+    let mut execution_state = LegacyRuntimeExecutionState::from_snapshot(snapshot);
     let update =
         execution_state.apply_strategy_decision(&decision, order_id.clone(), &snapshot.account_id);
     execution_state.project_into_snapshot(snapshot);
@@ -763,14 +763,14 @@ mod tests {
     #[test]
     fn legacy_strategy_projection_updates_positions() {
         let mut snapshot = SystemSnapshot::default();
-        let update = apply_strategy_execution(
+        let update = legacy_apply_strategy_execution(
             &mut snapshot,
             StrategyDecisionSnapshot::new("AAPL".into(), 5, "BUY", 150.0, Utc::now()),
         );
 
         assert!(matches!(
             update,
-            RuntimeExecutionUpdate::ChangedPosition { .. }
+            LegacyRuntimeExecutionUpdate::ChangedPosition { .. }
         ));
         assert_eq!(snapshot.orders.len(), 1);
     }

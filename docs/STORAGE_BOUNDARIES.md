@@ -31,6 +31,6 @@ title: Storage Boundaries for Read-Only Exploration Mode
   
 ## 5. Verification & Monitoring  
   
-- Run `/Users/davidl/Projects/mcp/exarp-go/bin/exarp-go task sync` after any manual SQLite change and confirm that the exit value reports only `synced_count` (no errors).  
+- From the repo root, run `./scripts/run_exarp_go.sh -tool task_workflow -args '{"action":"sync"}'` after any manual SQLite change and confirm the tool reports a successful sync (no errors).  
 - Periodically query `sqlite3 .todo2/todo2.db "SELECT id,count(*) FROM tasks GROUP BY id HAVING count(*)>1"`—the result must stay empty.  
 - Keep `T-1774362544084047000`’s regression tests running so Charts/Alerts visibly show “waiting for live data” when market feeds or snapshots pause.  

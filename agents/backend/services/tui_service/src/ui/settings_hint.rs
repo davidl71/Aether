@@ -18,7 +18,7 @@ pub(crate) fn render_settings_hint_section(f: &mut Frame, app: &App, area: Rect)
             " 0 = Settings  ↑↓ symbol  a add symbol  Del remove  Active section: Symbols "
         }
         SettingsSection::Sources => {
-            " 0 = Settings  ↑↓ section  Active section: Data Sources (credential origin: env/keyring/file/built-in) "
+            " 0 = Settings  ↑↓ row  e/Enter edit key  d/Del clear  Active section: Data Sources (origin: env/keyring/file) "
         }
         SettingsSection::Alpaca => {
             " 0 = Settings  ↑↓ field  e/Enter edit  d/Del clear  Active section: Alpaca credentials "

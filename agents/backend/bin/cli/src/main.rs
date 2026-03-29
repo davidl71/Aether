@@ -64,10 +64,18 @@ async fn run_box(symbol: String, dte: f64, width: f64, json: bool) -> Result<()>
     let yahoo_symbol = symbol.to_uppercase();
 
     // Get underlying price
-    let candles = history.get_history(&yahoo_symbol, Range::D1, Interval::D1).await?;
-    let spot = candles.first().map(|c| money_to_f64(&c.close)).unwrap_or(0.0);
+    let candles = history
+        .get_history(&yahoo_symbol, Range::D1, Interval::D1)
+        .await?;
+    let spot = candles
+        .first()
+        .map(|c| money_to_f64(&c.close))
+        .unwrap_or(0.0);
     if spot <= 0.0 {
-        return Err(anyhow::anyhow!("Could not determine underlying price for {}", symbol));
+        return Err(anyhow::anyhow!(
+            "Could not determine underlying price for {}",
+            symbol
+        ));
     }
     println!("Underlying: ${:.2}", spot);
 
@@ -78,14 +86,15 @@ async fn run_box(symbol: String, dte: f64, width: f64, json: bool) -> Result<()>
     let target_date = today + chrono::Duration::days(dte as i64);
     let (expiration_ts, expiration_date) = expirations
         .into_iter()
-        .filter_map(|ts| {
-            chrono::DateTime::from_timestamp(ts, 0).map(|dt| (ts, dt.date_naive()))
-        })
+        .filter_map(|ts| chrono::DateTime::from_timestamp(ts, 0).map(|dt| (ts, dt.date_naive())))
         .min_by_key(|(_, date)| (*date - target_date).abs())
         .ok_or_else(|| anyhow::anyhow!("No valid expirations found for {}", symbol))?;
 
     let actual_dte = (expiration_date - today).num_days() as f64;
-    println!("Using expiration: {} (DTE: {})", expiration_date, actual_dte as i32);
+    println!(
+        "Using expiration: {} (DTE: {})",
+        expiration_date, actual_dte as i32
+    );
 
     // Get option chain
     let chain = options.get_chain(&yahoo_symbol, expiration_ts).await?;
@@ -1647,7 +1656,8 @@ async fn run_alpaca(sub: AlpacaCmd) -> Result<()> {
             };
             std::env::set_var("APCA_API_BASE_URL", base_url);
 
-            let source = AlpacaSource::new(is_paper, vec![&symbol], std::time::Duration::from_secs(1))?;
+            let source =
+                AlpacaSource::new(is_paper, vec![&symbol], std::time::Duration::from_secs(1))?;
 
             println!(
                 "Fetching quote for {} from Alpaca {}...",

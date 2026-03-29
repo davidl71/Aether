@@ -6318,7 +6318,6 @@ dependencies = [
  "backoff",
  "bytes",
  "nats_adapter",
- "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",

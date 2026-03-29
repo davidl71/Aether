@@ -659,71 +659,85 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::styled(" q ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("quit  "),
             Span::styled(" ? ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("this help  "),
+            Span::raw("help  "),
+            Span::styled(" : ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("command palette  "),
             Span::styled(
                 " Tab / Shift-Tab ",
                 Style::default().add_modifier(Modifier::BOLD),
             ),
-            Span::raw("next / prev tab or pane"),
+            Span::raw("next / prev tab or workspace pane"),
         ]),
         Line::from(vec![
-            Span::styled(" macOS Cmd ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("⌘, Settings  ⌘/ help  ⌘1–⌘9 same as 1–9  ⌘p split  ⌘r refresh  ⌘w close"),
+            Span::styled(" macOS ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(
+                "⌘, Settings  ⌘/ help  ⌘⇧P palette  ⌘0 Settings  ⌘1–⌘9 = digit jumps  ⌘p split  ⌘r refresh  ⌘w close",
+            ),
         ]),
         Line::from(vec![
-            Span::styled(" 0–9 ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("jump to Dash / Pos / Charts / Orders / Alerts / Yield / Loans / Scen / Set"),
+            Span::styled(" 1–9,0 ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(
+                "1 Dash  2 Pos  3 Charts  4 Orders  5 Alerts  6 Yield  7 Loans  8 Disc  9 Scen  0 Settings",
+            ),
         ]),
         Line::from(vec![
             Span::styled(" M ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("read-only badge  "),
+            Span::raw("read-only note  "),
             Span::styled(" ` ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("log panel  "),
             Span::styled(" p ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("split pane  "),
+            Span::styled(" f ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("FMP (Dash/Pos) or snapshot refresh (other tabs)  "),
             Span::styled(" Esc ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("close current mode"),
+            Span::raw("close overlay / filter / etc."),
         ]),
         Line::from(vec![
             Span::styled(
-                " Dashboard / Positions / Orders / Alerts / Scenarios ",
+                " Dashboard / Positions / Alerts ",
                 Style::default().add_modifier(Modifier::BOLD),
             ),
             Span::raw("↑↓ PgUp/PgDn scroll  "),
             Span::styled(" Enter ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("detail  "),
+            Span::raw("Dash→Charts / Pos detail  "),
             Span::styled(" c ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("Positions combo"),
+            Span::raw("Positions combo / space"),
         ]),
         Line::from(vec![
             Span::styled(" Orders ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("/ filter mode  type symbol/status/side  Esc clear  "),
+            Span::raw("/ filter  Esc clear  "),
+            Span::styled(" x ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("cancel  "),
             Span::styled(" Loans ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("n new loan  Tab/Shift-Tab field nav"),
+            Span::raw("n new  b bulk JSON  "),
+            Span::styled(" Disc ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("r refresh  ↑↓ PgUp/Dn"),
         ]),
         Line::from(vec![
             Span::styled(" Charts ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("/ search mode  Enter confirm  Esc cancel  ←→ expiry  ↑↓ width  "),
+            Span::raw("/ search  Enter/Esc  ←→ pills  ↑↓ width  "),
             Span::styled(" Yield ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("←→ symbol"),
+            Span::raw("←→ symbol  ↑↓ curve  Enter point  r refresh"),
         ]),
         Line::from(vec![
             Span::styled(" Scenarios ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("[ ] DTE  w strike width  Enter detail  "),
-            Span::styled(" Alerts ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("includes Logs below  +/- e/w/i/d adjust log level  "),
+            Span::raw("[ ] DTE  w width  Enter detail  "),
+            Span::styled(" o ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("execute (disabled)  "),
+            Span::styled(" Logs ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("+/- level  e/w/i/d  h hide"),
         ]),
         Line::from(vec![
             Span::styled(" Settings ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("↑↓ section/key  e/Enter edit  a add  Del remove  r reset  "),
-            Span::raw("Alpaca: e edit  d clear  "),
-            Span::styled(" Status ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("provider, split-pane, loading, and latest result in bars"),
+            Span::raw("←/→ columns  ↑↓ row  e/Enter edit  a add  d/Del remove  r reset  "),
+            Span::raw("Alpaca & Sources rows: e edit cred  d clear"),
         ]),
         Line::from(vec![
-            Span::raw(" Legacy controls: "),
-            Span::styled("S/T/K/F/O/X", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(" no-ops in exploration mode (see status message if pressed)"),
+            Span::raw(" Exploration: "),
+            Span::styled("S T K O", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(" strategy / exec show disabled status; "),
+            Span::styled("X", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(" is Orders cancel only"),
         ]),
         Line::from(""),
         Line::from(Span::styled(
@@ -736,7 +750,7 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         .title(" Help ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
-    let area = centered_rect(78, 24, area);
+    let area = centered_rect(86, 30, area);
     f.render_widget(ratatui::widgets::Clear, area);
     f.render_widget(inner.block(block), area);
 }
@@ -1075,10 +1089,11 @@ fn settings_mode_indicator(app: &App) -> Option<(String, Color)> {
             Color::Yellow,
         )),
         InputMode::SettingsAddSymbol => Some(("SETTINGS:ADD SYMBOL".into(), Color::Yellow)),
-        InputMode::SettingsAlpacaCredential => Some(("SETTINGS:ALPACA CRED".into(), Color::Yellow)),
+        InputMode::SettingsCredentialEntry => Some(("SETTINGS:API KEY".into(), Color::Yellow)),
         InputMode::ChartSearch => Some(("CHARTS:SEARCH".into(), Color::Cyan)),
         InputMode::OrdersFilter => Some(("ORDERS:FILTER".into(), Color::Yellow)),
         InputMode::LoanForm => Some(("LOANS:FORM".into(), Color::Yellow)),
+        InputMode::LoanImportPath => Some(("LOANS:IMPORT".into(), Color::Yellow)),
         InputMode::LogPanel => Some(("LOGS:PANEL".into(), Color::Yellow)),
         _ => None,
     }
