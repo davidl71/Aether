@@ -30,6 +30,12 @@ For an **operator-oriented “which source for what”** summary (intent and typ
 | `AlpacaPositionSource` | api/src/alpaca_positions.rs | struct (not trait) |
 | `IbPositionSource` | api/src/ib_positions.rs | struct (not trait) |
 
+### 1.4 Finance rates read model (`api`, not `market_data`)
+
+| Surface | Location | Role |
+|---------|----------|------|
+| `api::finance_rates` | `api/src/finance_rates/mod.rs` re-exports | Serde DTOs in `types.rs`; opportunity aggregation / synthetic curves in `curve.rs`; FRED/FMP/NY Fed benchmark HTTP in `benchmarks.rs`; `compare_rates` / `yield_curve_comparison` in `comparison.rs`. Consumed by NATS handlers and TUI; not part of the `MarketDataSource` registry. |
+
 ---
 
 ## 2. Provider Implementation Matrix

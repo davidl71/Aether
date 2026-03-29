@@ -11,7 +11,7 @@ pub const PROTOBUF_MSG_ID_OFFSET: u32 = 1000;
 // --- Minimum server versions for protobuf (tws-api server_versions.py) ---
 /// Base: protobuf allowed at all.
 pub const MIN_SERVER_VER_PROTOBUF: i32 = 201;
-/// Place order / cancel order.
+/// IBKR wire threshold for place/cancel order messages (TWS `MIN_SERVER_VER` constant; not an Aether execution feature).
 pub const MIN_SERVER_VER_PLACE_ORDER: i32 = 203;
 /// Contract details.
 pub const MIN_SERVER_VER_CONTRACT_DATA: i32 = 205;

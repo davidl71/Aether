@@ -86,6 +86,7 @@ AI-friendly JSON output (for parsing):
 | Broker trait + domain | `agents/backend/crates/broker_engine/` |
 | IBKR adapter | `agents/backend/crates/ib_adapter/` |
 | Market data | `agents/backend/crates/market_data/` |
+| Finance rates / yield read model | `agents/backend/crates/api/src/finance_rates/` (`api::finance_rates`) |
 | Quant / risk / pricing | `agents/backend/crates/quant/` |
 | Ledger | `agents/backend/crates/ledger/` |
 | NATS messaging | `agents/backend/crates/nats_adapter/` |

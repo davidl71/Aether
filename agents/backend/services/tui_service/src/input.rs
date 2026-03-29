@@ -1,7 +1,9 @@
 //! Input handling: key events to application actions.
 //!
 //! Converts crossterm key events into typed actions, keeping input parsing
-//! separate from application state mutation.
+//! separate from application state mutation. Legacy strategy/scenario “execute”
+//! actions surface as disabled no-ops in data-exploration mode
+//! (`docs/DATA_EXPLORATION_MODE.md`).
 
 use api::RuntimePositionDto;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -79,6 +81,7 @@ pub enum Action {
     ScenariosDteContract,
     ScenariosDteExpand,
     ScenariosCycleStrikeWidth,
+    /// Deprecated scenario “execute” binding; exploration UI only (no submission).
     ScenariosExecute,
     ChartSearchFocus,
     ChartSearchChar(char),

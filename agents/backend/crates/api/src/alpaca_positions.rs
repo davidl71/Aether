@@ -1,4 +1,4 @@
-//! Alpaca position source for fetching account positions and balances.
+//! Alpaca account/position read API (paper or live endpoints) for exploration snapshots — not order flow.
 
 /// Position information from Alpaca.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -44,7 +44,7 @@ impl AlpacaPositionSource {
         Some(Self { is_paper })
     }
 
-    /// Create new position source for paper or live trading.
+    /// Create position source for Alpaca **paper vs live REST** credentials (read-only account data).
     /// Returns None if credentials are not configured for the requested environment.
     pub fn from_paper(is_paper: bool) -> Option<Self> {
         use crate::credentials::{credential_source, CredentialKey};
@@ -62,7 +62,7 @@ impl AlpacaPositionSource {
         }
     }
 
-    /// Check if this is paper trading environment.
+    /// True when using Alpaca paper API credentials (vs live account API).
     pub fn is_paper(&self) -> bool {
         self.is_paper
     }

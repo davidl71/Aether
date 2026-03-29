@@ -51,7 +51,7 @@ pub mod market_data {
     }
 }
 
-/// Strategy topics
+/// Strategy topics (signal/decision feed naming). Does not imply live execution; control plane is off in data-exploration mode.
 pub mod strategy {
     use super::domain;
 
@@ -86,7 +86,7 @@ pub mod strategy {
     }
 }
 
-/// Order topics
+/// Order topics (legacy OMS-style names). Backend does not accept new order submissions in data-exploration mode.
 pub mod orders {
     use super::domain;
 
@@ -342,10 +342,10 @@ pub mod api {
     }
 }
 
-/// RPC (Request/Reply) topics
+/// RPC (Request/Reply) topics — legacy naming; prefer snapshot/NATS read models for exploration UI.
 pub mod rpc {
 
-    /// Request strategy status: `rpc.strategy.status`
+    /// `rpc.strategy.status` (legacy RPC subject).
     pub fn strategy_status() -> &'static str {
         "rpc.strategy.status"
     }

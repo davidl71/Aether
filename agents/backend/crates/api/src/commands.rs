@@ -1,3 +1,6 @@
+//! NATS command envelope types for operator-visible outcomes (snapshot publish, deprecated strategy controls, etc.).
+//! Execution-era actions reply as failed while data-exploration mode is the default.
+
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use chrono::Utc;

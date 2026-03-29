@@ -1,8 +1,8 @@
-//! Legacy IBKR/TWS execution adapter.
+//! Legacy IBKR/TWS execution adapter (opt-in tooling only).
 //!
-//! This crate is intentionally excluded from the default workspace build. It
-//! retains order placement, combo order placement, cancellation, and resolved
-//! contract lookup for explicit legacy execution workflows only.
+//! Excluded from the default workspace build. Retains order placement, combo
+//! placement, cancellation, and resolved contract lookup for explicit legacy
+//! workflows — **not** the default product path (`docs/DATA_EXPLORATION_MODE.md`).
 
 use std::sync::Arc;
 

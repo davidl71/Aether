@@ -1,4 +1,4 @@
-//! Orders tab: filter bar and orders table with scroll.
+//! Orders tab: read-only snapshot orders (filter + scroll). No placement or cancel.
 
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},

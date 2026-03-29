@@ -1,5 +1,6 @@
 //! Scenarios tab: box spread scenarios per calendar day, DTE +4 around the money.
 //! Supports expanding/contracting DTE window ([ ]) and strike width filter (w). Compares to T-bill benchmark.
+//! “Execute” shortcuts are disabled in data-exploration mode (relative-value review only).
 
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},

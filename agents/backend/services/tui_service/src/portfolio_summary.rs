@@ -1,4 +1,4 @@
-//! Portfolio summary calculations for dashboard and reporting.
+//! Portfolio summary calculations for dashboard-style views (read-only aggregation).
 
 use std::collections::HashMap;
 
@@ -15,11 +15,11 @@ pub struct PortfolioSummary {
     pub pnl_percent: f64,
     /// Number of positions
     pub position_count: usize,
-    /// Per-strategy breakdown
+    /// Breakdown by strategy label / bucket (allocation grouping — not live execution).
     pub by_strategy: HashMap<String, StrategySummary>,
 }
 
-/// Summary statistics for a single strategy.
+/// Summary for one strategy bucket (position labels — not a running execution engine).
 #[derive(Debug, Clone, Default)]
 pub struct StrategySummary {
     /// Strategy name

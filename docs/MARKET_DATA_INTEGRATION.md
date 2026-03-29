@@ -30,7 +30,7 @@ Use this table to choose or interpret data sources in config and the TUI. Numeri
 | Options chains via Polygon | **Polygon** | When API key and websocket path are configured. |
 | Batch US quotes with fundamentals API | **FMP** | Batch quote + fundamentals; good for watchlists with rate limits in mind. |
 | Quick default / no API keys | **Yahoo** | Default quote polling in many setups. |
-| SOFR / Treasury benchmarks, curve inputs | **FMP** + **finance_rates** pipeline | See § FMP treasury & SOFR and backend `api.finance_rates.*` ([NATS_TOPICS_REGISTRY.md](./NATS_TOPICS_REGISTRY.md)). |
+| SOFR / Treasury benchmarks, curve inputs | **FMP** + **finance_rates** pipeline | Read-model code: `agents/backend/crates/api/src/finance_rates/` (`types`, `curve`, `benchmarks`, `comparison`); public surface remains `api::finance_rates`. NATS subjects unchanged — see § FMP treasury & SOFR and `api.finance_rates.*` ([NATS_TOPICS_REGISTRY.md](./NATS_TOPICS_REGISTRY.md)). |
 | Israeli SHIR (loan effective rates) | **SHIR** fetch in integration layer | See implementation sections below. |
 | Automated tests / no network | **Mock** | Priority 0; not for production. |
 | Alpaca account positions (read) | **`AlpacaPositionSource`** (`api` crate) | Not the same trait stack as `MarketDataSource`; see provider matrix in [MARKET_DATA_PROVIDER_ARCHITECTURE.md](./MARKET_DATA_PROVIDER_ARCHITECTURE.md). |

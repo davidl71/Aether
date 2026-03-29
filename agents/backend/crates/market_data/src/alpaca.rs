@@ -76,7 +76,7 @@ impl AlpacaSource {
         self.symbols[idx].clone()
     }
 
-    /// Check if this is paper trading.
+    /// True when quotes use Alpaca paper market-data endpoint (not order flow).
     pub fn is_paper(&self) -> bool {
         self.is_paper
     }

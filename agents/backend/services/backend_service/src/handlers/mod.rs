@@ -112,7 +112,7 @@ pub async fn handle_sub_parallel<F, Fut>(
     }
 }
 
-/// Execute CPU-bound work on the blocking thread pool.
+/// Run CPU-bound work on Tokio's blocking thread pool (not trading execution).
 pub async fn spawn_cpu_work<F>(work: F) -> Vec<u8>
 where
     F: FnOnce() -> Vec<u8> + Send + 'static,

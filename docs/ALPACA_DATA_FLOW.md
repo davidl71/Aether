@@ -14,7 +14,7 @@ This document maps **where Alpaca data enters Aether** and how it reaches the TU
 3. Backend publishes ticks over **NATS**; the TUI consumes snapshot/stream updates like other quote sources.
 4. **End-to-end (quotes)**: Alpaca API → `market_data` → NATS → TUI (charts / watchlist / health).
 
-Alpaca is **not** used to build the SOFR/Treasury **yield curve** in the current stack. That path uses TWS / `tws_yield_curve`, NATS KV curve payloads, and `finance_rates` aggregation — see Yield below.
+Alpaca is **not** used to build the SOFR/Treasury **yield curve** in the current stack. That path uses TWS / `tws_yield_curve`, NATS KV curve payloads, and `finance_rates` aggregation (`api/src/finance_rates/`) — see Yield below.
 
 ## Positions and account (read models)
 
@@ -23,13 +23,13 @@ Alpaca is **not** used to build the SOFR/Treasury **yield curve** in the current
 
 ## Yield curve tab (separate path)
 
-- **Source**: Curve data is written by the yield-curve writer / TWS daemon, held in **NATS KV**, and merged with benchmarks via HTTP/`finance_rates` — **not** via Alpaca market data APIs.
+- **Source**: Curve data is written by the yield-curve writer / TWS daemon, held in **NATS KV**, and merged with benchmarks via HTTP/`finance_rates` (`api/src/finance_rates/`) — **not** via Alpaca market data APIs.
 - **End-to-end (yield)**: TWS or writer → NATS KV / backend → TUI Yield tab (and manual refresh via `api.yield_curve.refresh`).
 
 So “Alpaca → yield curve” is **not** one pipeline. Operators should expect:
 
 - **Alpaca** → quotes/ticks (+ optional positions) → TUI.
-- **Yield** → TWS/KV/finance_rates → TUI Yield tab.
+- **Yield** → TWS/KV/`finance_rates` (`api/src/finance_rates/`) → TUI Yield tab.
 
 ## Rust-first integration note
 

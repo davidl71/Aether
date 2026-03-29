@@ -1,7 +1,6 @@
-//! Alpaca health monitoring and reporting.
+//! Alpaca health monitoring for read-only exploration (quotes/account visibility).
 //!
-//! Provides health checks for Alpaca API connectivity and publishes
-//! status to the system health endpoint.
+//! Connectivity checks and status for the system health stream — not order flow.
 
 use std::collections::HashMap;
 use std::time::Duration;

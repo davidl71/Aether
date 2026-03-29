@@ -115,6 +115,7 @@ See **ARCHITECTURE.md** for full ownership and current build settings.
 | `agents/backend/services/tui_service` | Ratatui TUI |
 | `agents/backend/services/tws_yield_curve_daemon` | TWS yield curve fetcher daemon |
 | `agents/backend/crates/api` | REST routes, snapshot, frontend read models |
+| `agents/backend/crates/api/src/finance_rates/` | SOFR/Treasury/box-spread read model (`api::finance_rates`; `types`, `curve`, `benchmarks`, `comparison`) |
 | `agents/backend/crates/broker_engine` | Broker trait + domain types (engine abstraction) |
 | `agents/backend/crates/common` | Shared snapshot/event types across crates |
 | `agents/backend/crates/ib_adapter` | IBKR/TWS adapter (implements BrokerEngine) |

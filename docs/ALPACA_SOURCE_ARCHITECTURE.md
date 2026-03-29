@@ -76,7 +76,7 @@ The promising Rust/native libraries in the repo for later work are:
 ## 5. Active Files
 
 - [agents/backend/crates/credential_store/src/lib.rs](../agents/backend/crates/credential_store/src/lib.rs) (stable import: `api::credentials`)
-- [agents/backend/crates/api/src/finance_rates.rs](../agents/backend/crates/api/src/finance_rates.rs)
+- [agents/backend/crates/api/src/finance_rates/mod.rs](../agents/backend/crates/api/src/finance_rates/mod.rs) (submodules: `types`, `curve`, `benchmarks`, `comparison`; stable import: `api::finance_rates`)
 - [agents/backend/services/backend_service/src/yield_curve_writer.rs](../agents/backend/services/backend_service/src/yield_curve_writer.rs)
 - [docs/MARKET_DATA_INTEGRATION.md](./MARKET_DATA_INTEGRATION.md)
 

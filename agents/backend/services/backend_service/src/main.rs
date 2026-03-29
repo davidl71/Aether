@@ -266,8 +266,9 @@ async fn main() -> anyhow::Result<()> {
     // Create shared aggregator for source priority resolution
     let market_aggregator = Arc::new(market_data::MarketDataAggregator::new());
 
-    // Spawn broker market data loop if broker is enabled
-    // This runs at highest priority (100) so it takes precedence over polling sources
+    // Spawn TWS-backed market data when broker env/config allows (read-only quotes into aggregator).
+    // Data-exploration mode: no order submission through this path; see docs/DATA_EXPLORATION_MODE.md.
+    // Priority 100 so TWS takes precedence over polling sources.
     let broker_engine_for_market_data: Option<Arc<dyn BrokerEngine>> = if config
         .broker
         .paper_trading
@@ -282,7 +283,7 @@ async fn main() -> anyhow::Result<()> {
         let adapter = IbAdapter::new(broker_config.clone());
         match adapter.connect().await {
             Ok(()) => {
-                info!(host = %broker_config.host, port = %broker_config.port, "Connected to TWS for market data + order placement");
+                info!(host = %broker_config.host, port = %broker_config.port, "Connected to TWS for market data (order flow disabled in data-exploration mode)");
                 Some(Arc::new(adapter) as Arc<dyn BrokerEngine>)
             }
             Err(e) => {
@@ -341,16 +342,17 @@ async fn main() -> anyhow::Result<()> {
     });
     if let Some(ref nats) = *nats_integration {
         if let Some(client) = nats.client() {
+            // Passed into strategy NATS handlers for API symmetry; handlers are exploration-only and ignore the engine.
             let broker_engine: Option<Arc<dyn BrokerEngine>> = if let Some(ref engine) =
                 broker_engine_for_market_data
             {
-                info!("Reusing TWS connection for order placement");
+                info!("Reusing TWS broker adapter for api_handlers (market data path; strategy subjects return deprecated replies)");
                 Some(engine.clone())
             } else if config.broker.paper_trading || std::env::var("IB_BROKER_ENABLED").is_ok() {
-                info!("Broker order placement disabled (TWS connection failed earlier)");
+                info!("No TWS broker adapter (connection failed); strategy NATS subjects still reply with data-exploration deprecation");
                 None
             } else {
-                info!("Broker order placement disabled (enable with IB_BROKER_ENABLED or set paper_trading=true)");
+                info!("TWS broker adapter not started (set paper_trading or IB_BROKER_ENABLED for market data via IBKR)");
                 None
             };
             let interval_ms: u64 = std::env::var("SNAPSHOT_PUBLISH_INTERVAL_MS")
