@@ -28,25 +28,8 @@ else
   echo "[ts] skipped (web/ archived)"
 fi
 
-# Python/betterproto (non-standard plugin — kept here, not in buf.gen.yaml)
-# Output under python/generated/ so scripts/recreate_python_generated_init.py can re-export from python.generated.ib.platform.v1
-echo ""
-PYTHON_OUT="$ROOT_DIR/python/generated"
-mkdir -p "$PYTHON_OUT"
-if command -v uv >/dev/null 2>&1; then
-  echo "[py] generating with betterproto..."
-  uv run python3 -m grpc_tools.protoc \
-    -I "$PROTO_DIR" \
-    --python_betterproto_out="$PYTHON_OUT" \
-    "$PROTO_DIR/messages.proto" 2>/dev/null || \
-  echo "[py] betterproto generation failed (uv pip install betterproto[compiler])"
-else
-  python3 -m grpc_tools.protoc \
-    -I "$PROTO_DIR" \
-    --python_betterproto_out="$PYTHON_OUT" \
-    "$PROTO_DIR/messages.proto" 2>/dev/null || \
-  echo "[py] betterproto not installed, skipping"
-fi
+# Python: root repo no longer emits betterproto here. Nautilus agent uses
+# agents/nautilus/scripts/generate_proto.py when needed.
 
 # Rust is handled by prost via build.rs (nats_adapter crate)
 echo "[rs] codegen handled by prost build.rs"

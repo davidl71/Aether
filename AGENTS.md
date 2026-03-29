@@ -81,6 +81,7 @@ Aether/
 │   ├── crates/              # api, credential_store, broker_engine, ib_adapter, ledger, market_data, nats_adapter, quant, risk, strategy, discount_bank_parser, common, tws_yield_curve
 │   ├── services/            # backend_service (:8080), tui_service, tws_yield_curve_daemon
 │   └── bin/                 # cli (Rust CLI)
+├── agents/nautilus/         # Optional Python Nautilus ↔ NATS agent (uv/pytest); see docs/PYTHON_INVENTORY.md
 ├── native/                  # C++ removed from build (see root CMakeLists.txt)
 ├── web/                     # Archived React web application (not active runtime)
 ├── proto/                   # Protocol Buffer definitions

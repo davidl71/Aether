@@ -3,6 +3,8 @@
 Last updated: 2026-03-04
 Total scripts: 116 (after deduplication)
 
+**Python (`scripts/*.py`):** see **`docs/PYTHON_INVENTORY.md`** for a maintained list and how they relate to `Justfile` / Cursor skills. This file focuses on shell scripts and historical deduplication.
+
 ## Recent Deduplication (2026-03-04)
 
 ### Removed Scripts (historical log; counts are approximate)
