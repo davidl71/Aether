@@ -14,7 +14,7 @@ pub use positions::positions_display_info;
 pub(crate) use positions::sort_positions_for_operator;
 mod scenarios;
 pub use scenarios::filtered_scenarios;
-mod settings;
+pub(crate) mod settings;
 mod yield_curve;
 pub use candlestick::Candle;
 pub use feedback::{ToastLevel, ToastManager};
@@ -32,8 +32,8 @@ use ratatui::{
 use api::CommandStatus;
 
 use crate::app::{App, DetailPopupContent, InputMode, Tab};
-use crate::mode::AppMode;
 use crate::events::{ConnectionState, ConnectionStatus, ConnectionTarget};
+use crate::mode::AppMode;
 use crate::pane::{pane_spec, PaneHintMode};
 use crate::workspace::{VisibleWorkspace, WorkspaceSpec};
 
@@ -1048,10 +1048,7 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
                 Style::default().add_modifier(Modifier::BOLD),
             ));
             spans.push(Span::raw(":"));
-            spans.push(Span::styled(
-                desc,
-                Style::default().fg(Color::DarkGray),
-            ));
+            spans.push(Span::styled(desc, Style::default().fg(Color::DarkGray)));
         }
     }
 
@@ -1072,6 +1069,7 @@ fn settings_mode_indicator(app: &App) -> Option<(String, Color)> {
             Color::Yellow,
         )),
         InputMode::SettingsAddSymbol => Some(("SETTINGS:ADD SYMBOL".into(), Color::Yellow)),
+        InputMode::SettingsAlpacaCredential => Some(("SETTINGS:ALPACA CRED".into(), Color::Yellow)),
         InputMode::ChartSearch => Some(("CHARTS:SEARCH".into(), Color::Cyan)),
         InputMode::OrdersFilter => Some(("ORDERS:FILTER".into(), Color::Yellow)),
         InputMode::LoanForm => Some(("LOANS:FORM".into(), Color::Yellow)),

@@ -198,6 +198,9 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
             app.request_discount_bank_fetch();
         }
         Action::SettingsDelete => {
+            if app.settings_section != crate::workspace::SettingsSection::Symbols {
+                return false;
+            }
             let wl = app.watchlist();
             if !wl.is_empty() && app.settings_symbol_index < wl.len() {
                 let mut list = app

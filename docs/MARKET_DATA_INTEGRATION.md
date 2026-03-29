@@ -95,8 +95,7 @@ pub async fn batch_quote(&self, symbols: &[String]) -> anyhow::Result<Vec<FmpQuo
 - Round-robin symbol polling with configurable interval
 - Health monitoring via `AlpacaHealthMonitor` in TUI
 
-**Credentials**: Resolved via TUI credential management (keyring/env/file)
-and passed as `APCA_API_KEY_ID`/`APCA_API_SECRET_KEY` environment variables.
+**Credentials**: Env (`APCA_*` / legacy `ALPACA_*`), keyring, or files via `api::credentials`. The TUI **Settings → Alpaca** section edits stored paper/live key ID and secret (see [ALPACA_DATA_FLOW.md](./ALPACA_DATA_FLOW.md)).
 
 ```rust
 // Alpaca source creation

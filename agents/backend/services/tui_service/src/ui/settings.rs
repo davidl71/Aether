@@ -1,5 +1,7 @@
 //! Settings tab: backend health, editable config overrides, and watchlist management.
 
+#[path = "settings_alpaca.rs"]
+mod alpaca_section;
 #[path = "settings_config.rs"]
 mod config_section;
 #[path = "settings_health.rs"]
@@ -21,6 +23,9 @@ use ratatui::{
 use crate::app::App;
 use crate::workspace::SettingsSection;
 
+pub(crate) use alpaca_section::{
+    alpaca_credential_key_for_row, render_settings_alpaca_section, ALPACA_CREDENTIAL_ROW_COUNT,
+};
 pub(crate) use config_section::render_settings_config_section;
 pub(crate) use health_section::render_settings_health_section;
 pub(crate) use hint_section::render_settings_hint_section;
@@ -33,6 +38,7 @@ pub(crate) struct SettingsLayout {
     pub config: Rect,
     pub symbols: Rect,
     pub sources: Rect,
+    pub alpaca: Rect,
     pub hint: Rect,
 }
 
@@ -55,11 +61,16 @@ pub(crate) fn settings_layout(area: Rect) -> SettingsLayout {
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(38), Constraint::Percentage(62)])
             .split(rows[1]);
+        let sources_alpaca = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(62), Constraint::Percentage(38)])
+            .split(bottom[1]);
         SettingsLayout {
             health: top[0],
             config: top[1],
             symbols: bottom[0],
-            sources: bottom[1],
+            sources: sources_alpaca[0],
+            alpaca: sources_alpaca[1],
             hint: rows[2],
         }
     } else {
@@ -68,7 +79,8 @@ pub(crate) fn settings_layout(area: Rect) -> SettingsLayout {
             .constraints([
                 Constraint::Length(9),
                 Constraint::Min(3),
-                Constraint::Min(6),
+                Constraint::Min(5),
+                Constraint::Min(4),
                 Constraint::Min(5),
                 Constraint::Length(1),
             ])
@@ -78,7 +90,8 @@ pub(crate) fn settings_layout(area: Rect) -> SettingsLayout {
             config: chunks[1],
             symbols: chunks[2],
             sources: chunks[3],
-            hint: chunks[4],
+            alpaca: chunks[4],
+            hint: chunks[5],
         }
     }
 }
@@ -89,12 +102,14 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
         config,
         symbols,
         sources,
+        alpaca,
         hint,
     } = settings_layout(area);
     render_settings_health_section(f, app, health);
     render_settings_config_section(f, app, config);
     render_settings_symbols_section(f, app, symbols);
     render_settings_sources_section(f, app, sources);
+    render_settings_alpaca_section(f, app, alpaca);
     render_settings_hint_section(f, app, hint);
 }
 

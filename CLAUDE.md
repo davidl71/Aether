@@ -74,6 +74,8 @@ AI-friendly JSON output (for parsing):
 ./scripts/build_rust_ai_friendly.sh --json-only
 ```
 
+**Agent cadence:** Prefer grouping related edits, then running **one** build/test (or clippy) pass—do not insist on a clean build after every single small change unless you are narrowing a compile error.
+
 ## Key Files to Know
 
 | What | Where |

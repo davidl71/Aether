@@ -601,6 +601,9 @@ mod tests {
         assert_eq!(config_key_scope("REST_URL"), SettingScope::EnvOnly);
         assert_eq!(config_key_scope("REST_POLL_MS"), SettingScope::EnvOnly);
         assert_eq!(config_key_scope("REST_FALLBACK"), SettingScope::EnvOnly);
-        assert_eq!(config_key_scope("TUI_POSITIONS_SORT"), SettingScope::Editable);
+        assert_eq!(
+            config_key_scope("TUI_POSITIONS_SORT"),
+            SettingScope::Editable
+        );
     }
 }

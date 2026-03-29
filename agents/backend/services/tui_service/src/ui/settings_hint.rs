@@ -20,6 +20,9 @@ pub(crate) fn render_settings_hint_section(f: &mut Frame, app: &App, area: Rect)
         SettingsSection::Sources => {
             " 0 = Settings  ↑↓ section  Active section: Data Sources (credential origin: env/keyring/file/built-in) "
         }
+        SettingsSection::Alpaca => {
+            " 0 = Settings  ↑↓ field  e/Enter edit  d/Del clear  Active section: Alpaca credentials "
+        }
         SettingsSection::Health => {
             match app.settings_health_focus {
                 SettingsHealthFocus::Transport => {

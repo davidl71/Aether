@@ -1,7 +1,11 @@
 use crossterm::event::KeyCode;
 
+use api::credentials;
+
 use crate::app::{App, CommandStatusView};
 use crate::input::Action;
+use crate::ui::settings::{alpaca_credential_key_for_row, ALPACA_CREDENTIAL_ROW_COUNT};
+use crate::ui::ToastLevel;
 use crate::workspace::{SettingsHealthFocus, SettingsSection};
 
 pub(crate) fn settings_key_action(app: &App, key: KeyCode) -> Option<Action> {
@@ -20,13 +24,26 @@ pub(crate) fn settings_key_action(app: &App, key: KeyCode) -> Option<Action> {
         {
             Some(Action::SettingsDelete)
         }
+        KeyCode::Char('d') | KeyCode::Char('D')
+            if app.settings_section == SettingsSection::Alpaca =>
+        {
+            Some(Action::SettingsDelete)
+        }
         KeyCode::Char('e') | KeyCode::Char('E') | KeyCode::Enter
             if app.settings_section == SettingsSection::Config =>
         {
             Some(Action::SettingsEditConfig)
         }
+        KeyCode::Char('e') | KeyCode::Char('E') | KeyCode::Enter
+            if app.settings_section == SettingsSection::Alpaca =>
+        {
+            Some(Action::SettingsEditAlpaca)
+        }
         KeyCode::Char('r') | KeyCode::Char('R') => Some(Action::SettingsReset),
-        KeyCode::Delete => Some(Action::SettingsDelete),
+        KeyCode::Delete => match app.settings_section {
+            SettingsSection::Symbols | SettingsSection::Alpaca => Some(Action::SettingsDelete),
+            _ => None,
+        },
         _ => None,
     }
 }
@@ -47,6 +64,12 @@ pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
                     app.settings_config_key_index = app.settings_config_key_index.saturating_sub(1);
                 } else {
                     app.settings_section = SettingsSection::Health;
+                }
+            } else if app.settings_section == SettingsSection::Alpaca {
+                if app.settings_alpaca_row > 0 {
+                    app.settings_alpaca_row -= 1;
+                } else {
+                    app.settings_section = SettingsSection::Sources;
                 }
             } else if app.settings_section == SettingsSection::Sources {
                 app.settings_section = SettingsSection::Symbols;
@@ -76,8 +99,14 @@ pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
                 } else {
                     app.settings_section = SettingsSection::Symbols;
                 }
-            } else if app.settings_section == SettingsSection::Health {
-                app.settings_section = SettingsSection::Config;
+            } else if app.settings_section == SettingsSection::Alpaca {
+                let last = ALPACA_CREDENTIAL_ROW_COUNT.saturating_sub(1);
+                if app.settings_alpaca_row < last {
+                    app.settings_alpaca_row += 1;
+                } else {
+                    app.settings_section = SettingsSection::Health;
+                    app.settings_health_focus = SettingsHealthFocus::Transport;
+                }
             } else {
                 app.settings_section = app.settings_section.next();
             }
@@ -103,6 +132,38 @@ pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
             if app.settings_section == SettingsSection::Health {
                 app.settings_health_focus = SettingsHealthFocus::Transport;
             }
+        }
+        Action::SettingsEditAlpaca => {
+            if app.settings_section != SettingsSection::Alpaca {
+                return false;
+            }
+            if let Some(ck) = alpaca_credential_key_for_row(app.settings_alpaca_row) {
+                let existing = credentials::get_credential(ck).unwrap_or_default();
+                app.settings_alpaca_edit_key = Some(ck);
+                app.settings_alpaca_buffer = Some(existing);
+                app.set_command_status(CommandStatusView::success(
+                    "settings",
+                    "Alpaca credential edit (Enter save, Esc cancel).",
+                ));
+            }
+            return true;
+        }
+        Action::SettingsDelete => {
+            if app.settings_section != SettingsSection::Alpaca {
+                return false;
+            }
+            if let Some(ck) = alpaca_credential_key_for_row(app.settings_alpaca_row) {
+                match credentials::delete_credential(ck) {
+                    Ok(()) => {
+                        app.push_toast(format!("Cleared {}.", ck.display_name()), ToastLevel::Info);
+                    }
+                    Err(e) => app.push_toast(
+                        format!("Could not clear credential: {e}"),
+                        ToastLevel::Warning,
+                    ),
+                }
+            }
+            return true;
         }
         _ => return false,
     }

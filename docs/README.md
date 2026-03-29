@@ -22,6 +22,7 @@
 | [TUI_UX_BENCHMARKS.md](./TUI_UX_BENCHMARKS.md) | UX comparison against benchmark trading/terminal apps |
 | [ARCHITECTURE_BROKER_ENGINE.md](./ARCHITECTURE_BROKER_ENGINE.md) | Broker engine architecture and `ib_adapter` integration |
 | [ALPACA_SOURCE_ARCHITECTURE.md](./ALPACA_SOURCE_ARCHITECTURE.md) | Alpaca as a market-data source only, not an execution engine |
+| [ALPACA_DATA_FLOW.md](./ALPACA_DATA_FLOW.md) | Credentials, quotes vs yield curve paths, Rust crate map |
 | [CRATE_BOUNDARIES.md](./CRATE_BOUNDARIES.md) | Logic for Rust crate ownership and segmentation |
 | [COMMAND_DB_TRADING_ENGINE_GUIDANCE.md](./COMMAND_DB_TRADING_ENGINE_GUIDANCE.md) | Guidance for command bus, database roles, and trading-engine scope |
 | [TWS_BACKEND_PROVIDER_DECISION.md](./TWS_BACKEND_PROVIDER_DECISION.md) | Why `ib_adapter` is the active TWS backend path |

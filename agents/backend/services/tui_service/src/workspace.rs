@@ -26,6 +26,8 @@ pub enum SettingsSection {
     Config,
     Symbols,
     Sources,
+    /// Alpaca API key ID + secret (paper / live) via keyring or credential file.
+    Alpaca,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -84,15 +86,17 @@ impl SettingsSection {
             SettingsSection::Config => "Config",
             SettingsSection::Symbols => "Symbols",
             SettingsSection::Sources => "Sources",
+            SettingsSection::Alpaca => "Alpaca",
         }
     }
 
     pub fn prev(self) -> Self {
         match self {
-            SettingsSection::Health => SettingsSection::Health,
+            SettingsSection::Health => SettingsSection::Alpaca,
             SettingsSection::Config => SettingsSection::Health,
             SettingsSection::Symbols => SettingsSection::Config,
             SettingsSection::Sources => SettingsSection::Symbols,
+            SettingsSection::Alpaca => SettingsSection::Sources,
         }
     }
 
@@ -101,7 +105,8 @@ impl SettingsSection {
             SettingsSection::Health => SettingsSection::Config,
             SettingsSection::Config => SettingsSection::Symbols,
             SettingsSection::Symbols => SettingsSection::Sources,
-            SettingsSection::Sources => SettingsSection::Sources,
+            SettingsSection::Sources => SettingsSection::Alpaca,
+            SettingsSection::Alpaca => SettingsSection::Health,
         }
     }
 }

@@ -91,6 +91,7 @@ pub enum Action {
     SettingsScrollDown,
     SettingsAddSymbol,
     SettingsEditConfig,
+    SettingsEditAlpaca,
     SettingsDelete,
     SettingsReset,
     LogScrollUp,
@@ -155,7 +156,9 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
 
     match input_mode {
         InputMode::Help | InputMode::DetailPopup => return Some(Action::NoOp),
-        InputMode::SettingsEditConfig | InputMode::SettingsAddSymbol => return Some(Action::NoOp),
+        InputMode::SettingsEditConfig
+        | InputMode::SettingsAddSymbol
+        | InputMode::SettingsAlpacaCredential => return Some(Action::NoOp),
         InputMode::LoanForm => return loan_form_key_action(key.code),
         _ => {}
     }

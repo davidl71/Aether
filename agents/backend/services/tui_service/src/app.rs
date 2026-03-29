@@ -126,6 +126,7 @@ pub enum InputMode {
     DetailPopup,
     SettingsEditConfig,
     SettingsAddSymbol,
+    SettingsAlpacaCredential,
     LoanForm,
     ChartSearch,
     OrdersFilter,
@@ -523,6 +524,11 @@ pub struct App {
     pub config_overrides: HashMap<String, String>,
     /// Selected config row in Settings (visible runtime config entries list).
     pub settings_config_key_index: usize,
+    /// Selected row in Settings → Alpaca credential table.
+    pub settings_alpaca_row: usize,
+    /// When set with `settings_alpaca_buffer`, user is editing this Alpaca credential.
+    pub settings_alpaca_edit_key: Option<api::credentials::CredentialKey>,
+    pub settings_alpaca_buffer: Option<String>,
     /// Last fetched box spread curve for the selected symbol.
     pub yield_curve: Option<CurveResponse>,
     /// Box spread curves for all watchlist symbols (keyed by symbol), populated by batch fetch.
@@ -664,6 +670,9 @@ impl App {
             settings_edit_config_key: None,
             config_overrides: HashMap::new(),
             settings_config_key_index: 0,
+            settings_alpaca_row: 0,
+            settings_alpaca_edit_key: None,
+            settings_alpaca_buffer: None,
             yield_curve: None,
             yield_curves_all: HashMap::new(),
             yield_benchmarks: None,
@@ -771,6 +780,8 @@ impl App {
             InputMode::Help
         } else if self.detail_popup.is_some() {
             InputMode::DetailPopup
+        } else if self.settings_alpaca_buffer.is_some() {
+            InputMode::SettingsAlpacaCredential
         } else if self.settings_add_symbol_input.is_some() {
             if self.settings_edit_config_key.is_some() {
                 InputMode::SettingsEditConfig
@@ -796,6 +807,7 @@ impl App {
         self.app_mode = match input_mode {
             InputMode::SettingsEditConfig
             | InputMode::SettingsAddSymbol
+            | InputMode::SettingsAlpacaCredential
             | InputMode::LoanForm
             | InputMode::ChartSearch
             | InputMode::OrdersFilter => AppMode::Edit,
@@ -1063,6 +1075,57 @@ impl App {
             }
             InputMode::DetailPopup => {
                 self.detail_popup = None;
+                return;
+            }
+            InputMode::SettingsAlpacaCredential => {
+                if let Some(ref mut buf) = self.settings_alpaca_buffer {
+                    match key.code {
+                        KeyCode::Enter => {
+                            if let Some(ck) = self.settings_alpaca_edit_key.take() {
+                                let val = buf.trim();
+                                let res = if val.is_empty() {
+                                    api::credentials::delete_credential(ck)
+                                } else {
+                                    api::credentials::set_credential(ck, val)
+                                };
+                                match res {
+                                    Ok(()) => {
+                                        let msg = if val.is_empty() {
+                                            format!("Cleared {}.", ck.display_name())
+                                        } else {
+                                            format!("Saved {}.", ck.display_name())
+                                        };
+                                        self.set_command_status(CommandStatusView::success(
+                                            "settings", msg,
+                                        ));
+                                    }
+                                    Err(e) => {
+                                        self.set_command_status(CommandStatusView::failure(
+                                            "settings",
+                                            format!("Credential error: {e}"),
+                                        ));
+                                    }
+                                }
+                            }
+                            self.settings_alpaca_buffer = None;
+                        }
+                        KeyCode::Esc => {
+                            self.set_command_status(CommandStatusView::success(
+                                "settings",
+                                "Alpaca edit cancelled.",
+                            ));
+                            self.settings_alpaca_edit_key = None;
+                            self.settings_alpaca_buffer = None;
+                        }
+                        KeyCode::Backspace => {
+                            buf.pop();
+                        }
+                        KeyCode::Char(c) if !c.is_control() => {
+                            buf.push(c);
+                        }
+                        _ => {}
+                    }
+                }
                 return;
             }
             InputMode::SettingsEditConfig | InputMode::SettingsAddSymbol => {
