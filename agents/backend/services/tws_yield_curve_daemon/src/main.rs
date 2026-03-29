@@ -109,11 +109,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         .and_then(|s| s.get("strike_width"))
                         .and_then(|v| v.as_f64())
                         .unwrap_or(4.0);
-                    let Some(yc) = yield_curve_from_opportunities(
-                        &opportunities,
-                        symbol,
-                        strike_width,
-                    ) else {
+                    let Some(yc) =
+                        yield_curve_from_opportunities(&opportunities, symbol, strike_width)
+                    else {
                         warn!(
                             %symbol,
                             opp_count = opportunities.len(),
