@@ -9,7 +9,7 @@ jobs:
   toolchain-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run setup_global_tools.sh
         env:
           CI: "true"
@@ -18,7 +18,7 @@ jobs:
   toolchain-macos:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run setup_global_tools.sh
         env:
           CI: "true"
@@ -27,7 +27,7 @@ jobs:
   proto-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Install buf
@@ -46,7 +46,7 @@ jobs:
       HOMEBREW_NO_INSTALL_CLEANUP: "1"
       HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Configure git for Homebrew
         run: |
