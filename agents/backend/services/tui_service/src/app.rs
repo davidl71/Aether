@@ -31,8 +31,6 @@ use crate::workspace::{
 
 const SPARKLINE_HISTORY_SIZE: usize = 20;
 const CHART_HISTORY_SIZE: usize = 120;
-const TOAST_TTL_SECS: u64 = 3;
-
 // ── Yield-refresh task tracking ─────────────────────────────────────────────
 
 /// Status of a manual yield-refresh request.
@@ -143,6 +141,8 @@ pub struct CommandStatusView {
     pub status: CommandStatus,
     pub message: Option<String>,
     pub error: Option<String>,
+    /// When false, failed status is shown in the status bar only (no error toast).
+    pub toast_on_failure: bool,
 }
 
 impl CommandStatusView {
@@ -154,6 +154,7 @@ impl CommandStatusView {
             status: reply.status.clone(),
             message: reply.message.clone(),
             error: reply.error.clone(),
+            toast_on_failure: true,
         }
     }
 
@@ -165,14 +166,23 @@ impl CommandStatusView {
             status: CommandStatus::Failed,
             message: None,
             error: Some(error.into()),
+            toast_on_failure: true,
         }
     }
 
     pub fn disabled(action: impl Into<String>) -> Self {
-        Self::failure(
-            action,
-            "Order and strategy-run controls are off in exploration mode; inspect data and settings as usual.",
-        )
+        Self {
+            command_id: None,
+            issued_at: None,
+            action: action.into(),
+            status: CommandStatus::Failed,
+            message: None,
+            error: Some(
+                "Order and strategy-run controls are off in exploration mode; inspect data and settings as usual."
+                    .into(),
+            ),
+            toast_on_failure: false,
+        }
     }
 
     pub fn success(action: impl Into<String>, message: impl Into<String>) -> Self {
@@ -183,6 +193,7 @@ impl CommandStatusView {
             status: CommandStatus::Completed,
             message: Some(message.into()),
             error: None,
+            toast_on_failure: true,
         }
     }
 }
@@ -1005,6 +1016,13 @@ impl App {
 
     /// Set the last operator action result for the status bar (strategy hotkeys map to disabled no-ops in exploration mode).
     pub fn set_command_status(&mut self, status: CommandStatusView) {
+        if status.toast_on_failure && matches!(status.status, CommandStatus::Failed) {
+            if let Some(ref err) = status.error {
+                self.push_toast(format!("{} — {}", status.action, err), ToastLevel::Error);
+            } else if let Some(ref msg) = status.message {
+                self.push_toast(format!("{} — {}", status.action, msg), ToastLevel::Warning);
+            }
+        }
         self.last_command_status = Some(status);
         self.mark_dirty();
     }

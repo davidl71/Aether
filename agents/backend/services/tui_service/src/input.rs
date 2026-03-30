@@ -233,8 +233,24 @@ fn handle_command_palette_input(
     }
 }
 
+/// True while the user is typing or navigating inside the command palette.
+fn command_palette_input_action(action: &Action) -> bool {
+    matches!(
+        action,
+        Action::CommandPalette
+            | Action::CommandPalettePrev
+            | Action::CommandPaletteNext
+            | Action::CommandPaletteBackspace
+            | Action::CommandPaletteChar(_)
+            | Action::NoOp
+    )
+}
+
 /// Applies an action to the app state.
 pub fn apply_action(app: &mut App, action: Action) {
+    if app.command_palette.visible && !command_palette_input_action(&action) {
+        app.command_palette.hide();
+    }
     if apply_settings_action(app, action) {
         return;
     }

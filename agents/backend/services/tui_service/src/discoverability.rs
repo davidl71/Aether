@@ -304,7 +304,6 @@ pub fn render_command_palette(f: &mut Frame, palette: &CommandPalette, area: Rec
         .map(|(i, &cmd_idx)| {
             let cmd = &palette.commands[cmd_idx];
             let keys = cmd.keys.join(", ");
-            let content = format!("{}  {}", keys, cmd.name);
 
             let style = if i == palette.selected {
                 Style::default()

@@ -18,6 +18,8 @@ pub(crate) mod settings;
 mod yield_curve;
 pub use candlestick::Candle;
 pub use feedback::{ToastLevel, ToastManager};
+
+use feedback::render_toast_area;
 #[cfg(test)]
 pub(crate) use yield_curve::render_yield_curve as render_yield_curve_tab;
 
@@ -52,6 +54,7 @@ pub fn render(f: &mut Frame, app: &App) {
     render_main(f, app, chunks[1]);
     render_hint_bar(f, app, chunks[2]);
     render_status_bar(f, app, chunks[3]);
+    render_toast_area(f, &app.toast_manager, f.area());
 
     if app.show_help {
         render_help_overlay(f, f.area());
@@ -669,6 +672,18 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::raw("next / prev tab or workspace pane"),
         ]),
         Line::from(vec![
+            Span::styled(
+                " Status bar ",
+                Style::default().add_modifier(Modifier::BOLD),
+            ),
+            Span::raw("NAV / EDIT / VIEW follow focus (browse vs text vs overlays). "),
+            Span::styled(
+                " Toasts ",
+                Style::default().add_modifier(Modifier::BOLD),
+            ),
+            Span::raw("stack bottom-right (errors and notices)."),
+        ]),
+        Line::from(vec![
             Span::styled(" macOS ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(
                 "⌘, Settings  ⌘/ help  ⌘⇧P palette  ⌘0 Settings  ⌘1–⌘9 = digit jumps  ⌘p split  ⌘r refresh  ⌘w close",
@@ -682,7 +697,7 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::styled(" M ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("read-only note  "),
+            Span::raw("mode / discoverability tips  "),
             Span::styled(" ` ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("log panel  "),
             Span::styled(" p ", Style::default().add_modifier(Modifier::BOLD)),

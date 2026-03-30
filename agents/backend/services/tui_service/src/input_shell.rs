@@ -96,7 +96,10 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
             set_active_tab(app, target);
         }
         Action::ModeCycle => {
-            app.set_command_status(CommandStatusView::disabled("set_mode"));
+            app.push_toast(
+                "NAV / EDIT / VIEW follow your focus (forms, search, overlays). Esc closes overlays. ? help  : palette",
+                crate::ui::ToastLevel::Info,
+            );
         }
         Action::CommandPalette => {
             app.command_palette.toggle();

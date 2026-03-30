@@ -401,6 +401,8 @@ fn help_overlay_documents_mode_aware_bindings() {
     assert!(content.contains("command palette"));
     assert!(content.contains("8 Disc"));
     assert!(content.contains(":"));
+    assert!(content.contains("NAV"));
+    assert!(content.contains("Toasts"));
 }
 
 #[test]
@@ -421,6 +423,17 @@ fn macos_cmd_shift_p_toggles_command_palette() {
         ..KeyEvent::from(KeyCode::Char('p'))
     });
     assert!(!app.command_palette.visible);
+}
+
+#[test]
+fn command_palette_closes_after_executing_non_palette_action() {
+    let (mut app, _, _) = make_app();
+    app.command_palette.visible = true;
+    crate::input::apply_action(&mut app, crate::input::Action::JumpToTab(2));
+    assert!(
+        !app.command_palette.visible,
+        "palette should close after a command runs (e.g. Enter on a palette entry)"
+    );
 }
 
 #[test]
