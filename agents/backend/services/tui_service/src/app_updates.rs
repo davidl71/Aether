@@ -69,7 +69,10 @@ impl App {
             }
 
             s.refresh_display_dto();
-            self.mark_dirty();
+            self.mark_regions(|d| {
+                d.mark_content();
+                d.mark_status_bar();
+            });
         }
     }
 
@@ -92,7 +95,7 @@ impl App {
                 volume: Some(volume as f64),
             },
         );
-        self.mark_dirty();
+        self.mark_regions(|d| d.mark_content());
     }
 
     pub fn apply_alert(
@@ -116,7 +119,7 @@ impl App {
                 s.inner.alerts.remove(0);
             }
             s.refresh_display_dto();
-            self.mark_dirty();
+            self.mark_regions(|d| d.mark_content());
         }
     }
 
@@ -164,10 +167,8 @@ impl App {
     /// Pull latest snapshot and config updates, process queued events.
     /// Returns true if the UI state changed and needs redraw.
     pub fn tick(&mut self) {
-        let mut changed = false;
-
         if self.toast_manager.cleanup_expired() {
-            changed = true;
+            self.mark_regions(|d| d.mark_overlay());
         }
 
         if self.config_rx.has_changed().unwrap_or(false) {
@@ -176,11 +177,12 @@ impl App {
             self.config_warning = validate_config_hint(&self.config);
             self.split_pane = self.config.split_pane;
             tracing::info!("Config reloaded from disk");
-            changed = true;
+            self.mark_dirty();
         }
 
         if self.health_rx.has_changed().unwrap_or(false) {
             self.backend_health = self.health_rx.borrow_and_update().clone();
+            self.mark_regions(|d| d.mark_content());
         }
 
         while let Ok(event) = self.event_rx.try_recv() {
@@ -197,7 +199,10 @@ impl App {
                 if self.should_accept_snapshot(&snap) {
                     self.set_snapshot(Some(snap.clone()));
                     self.update_roi_history(&snap);
-                    changed = true;
+                    self.mark_regions(|d| {
+                        d.mark_content();
+                        d.mark_status_bar();
+                    });
                 }
             }
         }
@@ -209,7 +214,7 @@ impl App {
                 &self.positions_expanded_combos,
             );
             if display_len > 0 {
-                self.positions_scroll = self.positions_scroll.min(display_len - 1);
+                self.positions_table.clamp_to_len(display_len);
             }
         }
 
@@ -233,10 +238,6 @@ impl App {
         }
 
         self.update_app_mode();
-
-        if changed {
-            self.needs_redraw = true;
-        }
     }
 
     fn refresh_credential_status(&mut self) {
@@ -263,11 +264,17 @@ impl App {
     fn apply_event(&mut self, event: AppEvent) {
         match event {
             AppEvent::Connection { target, status } => match target {
-                ConnectionTarget::Nats => self.nats_status = status,
+                ConnectionTarget::Nats => {
+                    self.nats_status = status;
+                    self.mark_regions(|d| d.mark_status_bar());
+                }
             },
             AppEvent::TransportHealth(state) => {
                 self.nats_transport = state;
-                self.mark_dirty();
+                self.mark_regions(|d| {
+                    d.mark_content();
+                    d.mark_status_bar();
+                });
             }
             AppEvent::CommandStatus(reply) => {
                 self.set_command_status(CommandStatusView::from_reply(&reply));
@@ -325,11 +332,17 @@ impl App {
                 }
                 self.yield_refresh_pending = false;
                 self.yield_error = None;
-                self.mark_dirty();
+                self.mark_regions(|d| {
+                    d.mark_content();
+                    d.mark_status_bar();
+                });
             }
             AppEvent::BenchmarksUpdate(benchmarks) => {
                 self.yield_benchmarks = Some(benchmarks);
-                self.mark_dirty();
+                self.mark_regions(|d| {
+                    d.mark_content();
+                    d.mark_status_bar();
+                });
             }
             AppEvent::YieldRefreshAck { ok } => {
                 if !ok {
@@ -343,7 +356,27 @@ impl App {
                     }
                     self.yield_refresh_pending = false;
                 }
-                self.mark_dirty();
+                self.mark_regions(|d| {
+                    d.mark_content();
+                    d.mark_status_bar();
+                });
+            }
+            AppEvent::StrategyNatsSignal { symbol, price } => {
+                self.strategy_nats_signal_count = self.strategy_nats_signal_count.saturating_add(1);
+                self.strategy_nats_last = format!("signal {} price={:.4}", symbol, price);
+                self.mark_regions(|d| d.mark_content());
+            }
+            AppEvent::StrategyNatsDecision {
+                symbol,
+                side,
+                quantity,
+                mark,
+            } => {
+                self.strategy_nats_decision_count =
+                    self.strategy_nats_decision_count.saturating_add(1);
+                self.strategy_nats_last =
+                    format!("decision {} {} x{} @ {:.4}", symbol, side, quantity, mark);
+                self.mark_regions(|d| d.mark_content());
             }
             AppEvent::AlpacaHealthUpdate {
                 is_paper,
@@ -372,7 +405,7 @@ impl App {
                 } else {
                     self.alpaca_live_status = conn_status;
                 }
-                self.mark_dirty();
+                self.mark_regions(|d| d.mark_content());
             }
         }
     }

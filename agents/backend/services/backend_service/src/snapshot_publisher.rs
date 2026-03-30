@@ -88,7 +88,9 @@ async fn run(
         {
             let mut snap = state.write().await;
             snap.touch();
+            let generated_at = snap.generated_at.to_rfc3339();
             let url = Some(client.url().to_string());
+            let failures = publish_errors.load(Ordering::Relaxed);
             let mut transport = if let Some(rtt) = flush_rtt_ms {
                 let mut t = NatsTransportHealthState::connected(url, Utc::now())
                     .with_subject(subject.clone())
@@ -110,10 +112,14 @@ async fn run(
             transport.in_messages = Some(stats_in_messages);
             transport.out_messages = Some(stats_out_messages);
             transport.connects = Some(stats_connects);
-            transport.extra.insert(
-                "publish_errors".to_string(),
-                publish_errors.load(Ordering::Relaxed).to_string(),
-            );
+            transport.snapshot_backend_id = Some(backend_id.clone());
+            transport.snapshot_generated_at = Some(generated_at);
+            transport.jetstream_enabled = Some(use_jetstream);
+            transport.jetstream_stream_ready = Some(js_ctx.is_some());
+            transport.jetstream_publish_failures = Some(failures);
+            transport
+                .extra
+                .insert("publish_errors".to_string(), failures.to_string());
             snap.nats_transport = Some(transport);
         }
 

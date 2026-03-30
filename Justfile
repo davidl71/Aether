@@ -50,23 +50,33 @@ clean-rust:
     cd agents/backend && cargo clean
     @echo "Rust workspace cleaned. To free more: rm -rf ~/.cargo/registry/cache ~/.cargo/git (global cache)."
 
+# Low disk detection (env thresholds: AETHER_DISK_FREE_WARN_MB / AETHER_DISK_FREE_CRIT_MB). Exits 1=warn 2=crit free space.
+disk-check:
+    ./scripts/disk_pressure.sh check
+# Dry-run: show agents/backend/target size + exact cargo clean command (no deletion).
+disk-prune-rust-dry:
+    ./scripts/disk_pressure.sh prune-rust-target
+# Actually run cargo clean (incremental rebuild after). Prefer dry-run first.
+disk-prune-rust-apply:
+    ./scripts/disk_pressure.sh prune-rust-target --apply
+
 # Save cargo-sweep timestamp (run after a successful build so sweep removes only older artifacts).
 # Requires: cargo install cargo-sweep. Automated: run after successful `just test` and `just build-rust`.
 sweep-stamp:
-    cd agents/backend && cargo sweep sweep . --stamp
+    cd agents/backend && cargo sweep --stamp .
 
 # Remove Cargo target artifacts older than the last sweep-stamp. Use after builds to free disk; next build will recompile removed crates.
 # CI runs sweep (agents-backend-rust.yml) after build/test to keep the target cache small.
 # Dry-run: just sweep-dry
 sweep:
-    cd agents/backend && cargo sweep sweep . --file .
+    cd agents/backend && cargo sweep --file . .
 sweep-dry:
-    cd agents/backend && cargo sweep sweep . --file . --dry-run
+    cd agents/backend && cargo sweep --file . . --dry-run
 
 # Prune artifacts older than N days (default 14). For cron/daily: 0 2 * * * cd /path/to/repo && just sweep-auto
 # Requires: cargo install cargo-sweep
 sweep-auto days="14":
-    cd agents/backend && cargo sweep sweep . --time {{days}}
+    cd agents/backend && cargo sweep --time {{days}} .
 
 # Find unused dependencies (compile-time check, more accurate than cargo-machete). Requires: cargo install cargo-udeps, rustup install nightly
 udeps:
@@ -88,7 +98,7 @@ cache-autoclean:
 # installed it is picked up automatically. On success, updates cargo-sweep stamp
 # if installed.
 build-rust:
-    cd agents/backend && env SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.cache/sccache}" cargo build && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
+    cd agents/backend && env SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.cache/sccache}" cargo build && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep --stamp . || true)
 
 # --- Test ---
 
@@ -96,11 +106,11 @@ build-rust:
 # workspace rustc-wrapper; if sccache is installed it is picked up
 # automatically. On success, updates cargo-sweep stamp if installed.
 test:
-    cd agents/backend && env SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.cache/sccache}" cargo test && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
+    cd agents/backend && env SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.cache/sccache}" cargo test && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep --stamp . || true)
 
 # Run a specific Rust test by name (e.g. just test-one risk_calculator)
 test-one name:
-    cd agents/backend && env SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.cache/sccache}" cargo test {{name}} && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
+    cd agents/backend && env SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.cache/sccache}" cargo test {{name}} && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep --stamp . || true)
 
 # Run Python tests (nautilus agent)
 test-python:
@@ -275,7 +285,11 @@ cred-status:
 # Sanity check: Python binding tests + Rust TUI buildability. On success, updates cargo-sweep stamp if installed.
 sanity:
     just test-python
-    cd agents/backend && env $(command -v sccache >/dev/null 2>&1 && echo RUSTC_WRAPPER=sccache) SCCACHE_DIR="${SCCACHE_DIR:-../.cache/sccache}" cargo check -p tui_service && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
+    cd agents/backend && env $(command -v sccache >/dev/null 2>&1 && echo RUSTC_WRAPPER=sccache) SCCACHE_DIR="${SCCACHE_DIR:-../.cache/sccache}" cargo check -p tui_service && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep --stamp . || true)
+
+# R analytics: Phase0 equity + box MTM backtest (skips if Rscript not on PATH)
+r-analytics-smoke:
+    ./analytics/r/tests/smoke.sh
 
 # Install a Python package
 py-add package:

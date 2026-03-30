@@ -328,6 +328,19 @@ pub fn spawn(
             "yield curve writer started (pre-populate then interval)"
         );
 
+        /// Best-effort overnight SOFR (decimal, e.g. 0.052). Used to anchor synthetic fallback near live funding.
+        async fn live_synthetic_benchmark_rate() -> Option<f64> {
+            let client = match reqwest::Client::builder()
+                .timeout(Duration::from_secs(HTTP_TIMEOUT_SECS))
+                .build()
+            {
+                Ok(c) => c,
+                Err(_) => return None,
+            };
+            let resp = api::finance_rates::get_sofr_rates(&client).await;
+            resp.overnight.rate.filter(|r| *r > 0.0 && *r <= 0.2)
+        }
+
         /// One full write cycle: TWS, URL, Yahoo, or synthetic placeholder; then write each symbol to KV.
         async fn write_cycle(
             kv: &nats_adapter::async_nats::jetstream::kv::Store,
@@ -357,6 +370,15 @@ pub fn spawn(
                 }
                 return;
             }
+            let live_bench = live_synthetic_benchmark_rate().await;
+            if live_bench.is_some() {
+                debug!(
+                    rate = ?live_bench,
+                    "yield curve writer: using live SOFR overnight for synthetic anchor (fallback paths)"
+                );
+            } else {
+                debug!("yield curve writer: no live SOFR (unavailable or out of range), synthetic uses BASE_RATE");
+            }
             let by_symbol: HashMap<String, Vec<serde_json::Value>> = if let Some(url) = source_url {
                 match fetch_curve_from_url(url).await {
                     Some(map) if !map.is_empty() => annotate_data_sources(map, "url"),
@@ -366,7 +388,7 @@ pub fn spawn(
                         );
                         symbols
                             .iter()
-                            .map(|s| (s.clone(), synthetic_opportunities(s, None)))
+                            .map(|s| (s.clone(), synthetic_opportunities(s, live_bench)))
                             .collect()
                     }
                 }
@@ -405,11 +427,11 @@ pub fn spawn(
                         }
                         Ok(_) => {
                             debug!(symbol = %sym, "yield curve writer: Yahoo returned empty, using synthetic");
-                            result.insert(sym.clone(), synthetic_opportunities(sym, None));
+                            result.insert(sym.clone(), synthetic_opportunities(sym, live_bench));
                         }
                         Err(e) => {
                             debug!(symbol = %sym, error = %e, "yield curve writer: Yahoo failed, using synthetic");
-                            result.insert(sym.clone(), synthetic_opportunities(sym, None));
+                            result.insert(sym.clone(), synthetic_opportunities(sym, live_bench));
                         }
                     }
                 }

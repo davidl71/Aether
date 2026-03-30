@@ -28,6 +28,7 @@
 ## Design references
 
 - [TWS_BACKEND_PROVIDER_DECISION.md](./TWS_BACKEND_PROVIDER_DECISION.md) — provider choice and deprecation of duplicate adapters in active docs.
+- [ibkr-docker-gateway-deployment-eval.md](./research/ibkr-docker-gateway-deployment-eval.md) — optional **Docker** deployment (extrange/ibkr-docker, gnzsnz alternative); host Gateway remains default for macOS dev.
 - [ARCHITECTURE.md](../ARCHITECTURE.md) — where IBKR fits in the Rust workspace.
 - [AGENTS.md](../AGENTS.md), [CLAUDE.md](../CLAUDE.md) — Cargo workspace path (`agents/backend/`), commands, and safety defaults.
 

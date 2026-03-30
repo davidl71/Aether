@@ -2,8 +2,9 @@
 //!
 //! Provides user interface elements to help users discover and learn key bindings:
 //! - Command palette (Cmd+Shift+P style): searchable list of all actions
-//! - Enhanced help overlay: organized by mode with search
-//! - Context hints: dynamic hints based on current mode/tab
+//! - Help overlay: full keybinding sheet — implemented by `render_help_overlay` in `ui/mod.rs`;
+//!   documented for operators/maintainers in repo `docs/TUI_ARCHITECTURE.md` (section **Help overlay**)
+//! - Context hints: dynamic hints based on current mode/tab (`context_hints_for`)
 
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Margin, Rect},
@@ -268,7 +269,9 @@ fn build_command_registry() -> Vec<Command> {
             "Next pane (composed workspace)",
             Action::WorkspaceFocusNext,
         )
-        .description("Next tab inside Market / Operations / Credit workspace (when Tab cycles panes)")
+        .description(
+            "Next tab inside Market / Operations / Credit workspace (when Tab cycles panes)",
+        )
         .keys(vec!["Tab (workspace)".into()]),
         Command::new(
             "workspace_focus_prev",
@@ -396,8 +399,9 @@ pub(crate) fn context_hints_for(mode: AppMode, tab: Tab) -> Vec<(String, String)
                 }
                 Tab::Charts => {
                     hints.push(("/".into(), "search".into()));
-                    hints.push(("←→ · hl".into(), "expiry".into()));
-                    hints.push(("↑↓ · jk".into(), "pill row".into()));
+                    hints.push(("Enter/Esc".into(), "pick search / close".into()));
+                    hints.push(("←→ · hl".into(), "expiry pills".into()));
+                    hints.push(("↑↓ · jk".into(), "strike row".into()));
                     hints.push(("Home/End".into(), "search jump".into()));
                 }
                 Tab::Alerts => {
@@ -418,9 +422,19 @@ pub(crate) fn context_hints_for(mode: AppMode, tab: Tab) -> Vec<(String, String)
                 }
                 Tab::Scenarios => {
                     hints.push(("[ ]".into(), "DTE".into()));
-                    hints.push(("w".into(), "width".into()));
+                    hints.push(("w".into(), "strike width".into()));
+                    hints.push(("Enter".into(), "detail".into()));
+                    hints.push(("o".into(), "execute (off)".into()));
                 }
-                _ => {}
+                Tab::Loans => {
+                    hints.push(("n".into(), "new".into()));
+                    hints.push(("b/i".into(), "bulk JSON".into()));
+                    hints.push(("↑↓".into(), "scroll".into()));
+                }
+                Tab::Settings => {
+                    hints.push(("0".into(), "this tab".into()));
+                    hints.push(("e/Enter".into(), "edit".into()));
+                }
             }
         }
         AppMode::Edit => {

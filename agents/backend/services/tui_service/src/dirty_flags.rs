@@ -1,7 +1,10 @@
 //! Dirty flags for selective re-rendering optimization.
 //!
-//! Tracks which UI regions need redrawing to avoid full-screen
-//! redraws when only a small portion changes.
+//! Tracks which UI regions need redrawing so [`crate::ui::render`] can skip
+//! widgets whose backing cells are unchanged (ratatui diffs buffers between draws).
+//!
+//! If no bit is set, [`crate::ui::render`] paints the full frame (tests and paths
+//! that only set [`crate::app::App::needs_redraw`]).
 
 /// Flags indicating which UI regions need redrawing.
 #[derive(Debug, Clone, Copy, Default, PartialEq)]

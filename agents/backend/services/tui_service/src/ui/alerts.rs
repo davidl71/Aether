@@ -27,7 +27,7 @@ pub(crate) fn build_alerts_view(app: &App, area: Rect) -> AlertsView {
     let scroll_row = if len <= visible_height {
         0
     } else {
-        app.alerts_scroll.min(max_scroll_row)
+        app.alerts_scroll.scroll().min(max_scroll_row)
     } as u16;
 
     let title = if len > visible_height {
@@ -51,7 +51,7 @@ pub(crate) fn render_alerts_panel(f: &mut Frame, area: Rect, view: AlertsView) {
     f.render_widget(widget, area);
 }
 
-fn alert_lines(app: &App) -> Vec<Line<'static>> {
+pub(crate) fn alert_lines(app: &App) -> Vec<Line<'static>> {
     if let Some(ref snap) = app.snapshot() {
         snap.dto()
             .alerts

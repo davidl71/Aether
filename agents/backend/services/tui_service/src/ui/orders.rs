@@ -119,7 +119,11 @@ pub fn render_orders_table(f: &mut Frame, app: &App, area: Rect) {
     let selected_order_summary = if let Some(ref snap) = app.snapshot() {
         let filtered = app.filtered_orders(snap);
         filtered
-            .get(app.orders_scroll.min(filtered.len().saturating_sub(1)))
+            .get(
+                app.orders_table
+                    .selected()
+                    .min(filtered.len().saturating_sub(1)),
+            )
             .map(|order| format!("{} {} {}", order.symbol, order.side, order.status))
     } else {
         None
@@ -148,7 +152,7 @@ pub fn render_orders_table(f: &mut Frame, app: &App, area: Rect) {
     let cursor = if len == 0 {
         0
     } else {
-        app.orders_scroll.min(len - 1)
+        app.orders_table.selected().min(len - 1)
     };
     let viewport = if len <= visible_height {
         0

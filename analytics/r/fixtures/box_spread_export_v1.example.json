@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "rows": [
+    {
+      "symbol": "EXAMPLE",
+      "k_long_call": 500,
+      "k_short_call": 510,
+      "k_long_put": 510,
+      "k_short_put": 500,
+      "premium_net": 8.25,
+      "t_years": 0.25,
+      "r": 0.052
+    }
+  ]
+}

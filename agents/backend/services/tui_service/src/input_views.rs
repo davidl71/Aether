@@ -4,27 +4,27 @@ use crate::input::Action;
 pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
     match action {
         Action::OrdersScrollUp => {
-            app.orders_scroll = app.orders_scroll.saturating_sub(1);
+            app.orders_table.move_up();
         }
         Action::OrdersScrollDown => {
             let len = app.filtered_orders_len();
-            if len > 0 {
-                app.orders_scroll = (app.orders_scroll + 1).min(len - 1);
-            }
+            app.orders_table.move_down(len);
         }
         Action::OrdersScrollPageUp => {
-            app.orders_scroll = app.orders_scroll.saturating_sub(10);
+            let len = app.filtered_orders_len();
+            app.orders_table.shift_selected(-10, len);
         }
         Action::OrdersScrollPageDown => {
             let len = app.filtered_orders_len();
-            if len > 0 {
-                app.orders_scroll = (app.orders_scroll + 10).min(len - 1);
-            }
+            app.orders_table.shift_selected(10, len);
         }
         Action::OrdersDetail => {
             if let Some(ref snap) = app.snapshot() {
                 let filtered = app.filtered_orders(snap);
-                let idx = app.orders_scroll.min(filtered.len().saturating_sub(1));
+                let idx = app
+                    .orders_table
+                    .selected()
+                    .min(filtered.len().saturating_sub(1));
                 if let Some(order) = filtered.get(idx) {
                     app.detail_popup = Some(DetailPopupContent::Order(order.clone()));
                 }
@@ -40,13 +40,16 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
         Action::OrdersFilterChar(c) => {
             app.order_filter_active = true;
             app.order_filter.push(c);
+            app.orders_table.clamp_to_len(app.filtered_orders_len());
         }
         Action::OrdersFilterBackspace => {
             app.order_filter.pop();
+            app.orders_table.clamp_to_len(app.filtered_orders_len());
         }
         Action::OrdersFilterClear => {
             app.order_filter.clear();
             app.order_filter_active = false;
+            app.orders_table.clamp_to_len(app.filtered_orders_len());
             app.set_command_status(CommandStatusView::success(
                 "orders_filter",
                 "Filter cleared.",
@@ -56,33 +59,23 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
             app.set_command_status(CommandStatusView::disabled("cancel_all"));
         }
         Action::AlertsScrollUp => {
-            app.alerts_scroll = app.alerts_scroll.saturating_sub(1);
+            let len = crate::ui::alerts::alert_lines(app).len();
+            app.alerts_scroll.shift_scroll(-1, len.saturating_sub(1));
         }
         Action::AlertsScrollDown => {
-            let len = app
-                .snapshot()
-                .as_ref()
-                .map(|s| s.dto().alerts.len())
-                .unwrap_or(0);
-            if len > 0 {
-                app.alerts_scroll = (app.alerts_scroll + 1).min(len - 1);
-            }
+            let len = crate::ui::alerts::alert_lines(app).len();
+            app.alerts_scroll.shift_scroll(1, len.saturating_sub(1));
         }
         Action::AlertsScrollPageUp => {
-            app.alerts_scroll = app.alerts_scroll.saturating_sub(10);
+            let len = crate::ui::alerts::alert_lines(app).len();
+            app.alerts_scroll.shift_scroll(-10, len.saturating_sub(1));
         }
         Action::AlertsScrollPageDown => {
-            let len = app
-                .snapshot()
-                .as_ref()
-                .map(|s| s.dto().alerts.len())
-                .unwrap_or(0);
-            if len > 0 {
-                app.alerts_scroll = (app.alerts_scroll + 10).min(len - 1);
-            }
+            let len = crate::ui::alerts::alert_lines(app).len();
+            app.alerts_scroll.shift_scroll(10, len.saturating_sub(1));
         }
         Action::DashboardScrollUp => {
-            app.dashboard_scroll = app.dashboard_scroll.saturating_sub(1);
+            app.dashboard_table.move_up();
         }
         Action::DashboardScrollDown => {
             let len = app
@@ -90,14 +83,13 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
                 .as_ref()
                 .map(|s| s.inner.symbols.len())
                 .unwrap_or(0);
-            if len > 0 {
-                app.dashboard_scroll = (app.dashboard_scroll + 1).min(len - 1);
-            }
+            app.dashboard_table.move_down(len);
         }
         Action::DashboardNavigateToChart => {
             let symbol = app.snapshot().as_ref().and_then(|snap| {
                 let idx = app
-                    .dashboard_scroll
+                    .dashboard_table
+                    .selected()
                     .min(snap.inner.symbols.len().saturating_sub(1));
                 snap.inner.symbols.get(idx).map(|s| s.symbol.clone())
             });
@@ -109,28 +101,26 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
             }
         }
         Action::ScenariosScrollUp => {
-            app.scenarios_scroll = app.scenarios_scroll.saturating_sub(1);
+            app.scenarios_table.move_up();
         }
         Action::ScenariosScrollDown => {
             let filtered = crate::ui::filtered_scenarios(app);
-            if !filtered.is_empty() {
-                app.scenarios_scroll =
-                    (app.scenarios_scroll + 1).min(filtered.len().saturating_sub(1));
-            }
+            app.scenarios_table.move_down(filtered.len());
         }
         Action::ScenariosScrollPageUp => {
-            app.scenarios_scroll = app.scenarios_scroll.saturating_sub(10);
+            let filtered = crate::ui::filtered_scenarios(app);
+            app.scenarios_table.shift_selected(-10, filtered.len());
         }
         Action::ScenariosScrollPageDown => {
             let filtered = crate::ui::filtered_scenarios(app);
-            if !filtered.is_empty() {
-                app.scenarios_scroll =
-                    (app.scenarios_scroll + 10).min(filtered.len().saturating_sub(1));
-            }
+            app.scenarios_table.shift_selected(10, filtered.len());
         }
         Action::ScenariosDetail => {
             let filtered = crate::ui::filtered_scenarios(app);
-            let idx = app.scenarios_scroll.min(filtered.len().saturating_sub(1));
+            let idx = app
+                .scenarios_table
+                .selected()
+                .min(filtered.len().saturating_sub(1));
             if let Some(scenario) = filtered.get(idx) {
                 app.detail_popup = Some(DetailPopupContent::Scenario(scenario.clone()));
             }
@@ -184,7 +174,9 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
                     app.symbol_for_chart = selected.clone();
                     if !app.chart_search_history.contains(selected) {
                         app.chart_search_history.push_front(selected.clone());
-                        if app.chart_search_history.len() > 10 {
+                        if app.chart_search_history.len()
+                            > crate::chart_search_history::CHART_SEARCH_HISTORY_MAX
+                        {
                             app.chart_search_history.pop_back();
                         }
                     }
@@ -194,11 +186,14 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
                 if !app.chart_search_history.contains(&app.chart_search_input) {
                     app.chart_search_history
                         .push_front(app.chart_search_input.clone());
-                    if app.chart_search_history.len() > 10 {
+                    if app.chart_search_history.len()
+                        > crate::chart_search_history::CHART_SEARCH_HISTORY_MAX
+                    {
                         app.chart_search_history.pop_back();
                     }
                 }
             }
+            crate::chart_search_history::save_chart_search_history(&app.chart_search_history);
             app.chart_search_visible = false;
             app.chart_search_input.clear();
         }
@@ -207,6 +202,16 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
             app.chart_search_input.clear();
             app.chart_search_results.clear();
         }
+        Action::ChartSearchFirst => {
+            if !app.chart_search_results.is_empty() {
+                app.chart_search_selected = 0;
+            }
+        }
+        Action::ChartSearchLast => {
+            if !app.chart_search_results.is_empty() {
+                app.chart_search_selected = app.chart_search_results.len() - 1;
+            }
+        }
         Action::ChartPillLeft => {
             if app.chart_pill_row == 0 {
                 app.chart_expiry_index = app.chart_expiry_index.saturating_sub(1);
@@ -214,7 +219,10 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
         }
         Action::ChartPillRight => {
             if app.chart_pill_row == 0 {
-                app.chart_expiry_index += 1;
+                let max = crate::ui::charts::chart_expiry_max_index(app);
+                if app.chart_expiry_index < max {
+                    app.chart_expiry_index += 1;
+                }
             }
         }
         Action::ChartPillUp => {
@@ -231,7 +239,8 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
         }
         Action::ChartPillSelect => {
             if app.chart_pill_row == 1 {
-                app.chart_strike_index = (app.chart_strike_index + 1) % 5;
+                let n = crate::ui::charts::CHART_STRIKE_PILL_COUNT;
+                app.chart_strike_index = (app.chart_strike_index + 1) % n;
             }
         }
         Action::LogScrollUp => {

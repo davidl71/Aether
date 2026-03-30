@@ -111,7 +111,11 @@ async fn get_health(
         .response_with_stale_after(health_stale_after());
     if let Some((ok, bucket)) = check_kv_bucket_reachable(nats_integration.as_ref()).await {
         resp.kv_bucket_ok = Some(ok);
-        resp.kv_bucket = Some(bucket);
+        resp.kv_bucket = Some(bucket.clone());
+        let now = chrono::Utc::now().to_rfc3339();
+        resp.transport.kv_reachable = Some(ok);
+        resp.transport.kv_bucket = Some(bucket);
+        resp.transport.kv_last_check_at = Some(now);
     }
     Json(resp)
 }

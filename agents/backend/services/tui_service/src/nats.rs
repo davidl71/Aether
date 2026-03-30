@@ -6,6 +6,13 @@
 //! and derives RuntimeSnapshotDto for display). See
 //! docs/platform/PROTOBUF_CONVERSION_AND_KV.md §4.2.
 //!
+//! **Strategy diagnostics (read-only):** background subscriptions to
+//! `strategy.signal.>` and `strategy.decision.>` (when enabled) decode
+//! `StrategySignal` / `StrategyDecision` and emit [`AppEvent`](crate::events::AppEvent)
+//! for counters + Settings health text — not execution control. Opt-in with
+//! `TUI_STRATEGY_NATS_SUBSCRIBE=1` (or `true` / `yes` / `on`) to avoid extra NATS
+//! traffic when strategy publishers are very chatty.
+//!
 //! Uses a circuit breaker to avoid hammering a downed NATS server:
 //! - After 3 consecutive failures the circuit opens for 30s
 //! - Reconnect delays grow exponentially: 2s, 4s, 8s … 60s max
@@ -26,7 +33,8 @@ use chrono::Utc;
 use futures::StreamExt;
 use nats_adapter::{extract_proto_payload, proto::v1 as pb, topics, NatsClient};
 use std::collections::HashMap;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use tokio::sync::{mpsc, watch};
 use tracing::{debug, info, warn};
 
@@ -56,6 +64,8 @@ pub async fn run(
     );
 
     let mut cb = CircuitBreaker::new();
+    // Full reconnect cycles (connect / subscription loss → backoff), same counter semantics as backend health aggregation.
+    let reconnect_cycles = Arc::new(AtomicU64::new(0));
 
     loop {
         if !cb.can_attempt() {
@@ -78,29 +88,35 @@ pub async fn run(
                     ConnectionState::Connected,
                     format!("Connected to {}", config.nats_url),
                 );
-                emit_transport_health(
-                    &event_tx,
-                    {
-                        let stats = client.client().statistics();
-                        let mut t =
-                            NatsTransportHealthState::connected(Some(config.nats_url.clone()), Utc::now())
-                        .with_subject(&subject)
-                        .with_role("snapshot-subscriber");
-                        t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
-                        t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
-                        t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
-                        t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
-                        t.connects = Some(stats.connects.load(Ordering::Relaxed));
-                        t
-                    },
-                );
+                emit_transport_health(&event_tx, {
+                    let stats = client.client().statistics();
+                    let mut t = NatsTransportHealthState::connected(
+                        Some(config.nats_url.clone()),
+                        Utc::now(),
+                    )
+                    .with_subject(&subject)
+                    .with_role("snapshot-subscriber");
+                    t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+                    t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
+                    t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
+                    t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
+                    t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
+                    t.connects = Some(stats.connects.load(Ordering::Relaxed));
+                    t
+                });
                 // Spawn health subscriber on same connection (drops when connection drops)
                 let client_health = client.clone();
                 let health_tx = health_tx.clone();
                 let health_event_tx = event_tx.clone();
+                let health_reconnect = reconnect_cycles.clone();
                 tokio::spawn(async move {
-                    if let Err(e) =
-                        run_health_subscriber(client_health, health_tx, health_event_tx).await
+                    if let Err(e) = run_health_subscriber(
+                        client_health,
+                        health_tx,
+                        health_event_tx,
+                        health_reconnect,
+                    )
+                    .await
                     {
                         warn!(error = %e, "Health subscriber ended");
                     }
@@ -114,11 +130,9 @@ pub async fn run(
                         "NATS subscription lost, reconnecting"
                     );
                     emit_status(&event_tx, ConnectionState::Retrying, e.to_string());
-                    emit_transport_health(
-                        &event_tx,
-                        {
-                            let stats = client.client().statistics();
-                            let mut t = NatsTransportHealthState::disconnected(
+                    emit_transport_health(&event_tx, {
+                        let stats = client.client().statistics();
+                        let mut t = NatsTransportHealthState::disconnected(
                             Some(config.nats_url.clone()),
                             Utc::now(),
                             Some(e.to_string()),
@@ -126,15 +140,16 @@ pub async fn run(
                         )
                         .with_subject(&subject)
                         .with_role("snapshot-subscriber");
-                            t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
-                            t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
-                            t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
-                            t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
-                            t.connects = Some(stats.connects.load(Ordering::Relaxed));
-                            t
-                        },
-                    );
+                        t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+                        t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
+                        t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
+                        t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
+                        t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
+                        t.connects = Some(stats.connects.load(Ordering::Relaxed));
+                        t
+                    });
                     tokio::time::sleep(delay).await;
+                    reconnect_cycles.fetch_add(1, Ordering::Relaxed);
                 }
             }
             Err(e) => {
@@ -147,20 +162,22 @@ pub async fn run(
                 };
                 warn!(error = %e, "NATS connect failed{}", open_msg);
                 emit_status(&event_tx, ConnectionState::Retrying, e.to_string());
-                emit_transport_health(
-                    &event_tx,
-                    NatsTransportHealthState::disconnected(
+                emit_transport_health(&event_tx, {
+                    let mut t = NatsTransportHealthState::disconnected(
                         Some(config.nats_url.clone()),
                         Utc::now(),
                         Some(e.to_string()),
                         Some("failed to connect snapshot subscriber to NATS".to_string()),
                     )
                     .with_subject(&subject)
-                    .with_role("snapshot-subscriber"),
-                );
+                    .with_role("snapshot-subscriber");
+                    t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+                    t
+                });
                 if !cb.is_open() {
                     tokio::time::sleep(delay).await;
                 }
+                reconnect_cycles.fetch_add(1, Ordering::Relaxed);
             }
         }
     }
@@ -197,27 +214,26 @@ async fn run_health_subscriber(
     client: NatsClient,
     tx: watch::Sender<HashMap<String, BackendHealthState>>,
     event_tx: mpsc::UnboundedSender<AppEvent>,
+    reconnect_cycles: Arc<AtomicU64>,
 ) -> anyhow::Result<()> {
     let subject = topics::system::health();
     let mut sub = client.client().subscribe(subject.to_string()).await?;
     let mut backends: HashMap<String, BackendHealthState> = HashMap::new();
 
     while let Some(msg) = sub.next().await {
-        emit_transport_health(
-            &event_tx,
-            {
-                let stats = client.client().statistics();
-                let mut t = NatsTransportHealthState::connected(None, Utc::now())
-                    .with_subject(subject)
-                    .with_role("health-subscriber");
-                t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
-                t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
-                t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
-                t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
-                t.connects = Some(stats.connects.load(Ordering::Relaxed));
-                t
-            },
-        );
+        emit_transport_health(&event_tx, {
+            let stats = client.client().statistics();
+            let mut t = NatsTransportHealthState::connected(None, Utc::now())
+                .with_subject(subject)
+                .with_role("health-subscriber");
+            t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+            t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
+            t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
+            t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
+            t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
+            t.connects = Some(stats.connects.load(Ordering::Relaxed));
+            t
+        });
         if let Some(health) = backend_health_from_message(&msg.payload) {
             let state = BackendHealthState::from_proto(health);
             let id = state.backend.clone();
@@ -226,11 +242,9 @@ async fn run_health_subscriber(
         }
     }
 
-    emit_transport_health(
-        &event_tx,
-        {
-            let stats = client.client().statistics();
-            let mut t = NatsTransportHealthState::disconnected(
+    emit_transport_health(&event_tx, {
+        let stats = client.client().statistics();
+        let mut t = NatsTransportHealthState::disconnected(
             None,
             Utc::now(),
             None,
@@ -238,14 +252,14 @@ async fn run_health_subscriber(
         )
         .with_subject(subject)
         .with_role("health-subscriber");
-            t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
-            t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
-            t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
-            t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
-            t.connects = Some(stats.connects.load(Ordering::Relaxed));
-            t
-        },
-    );
+        t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+        t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
+        t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
+        t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
+        t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
+        t.connects = Some(stats.connects.load(Ordering::Relaxed));
+        t
+    });
 
     anyhow::bail!("Health subscription ended");
 }
@@ -489,4 +503,84 @@ pub async fn run_alert_subscriber(
     }
 
     anyhow::bail!("Alert subscription ended");
+}
+
+/// When true, spawn strategy signal/decision diagnostic subscribers.
+///
+/// Default off. Set `TUI_STRATEGY_NATS_SUBSCRIBE=1` (or `true` / `yes` / `on`).
+pub fn strategy_nats_subscribe_enabled() -> bool {
+    match std::env::var("TUI_STRATEGY_NATS_SUBSCRIBE") {
+        Ok(v) => {
+            let v = v.trim().to_ascii_lowercase();
+            v == "1" || v == "true" || v == "yes" || v == "on"
+        }
+        Err(_) => false,
+    }
+}
+
+/// Subscribe to `strategy.signal.>` and emit [`AppEvent::StrategyNatsSignal`](crate::events::AppEvent).
+pub async fn run_strategy_signal_subscriber(
+    client: NatsClient,
+    event_tx: mpsc::UnboundedSender<AppEvent>,
+) -> anyhow::Result<()> {
+    let subject = topics::strategy::all_signals();
+    let mut sub = client.client().subscribe(subject.to_string()).await?;
+    info!(subject = %subject, "Subscribed to strategy.signal wildcard (diagnostic)");
+
+    while let Some(msg) = sub.next().await {
+        match extract_proto_payload::<pb::StrategySignal>(&msg.payload) {
+            Ok(proto) => {
+                debug!(
+                    subject = %msg.subject,
+                    symbol = %proto.symbol,
+                    price = proto.price,
+                    "strategy signal"
+                );
+                let _ = event_tx.send(AppEvent::StrategyNatsSignal {
+                    symbol: proto.symbol,
+                    price: proto.price,
+                });
+            }
+            Err(e) => {
+                debug!(error = %e, subject = %msg.subject, "Failed to decode strategy.signal payload");
+            }
+        }
+    }
+
+    anyhow::bail!("Strategy signal subscription ended");
+}
+
+/// Subscribe to `strategy.decision.>` and emit [`AppEvent::StrategyNatsDecision`](crate::events::AppEvent).
+pub async fn run_strategy_decision_subscriber(
+    client: NatsClient,
+    event_tx: mpsc::UnboundedSender<AppEvent>,
+) -> anyhow::Result<()> {
+    let subject = topics::strategy::all_decisions();
+    let mut sub = client.client().subscribe(subject.to_string()).await?;
+    info!(subject = %subject, "Subscribed to strategy.decision wildcard (diagnostic)");
+
+    while let Some(msg) = sub.next().await {
+        match extract_proto_payload::<pb::StrategyDecision>(&msg.payload) {
+            Ok(proto) => {
+                debug!(
+                    subject = %msg.subject,
+                    symbol = %proto.symbol,
+                    side = %proto.side,
+                    qty = proto.quantity,
+                    "strategy decision"
+                );
+                let _ = event_tx.send(AppEvent::StrategyNatsDecision {
+                    symbol: proto.symbol,
+                    side: proto.side,
+                    quantity: proto.quantity,
+                    mark: proto.mark,
+                });
+            }
+            Err(e) => {
+                debug!(error = %e, subject = %msg.subject, "Failed to decode strategy.decision payload");
+            }
+        }
+    }
+
+    anyhow::bail!("Strategy decision subscription ended");
 }

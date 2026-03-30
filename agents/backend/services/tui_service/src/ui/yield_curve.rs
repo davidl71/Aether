@@ -271,7 +271,8 @@ pub fn render_yield_curve_detail_table(f: &mut Frame, app: &App, symbol: &str, a
     let (rows, empty_reason): (Vec<Row>, Option<&'static str>) = match &app.yield_curve {
         Some(curve) if curve.point_count > 0 => {
             let scroll = app
-                .yield_curve_scroll
+                .yield_curve_table
+                .selected()
                 .min(curve.point_count.saturating_sub(1));
             let viewport = if curve.point_count <= visible_height {
                 0

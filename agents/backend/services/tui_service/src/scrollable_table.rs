@@ -1,188 +1,85 @@
-//! Scrollable table state for large tables.
+//! Scrollable table selection and viewport offset (`docs/TUI_ARCHITECTURE.md` Phase 2).
 //!
-//! Manages scroll position and selection for tables with many rows,
-//! allowing efficient navigation without rendering all rows.
+//! Most tabs use [`ScrollableTableState::selected`] as the highlighted row index; the optional
+//! [`ScrollableTableState::scroll`] field is the first visible row when implementing a viewport.
+//! Alerts use [`ScrollableTableState::shift_scroll`] on `scroll` only (paragraph-style list).
 
-/// State for a scrollable table with selection.
-#[derive(Debug, Clone)]
+/// Selection index and optional viewport offset for tabular / list panes.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ScrollableTableState {
-    /// First visible row offset
-    pub offset: usize,
-    /// Currently selected row index (absolute, not relative to offset)
-    pub selected: usize,
-    /// Total number of rows in the table
-    pub total_rows: usize,
-    /// Number of rows visible at once
-    pub visible_rows: usize,
-}
-
-impl Default for ScrollableTableState {
-    fn default() -> Self {
-        Self::new()
-    }
+    selected: usize,
+    scroll: usize,
 }
 
 impl ScrollableTableState {
-    /// Create a new scrollable table state.
-    pub fn new() -> Self {
-        Self {
-            offset: 0,
-            selected: 0,
-            total_rows: 0,
-            visible_rows: 10,
-        }
-    }
-
-    /// Create with total rows and visible rows.
-    pub fn with_rows(total_rows: usize, visible_rows: usize) -> Self {
-        Self {
-            offset: 0,
-            selected: 0,
-            total_rows,
-            visible_rows,
-        }
-    }
-
-    /// Update total rows (e.g., when data changes).
-    pub fn set_total_rows(&mut self, total: usize) {
-        self.total_rows = total;
-        self.clamp_selection();
-    }
-
-    /// Update visible rows (e.g., when terminal resizes).
-    pub fn set_visible_rows(&mut self, visible: usize) {
-        self.visible_rows = visible;
-        self.adjust_offset();
-    }
-
-    /// Move selection up by one row.
-    pub fn scroll_up(&mut self) {
+    pub fn move_up(&mut self) {
         self.selected = self.selected.saturating_sub(1);
-        self.adjust_offset();
     }
 
-    /// Move selection down by one row.
-    pub fn scroll_down(&mut self) {
-        if self.total_rows > 0 {
-            self.selected = (self.selected + 1).min(self.total_rows - 1);
-            self.adjust_offset();
-        }
-    }
-
-    /// Move selection up by page size.
-    pub fn page_up(&mut self) {
-        self.selected = self.selected.saturating_sub(self.visible_rows);
-        self.adjust_offset();
-    }
-
-    /// Move selection down by page size.
-    pub fn page_down(&mut self) {
-        if self.total_rows > 0 {
-            self.selected = (self.selected + self.visible_rows).min(self.total_rows - 1);
-            self.adjust_offset();
-        }
-    }
-
-    /// Move to first row.
-    pub fn go_to_top(&mut self) {
-        self.selected = 0;
-        self.adjust_offset();
-    }
-
-    /// Move to last row.
-    pub fn go_to_bottom(&mut self) {
-        if self.total_rows > 0 {
-            self.selected = self.total_rows - 1;
-            self.adjust_offset();
-        }
-    }
-
-    /// Get the visible range (start, end) for rendering.
-    pub fn visible_range(&self) -> (usize, usize) {
-        let start = self.offset;
-        let end = (self.offset + self.visible_rows).min(self.total_rows);
-        (start, end)
-    }
-
-    /// Check if a row index is currently visible.
-    pub fn is_visible(&self, index: usize) -> bool {
-        let (start, end) = self.visible_range();
-        index >= start && index < end
-    }
-
-    /// Get relative index for rendering (0 to visible_rows-1).
-    pub fn relative_index(&self, absolute: usize) -> Option<usize> {
-        if self.is_visible(absolute) {
-            Some(absolute - self.offset)
-        } else {
-            None
-        }
-    }
-
-    /// Clamp selection to valid bounds.
-    fn clamp_selection(&mut self) {
-        if self.total_rows == 0 {
+    /// Move selection down; `max` is row count (valid indices are `0..max`).
+    pub fn move_down(&mut self, max: usize) {
+        if max == 0 {
             self.selected = 0;
         } else {
-            self.selected = self.selected.min(self.total_rows - 1);
+            self.selected = (self.selected + 1).min(max - 1);
         }
     }
 
-    /// Adjust offset to ensure selection is visible.
-    fn adjust_offset(&mut self) {
-        // Ensure offset doesn't go past selected
-        if self.offset > self.selected {
-            self.offset = self.selected;
+    /// Keep [`Self::selected`] within the visible window starting at [`Self::scroll`].
+    pub fn adjust_scroll(&mut self, visible_height: usize) {
+        if visible_height == 0 {
+            return;
         }
-        // Ensure selection is visible
-        if self.selected >= self.offset + self.visible_rows {
-            self.offset = self.selected.saturating_sub(self.visible_rows - 1);
+        if self.selected < self.scroll {
+            self.scroll = self.selected;
         }
-        // Clamp offset to valid range
-        if self.total_rows > self.visible_rows {
-            let max_offset = self.total_rows - self.visible_rows;
-            self.offset = self.offset.min(max_offset);
-        } else {
-            self.offset = 0;
-        }
-    }
-}
-
-/// Helper to render a scrollable table with selection highlighting.
-pub struct ScrollableTable<'a> {
-    rows: Vec<Vec<String>>,
-    headers: Vec<String>,
-    state: &'a ScrollableTableState,
-}
-
-impl<'a> ScrollableTable<'a> {
-    /// Create a new scrollable table.
-    pub fn new(
-        headers: Vec<String>,
-        rows: Vec<Vec<String>>,
-        state: &'a ScrollableTableState,
-    ) -> Self {
-        Self {
-            rows,
-            headers,
-            state,
+        let vis = visible_height.max(1);
+        let last_visible = self.scroll.saturating_add(vis.saturating_sub(1));
+        if self.selected > last_visible {
+            self.scroll = self.selected.saturating_sub(vis.saturating_sub(1));
         }
     }
 
-    /// Get visible rows with their absolute indices.
-    pub fn visible_rows(&self) -> impl Iterator<Item = (usize, &Vec<String>)> {
-        let (start, end) = self.state.visible_range();
-        self.rows.iter().enumerate().skip(start).take(end - start)
+    pub fn selected(&self) -> usize {
+        self.selected
     }
 
-    /// Get header row.
-    pub fn headers(&self) -> &[String] {
-        &self.headers
+    pub fn scroll(&self) -> usize {
+        self.scroll
     }
 
-    /// Check if row is selected.
-    pub fn is_selected(&self, absolute_index: usize) -> bool {
-        self.state.selected == absolute_index
+    /// Reset selection and viewport (e.g. toggle combo view, change symbol).
+    pub fn reset(&mut self) {
+        self.selected = 0;
+        self.scroll = 0;
+    }
+
+    /// Clamp when row count shrinks; keeps `scroll` consistent with `selected`.
+    pub fn clamp_to_len(&mut self, len: usize) {
+        if len == 0 {
+            self.selected = 0;
+            self.scroll = 0;
+            return;
+        }
+        self.selected = self.selected.min(len - 1);
+        self.scroll = self.scroll.min(self.selected);
+    }
+
+    /// Move selection by `delta` rows, clamped to `[0, max - 1]` when `max > 0`.
+    pub fn shift_selected(&mut self, delta: isize, max: usize) {
+        if max == 0 {
+            self.selected = 0;
+            return;
+        }
+        let max_i = (max - 1) as isize;
+        let s = self.selected as isize + delta;
+        self.selected = s.clamp(0, max_i) as usize;
+    }
+
+    /// Move viewport offset only (alerts paragraph scroll). Clamps to `[0, max_offset]`.
+    pub fn shift_scroll(&mut self, delta: isize, max_offset: usize) {
+        let s = self.scroll as isize + delta;
+        self.scroll = s.clamp(0, max_offset as isize) as usize;
     }
 }
 
@@ -191,44 +88,56 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_scrollable_table_state() {
-        let mut state = ScrollableTableState::with_rows(100, 10);
-        assert_eq!(state.visible_range(), (0, 10));
-
-        state.scroll_down();
-        assert_eq!(state.selected, 1);
-        assert_eq!(state.offset, 0);
-
-        // Scroll to bottom of visible area
-        for _ in 0..10 {
-            state.scroll_down();
-        }
-        assert_eq!(state.selected, 11);
-        assert_eq!(state.offset, 2); // Adjusted to keep selection visible
+    fn move_up_down_respects_max() {
+        let mut s = ScrollableTableState::default();
+        s.move_down(3);
+        assert_eq!(s.selected(), 1);
+        s.move_down(3);
+        assert_eq!(s.selected(), 2);
+        s.move_down(3);
+        assert_eq!(s.selected(), 2);
+        s.move_up();
+        assert_eq!(s.selected(), 1);
+        s.move_up();
+        s.move_up();
+        assert_eq!(s.selected(), 0);
     }
 
     #[test]
-    fn test_page_navigation() {
-        let mut state = ScrollableTableState::with_rows(100, 10);
-
-        state.page_down();
-        assert_eq!(state.selected, 10);
-        // `adjust_offset` keeps the selection visible; row 10 is last row of viewport starting at 1
-        assert_eq!(state.offset, 1);
-
-        state.page_up();
-        assert_eq!(state.selected, 0);
-        assert_eq!(state.offset, 0);
+    fn move_down_zero_max_zeros_selection() {
+        let mut s = ScrollableTableState::default();
+        s.shift_selected(5, 10);
+        s.move_down(0);
+        assert_eq!(s.selected(), 0);
     }
 
     #[test]
-    fn test_go_to_top_bottom() {
-        let mut state = ScrollableTableState::with_rows(50, 10);
+    fn adjust_scroll_keeps_selection_visible() {
+        let mut s = ScrollableTableState::default();
+        s.shift_selected(15, 20);
+        s.adjust_scroll(5);
+        assert_eq!(s.scroll(), 11);
+        s.shift_selected(-10, 20);
+        s.adjust_scroll(5);
+        assert_eq!(s.selected(), 5);
+        assert_eq!(s.scroll(), 5);
+    }
 
-        state.go_to_bottom();
-        assert_eq!(state.selected, 49);
+    #[test]
+    fn shift_selected_clamps() {
+        let mut s = ScrollableTableState::default();
+        s.shift_selected(50, 10);
+        assert_eq!(s.selected(), 9);
+        s.shift_selected(-100, 10);
+        assert_eq!(s.selected(), 0);
+    }
 
-        state.go_to_top();
-        assert_eq!(state.selected, 0);
+    #[test]
+    fn shift_scroll_clamps() {
+        let mut s = ScrollableTableState::default();
+        s.shift_scroll(5, 3);
+        assert_eq!(s.scroll(), 3);
+        s.shift_scroll(-10, 3);
+        assert_eq!(s.scroll(), 0);
     }
 }

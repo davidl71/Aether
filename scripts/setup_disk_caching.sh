@@ -2,6 +2,7 @@
 # setup_disk_caching.sh - Disk-based cache setup (migrated from RAM disk).
 # Replaces setup_ram_optimization.sh for disk-based development.
 # Usage: ./setup_disk_caching.sh [enable|disable|status]
+# Low free-space / target-size checks: ./scripts/disk_pressure.sh check | just disk-check
 
 set -euo pipefail
 

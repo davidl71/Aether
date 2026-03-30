@@ -208,7 +208,9 @@ fn render_transactions_table(f: &mut Frame, app: &App, area: Rect) {
             let scroll = if len <= 1 {
                 0
             } else {
-                app.discount_bank_scroll.min(len.saturating_sub(1))
+                app.discount_bank_table
+                    .selected()
+                    .min(len.saturating_sub(1))
             };
             let window: Vec<Row> = all_rows
                 .into_iter()

@@ -6,7 +6,7 @@ use std::time::Instant;
 
 use api::discount_bank::{DiscountBankBalanceDto, DiscountBankTransactionsListDto};
 use api::finance_rates::{BenchmarksResponse, CurveResponse, RatePointResponse};
-use api::loans::LoanRecord;
+use api::loans::{LoanRecord, LoansBulkImportResponse};
 use api::{
     Alert, BackendHealthState, CommandReply, CommandStatus, NatsTransportHealthState,
     RuntimeOrderDto, RuntimePositionDto, ScenarioDto,
@@ -23,6 +23,7 @@ use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarge
 use crate::mode::AppMode;
 use crate::models::TuiSnapshot;
 use crate::pane::pane_spec;
+use crate::scrollable_table::ScrollableTableState;
 use crate::ui::{Candle, ToastLevel, ToastManager};
 use crate::workspace::{
     SecondaryFocus, SettingsHealthFocus, SettingsSection, VisibleWorkspace, WorkspaceSpec,
@@ -31,6 +32,16 @@ use crate::workspace::{
 
 const SPARKLINE_HISTORY_SIZE: usize = 20;
 const CHART_HISTORY_SIZE: usize = 120;
+
+/// Loans worker → TUI: plain list refresh or bulk import with server summary.
+#[derive(Debug)]
+pub enum LoansUiOutcome {
+    Plain(Result<Vec<LoanRecord>, String>),
+    BulkSuccess {
+        summary: LoansBulkImportResponse,
+        list: Result<Vec<LoanRecord>, String>,
+    },
+}
 // ── Yield-refresh task tracking ─────────────────────────────────────────────
 
 /// Status of a manual yield-refresh request.
@@ -480,21 +491,21 @@ pub struct App {
     pub alpaca_health: crate::alpaca_health::AlpacaHealthMonitor,
     /// When true, main area shows Dashboard (left) and Positions (right) side-by-side; toggled with [p] or from config.
     pub split_pane: bool,
-    /// Scroll/selection index for Positions tab (arrow-key scroll).
-    pub positions_scroll: usize,
+    /// Positions tab: selected display row (combo or flat).
+    pub positions_table: ScrollableTableState,
     /// When true, Positions tab groups by combo (account + strategy + symbol stem) and shows header + legs.
     pub positions_combo_view: bool,
     /// Combo keys that are expanded (show legs). Empty = all combos collapsed by default. Key = (account_id, strategy, symbol_stem).
     pub positions_expanded_combos: HashSet<(String, String, String)>,
-    /// Scroll/selection index for Orders tab (arrow-key scroll; index into filtered list).
-    pub orders_scroll: usize,
+    /// Orders tab: selected row index into filtered list.
+    pub orders_table: ScrollableTableState,
     /// Symbol currently selected for charting in the Charts tab.
     pub symbol_for_chart: String,
     /// Rolling live candle history keyed by symbol, fed by NATS candle updates.
     pub chart_history: HashMap<String, VecDeque<Candle>>,
     /// Charts search: input buffer (type to search).
     pub chart_search_input: String,
-    /// Charts search: history of searched symbols.
+    /// Charts search: history of searched symbols (loaded from / saved to config dir; see `chart_search_history`).
     pub chart_search_history: VecDeque<String>,
     /// Charts search: visible dropdown (true while searching).
     pub chart_search_visible: bool,
@@ -512,12 +523,12 @@ pub struct App {
     pub chart_expiry_index: usize,
     /// Charts pill navigation: selected strike width index.
     pub chart_strike_index: usize,
-    /// Scroll/selection index for Alerts tab (arrow-key scroll).
-    pub alerts_scroll: usize,
-    /// Scroll/selection index for Dashboard symbols (arrow-key scroll).
-    pub dashboard_scroll: usize,
-    /// Scroll/selection index for Scenarios tab (arrow-key scroll).
-    pub scenarios_scroll: usize,
+    /// Alerts tab: paragraph scroll offset (only [`ScrollableTableState::scroll`] is used).
+    pub alerts_scroll: ScrollableTableState,
+    /// Dashboard: selected symbol row.
+    pub dashboard_table: ScrollableTableState,
+    /// Scenarios tab: selected row in filtered list.
+    pub scenarios_table: ScrollableTableState,
     /// DTE window center for Scenarios (default 4). Range = center ± scenarios_dte_half_width.
     pub scenarios_dte_center: i32,
     /// Half-width of DTE window (default 2 → range 2–6). [ ] to contract/expand.
@@ -526,8 +537,8 @@ pub struct App {
     pub scenarios_strike_width_filter: Option<u32>,
     /// Selected symbol index for Yield tab (into effective watchlist).
     pub yield_symbol_index: usize,
-    /// Selected row in the yield curve points table (↑↓ to navigate, Enter for detail popup).
-    pub yield_curve_scroll: usize,
+    /// Yield curve points table: selected row (↑↓, Enter for detail).
+    pub yield_curve_table: ScrollableTableState,
     /// In-Settings watchlist override (add/remove symbols in memory). None = use config.watchlist.
     pub watchlist_override: Option<Vec<String>>,
     /// Active secondary focus target inside the Settings pane.
@@ -573,19 +584,22 @@ pub struct App {
     pub market_open: Option<bool>,
     /// Tick counter for periodic market-hours check (resets at MARKET_CHECK_INTERVAL_TICKS).
     market_open_tick: u32,
-    /// Last fetched loans list (NATS api.loans.list).
+    /// Cached loans list (`api.loans.list`). Refreshed after NATS outcomes (fetch/create/import);
+    /// tab navigation uses [`Self::request_loans_fetch_if_uncached`] to avoid redundant fetches.
     pub loans_list: Option<Result<Vec<LoanRecord>, String>>,
     /// True while a loans fetch is in flight.
     pub loans_fetch_pending: bool,
-    /// Scroll index for Loans tab.
-    pub loans_scroll: usize,
+    /// True after user submits bulk import path until the worker reports an outcome.
+    pub loans_bulk_import_inflight: bool,
+    /// Loans tab: selected row.
+    pub loans_table: ScrollableTableState,
     /// Sender to trigger loans fetch; None when not wired.
     pub loans_fetch_tx: Option<mpsc::UnboundedSender<()>>,
     /// Loan entry form state (when Some, show form overlay).
     pub loan_entry: Option<LoanEntryState>,
     /// Sender to create a new loan via NATS api.loans.create; None when not wired.
     pub loan_create_tx: Option<mpsc::UnboundedSender<LoanRecord>>,
-    /// Buffer for bulk-import file path on Loans tab (`b`); None when not editing.
+    /// Buffer for bulk-import file path on Loans tab (`b` / `i`); None when not editing.
     pub loan_import_path: Option<String>,
     /// Sender to bulk-import loans from a JSON file path (reads file, NATS `api.loans.import_bulk`).
     pub loan_bulk_import_tx: Option<mpsc::UnboundedSender<std::path::PathBuf>>,
@@ -595,8 +609,8 @@ pub struct App {
     pub discount_bank_transactions: Option<Result<DiscountBankTransactionsListDto, String>>,
     /// True while a Discount Bank fetch is in flight.
     pub discount_bank_fetch_pending: bool,
-    /// Scroll index for Discount Bank tab.
-    pub discount_bank_scroll: usize,
+    /// Discount Bank tab: selected row.
+    pub discount_bank_table: ScrollableTableState,
     /// Sender to trigger Discount Bank fetch; None when not wired.
     pub discount_bank_fetch_tx: Option<mpsc::UnboundedSender<()>>,
     /// Sender to trigger FMP quote+fundamentals fetch (symbol string); None when not wired.
@@ -613,6 +627,12 @@ pub struct App {
     pub credential_source: HashMap<&'static str, &'static str>,
     /// Instant when credential_status was last refreshed.
     credential_status_refreshed_at: Option<Instant>,
+    /// Messages received on `strategy.signal.>` (diagnostic NATS subscription).
+    pub strategy_nats_signal_count: u64,
+    /// Messages received on `strategy.decision.>` (diagnostic NATS subscription).
+    pub strategy_nats_decision_count: u64,
+    /// Truncated summary of the last strategy signal or decision (Settings → health).
+    pub strategy_nats_last: String,
     event_rx: mpsc::UnboundedReceiver<AppEvent>,
     snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
     config_rx: watch::Receiver<TuiConfig>,
@@ -668,14 +688,14 @@ impl App {
             alpaca_live_status: ConnectionStatus::new(ConnectionState::Retrying, "Not configured"),
             alpaca_health: crate::alpaca_health::AlpacaHealthMonitor::new(),
             split_pane,
-            positions_scroll: 0,
+            positions_table: ScrollableTableState::default(),
             positions_combo_view: false,
             positions_expanded_combos: HashSet::new(),
-            orders_scroll: 0,
+            orders_table: ScrollableTableState::default(),
             symbol_for_chart: String::new(),
             chart_history: HashMap::new(),
             chart_search_input: String::new(),
-            chart_search_history: VecDeque::with_capacity(10),
+            chart_search_history: crate::chart_search_history::load_chart_search_history(),
             chart_search_visible: false,
             chart_search_selected: 0,
             chart_search_results: Vec::new(),
@@ -684,14 +704,14 @@ impl App {
             chart_pill_row: 0,
             chart_expiry_index: 0,
             chart_strike_index: 2,
-            alerts_scroll: 0,
-            dashboard_scroll: 0,
-            scenarios_scroll: 0,
+            alerts_scroll: ScrollableTableState::default(),
+            dashboard_table: ScrollableTableState::default(),
+            scenarios_table: ScrollableTableState::default(),
             scenarios_dte_center: 4,
             scenarios_dte_half_width: 2,
             scenarios_strike_width_filter: None,
             yield_symbol_index: 0,
-            yield_curve_scroll: 0,
+            yield_curve_table: ScrollableTableState::default(),
             watchlist_override: None,
             settings_section: SettingsSection::Health,
             settings_health_focus: SettingsHealthFocus::Transport,
@@ -717,7 +737,8 @@ impl App {
             market_open_tick: 0,
             loans_list: None,
             loans_fetch_pending: false,
-            loans_scroll: 0,
+            loans_bulk_import_inflight: false,
+            loans_table: ScrollableTableState::default(),
             loans_fetch_tx,
             loan_entry: None,
             loan_create_tx,
@@ -726,7 +747,7 @@ impl App {
             discount_bank_balance: None,
             discount_bank_transactions: None,
             discount_bank_fetch_pending: false,
-            discount_bank_scroll: 0,
+            discount_bank_table: ScrollableTableState::default(),
             discount_bank_fetch_tx,
             fmp_fetch_tx,
             greeks_fetch_tx,
@@ -735,6 +756,9 @@ impl App {
             credential_status: HashMap::new(),
             credential_source: HashMap::new(),
             credential_status_refreshed_at: None,
+            strategy_nats_signal_count: 0,
+            strategy_nats_decision_count: 0,
+            strategy_nats_last: String::new(),
             event_rx,
             snapshot_rx,
             config_rx,
@@ -745,6 +769,12 @@ impl App {
     pub fn mark_dirty(&mut self) {
         self.needs_redraw = true;
         self.dirty_flags.mark_all();
+    }
+
+    /// Marks [`needs_redraw`](Self::needs_redraw) and records which UI regions changed for selective [`crate::ui::render`].
+    pub fn mark_regions(&mut self, update: impl FnOnce(&mut crate::dirty_flags::DirtyFlags)) {
+        self.needs_redraw = true;
+        update(&mut self.dirty_flags);
     }
 
     /// Returns a reference to the current snapshot (for rendering).
@@ -838,10 +868,9 @@ impl App {
         }
     }
 
-    /// Update app_mode based on current input_mode and state.
-    pub fn update_app_mode(&mut self) {
-        let input_mode = self.input_mode();
-        self.app_mode = match input_mode {
+    /// Map focus/input surface to high-level [`AppMode`] (single place for routing and tests).
+    pub fn app_mode_for_input_mode(input_mode: InputMode) -> AppMode {
+        match input_mode {
             InputMode::SettingsEditConfig
             | InputMode::SettingsAddSymbol
             | InputMode::SettingsCredentialEntry
@@ -849,11 +878,26 @@ impl App {
             | InputMode::LoanImportPath
             | InputMode::ChartSearch
             | InputMode::OrdersFilter => AppMode::Edit,
-            InputMode::Help | InputMode::DetailPopup | InputMode::LogPanel | InputMode::TreePanel => {
-                AppMode::View
-            }
+            InputMode::Help
+            | InputMode::DetailPopup
+            | InputMode::LogPanel
+            | InputMode::TreePanel => AppMode::View,
             InputMode::Normal => AppMode::Navigation,
-        };
+        }
+    }
+
+    /// Update `app_mode` from current [`InputMode`]. On change, pushes a short info toast.
+    pub fn update_app_mode(&mut self) {
+        let next = Self::app_mode_for_input_mode(self.input_mode());
+        if next != self.app_mode {
+            self.push_toast(
+                format!("Mode {} → {}", self.app_mode.label(), next.label()),
+                crate::ui::ToastLevel::Info,
+            );
+            // Mode icon/label is on the status bar; toast only marks overlay.
+            self.mark_regions(|d| d.mark_status_bar());
+        }
+        self.app_mode = next;
     }
 
     /// Legacy: set yield data from NATS request/reply fetch (curve + benchmarks).
@@ -874,7 +918,10 @@ impl App {
                 self.yield_error = Some(e);
             }
         }
-        self.mark_dirty();
+        self.mark_regions(|d| {
+            d.mark_content();
+            d.mark_status_bar();
+        });
     }
 
     /// Trigger a yield refresh: publishes to `api.yield_curve.refresh` (fire-and-forget).
@@ -918,11 +965,47 @@ impl App {
             .cloned();
     }
 
-    /// Set loans list from NATS fetch.
-    pub fn set_loans_data(&mut self, res: Result<Vec<LoanRecord>, String>) {
+    /// Set loans list from a worker message (plain refresh, bulk import, or error).
+    pub fn apply_loans_outcome(&mut self, outcome: LoansUiOutcome) {
         self.loans_fetch_pending = false;
-        self.loans_list = Some(res);
-        self.mark_dirty();
+        match outcome {
+            LoansUiOutcome::Plain(res) => {
+                if self.loans_bulk_import_inflight {
+                    self.loans_bulk_import_inflight = false;
+                    if let Err(ref e) = res {
+                        self.push_toast(format!("Bulk import failed: {}", e), ToastLevel::Error);
+                    }
+                }
+                self.loans_list = Some(res);
+                self.mark_regions(|d| d.mark_content());
+            }
+            LoansUiOutcome::BulkSuccess { summary, list } => {
+                self.loans_bulk_import_inflight = false;
+                let n_skip = summary.errors.len();
+                if n_skip > 0 {
+                    self.push_toast(
+                        format!(
+                            "Bulk import: applied {} loan(s); {} row(s) skipped.",
+                            summary.applied, n_skip
+                        ),
+                        ToastLevel::Warning,
+                    );
+                } else {
+                    self.push_toast(
+                        format!("Bulk import: applied {} loan(s).", summary.applied),
+                        ToastLevel::Info,
+                    );
+                }
+                if let Err(ref e) = list {
+                    self.push_toast(
+                        format!("Loan list refresh failed: {}", e),
+                        ToastLevel::Warning,
+                    );
+                }
+                self.loans_list = Some(list);
+                self.mark_regions(|d| d.mark_content());
+            }
+        }
     }
 
     /// Request a loans list fetch (no-op if already in flight or tx not wired).
@@ -937,6 +1020,17 @@ impl App {
         }
     }
 
+    /// Request `api.loans.list` only when there is no successful in-memory list yet.
+    ///
+    /// After writes, workers push fresh lists via `apply_loans_outcome`. Use this from tab
+    /// switches and bulk-import UI so refocusing Loans does not refetch every time.
+    pub fn request_loans_fetch_if_uncached(&mut self) {
+        if matches!(self.loans_list, Some(Ok(_))) {
+            return;
+        }
+        self.request_loans_fetch();
+    }
+
     /// Set Discount Bank data from NATS fetch (balance + transactions).
     pub fn set_discount_bank_data(
         &mut self,
@@ -946,7 +1040,7 @@ impl App {
         self.discount_bank_fetch_pending = false;
         self.discount_bank_balance = Some(balance);
         self.discount_bank_transactions = Some(txns);
-        self.mark_dirty();
+        self.mark_regions(|d| d.mark_content());
     }
 
     /// Request a Discount Bank fetch (no-op if already in flight or tx not wired).
@@ -971,7 +1065,7 @@ impl App {
                 self.push_toast(format!("FMP: {}", e), ToastLevel::Error);
             }
         }
-        self.needs_redraw = true;
+        self.mark_regions(|d| d.mark_overlay());
     }
 
     /// Apply incoming greeks result — updates the open Position popup if present.
@@ -979,7 +1073,7 @@ impl App {
         if let Some(DetailPopupContent::Position(_, greeks_slot)) = &mut self.detail_popup {
             *greeks_slot = result.ok();
         }
-        self.needs_redraw = true;
+        self.mark_regions(|d| d.mark_overlay());
     }
 
     /// Trigger FMP fetch for a symbol.
@@ -1039,13 +1133,16 @@ impl App {
             }
         }
         self.last_command_status = Some(status);
-        self.mark_dirty();
+        self.mark_regions(|d| {
+            d.mark_hint_bar();
+            d.mark_status_bar();
+        });
     }
 
     /// Push a transient toast notification. Toasts expire after TOAST_TTL_SECS seconds.
     pub fn push_toast(&mut self, msg: impl Into<String>, level: ToastLevel) {
         self.toast_manager.push(msg, level);
-        self.mark_dirty();
+        self.mark_regions(|d| d.mark_overlay());
     }
 
     /// Length of orders list after applying order_filter (for Orders tab selection clamp).
@@ -1113,7 +1210,7 @@ impl App {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {
-        self.needs_redraw = true;
+        self.mark_dirty();
 
         match self.input_mode() {
             InputMode::Help => {
@@ -1242,7 +1339,7 @@ impl App {
     }
 
     pub fn handle_action(&mut self, action: crate::input::Action) {
-        self.needs_redraw = true;
+        self.mark_dirty();
         crate::input::apply_action(self, action);
     }
 }

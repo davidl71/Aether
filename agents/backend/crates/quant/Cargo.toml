@@ -22,7 +22,12 @@ time = "0.3"
 
 [dev-dependencies]
 approx = "0.5"
+criterion = { version = "0.5", features = ["html_reports"] }
 rand_chacha = "0.3"
 optionstratlib = "0.15"
 rust_decimal = "1.36"
 rust_decimal_macros = "1.36"
+
+[[bench]]
+name = "trading_numeric_compare"
+harness = false

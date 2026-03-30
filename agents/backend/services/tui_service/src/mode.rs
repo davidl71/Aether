@@ -21,6 +21,15 @@ pub enum AppMode {
 }
 
 impl AppMode {
+    /// Short glyph for the status bar (ASCII-friendly).
+    pub fn icon(&self) -> &'static str {
+        match self {
+            AppMode::Navigation => ">",
+            AppMode::Edit => "*",
+            AppMode::View => "@",
+        }
+    }
+
     /// Get the display label for this mode.
     pub fn label(&self) -> &'static str {
         match self {
@@ -69,7 +78,10 @@ impl AppMode {
     }
 }
 
-/// Context for determining the appropriate AppMode based on current state.
+/// Context for determining the appropriate AppMode based on coarse UI flags.
+///
+/// Runtime mapping from [`crate::app::InputMode`] to [`AppMode`] lives on
+/// [`crate::app::App::app_mode_for_input_mode`] so it stays aligned with focus precedence.
 #[derive(Debug)]
 pub struct ModeContext {
     pub has_detail_popup: bool,
@@ -113,6 +125,13 @@ impl Default for ModeContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_mode_icons() {
+        assert_eq!(AppMode::Navigation.icon(), ">");
+        assert_eq!(AppMode::Edit.icon(), "*");
+        assert_eq!(AppMode::View.icon(), "@");
+    }
 
     #[test]
     fn test_mode_cycle() {

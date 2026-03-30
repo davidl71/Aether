@@ -6,6 +6,9 @@ pub mod margin;
 pub mod option_chain;
 pub mod yield_curve;
 
+#[cfg(test)]
+mod numeric_representation;
+
 use rand::SeedableRng;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -212,7 +215,8 @@ pub enum QuantError {
     PutCallParityViolation(String),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone)]
 pub struct MonteCarloResult {
     pub price: f64,
     pub standard_error: f64,
@@ -221,7 +225,8 @@ pub struct MonteCarloResult {
     pub simulations: usize,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone)]
 pub struct LinearRegressionResult {
     pub coefficients: Vec<f64>,
     pub intercept: f64,

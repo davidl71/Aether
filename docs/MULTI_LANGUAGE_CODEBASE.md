@@ -16,6 +16,7 @@ Other languages are supporting tooling, optional agents, or archived UI—not co
 | **Protobuf** | Shared messages | `proto/` | Rust: prost via `nats_adapter` `build.rs`; Go/buf: `./proto/generate.sh`; Nautilus Python: `just proto-gen-nautilus` |
 | **TypeScript / JS** | TUI E2E tests; archived web app | `tui-e2e/`, `web/` (archived) | `just test-tui-e2e`; web not an active runtime |
 | **Swift** | iOS/iPad/desktop apps (out of tree or separate targets) | Not under `agents/backend/` | See product docs if you open those workspaces |
+| **R** | Optional batch analytics / backtest sidecar | `analytics/r/` | **`docs/R_RUST_BOUNDARY.md`**; not on the Rust hot path |
 
 ---
 
@@ -34,6 +35,9 @@ just test-python
 
 # Proto (no root-level Python emit; see PYTHON_INVENTORY.md)
 ./proto/generate.sh
+
+# R (optional; Phase 0 metrics on exported CSV)
+cd analytics/r && Rscript phase0_equity_metrics.R
 ```
 
 ---

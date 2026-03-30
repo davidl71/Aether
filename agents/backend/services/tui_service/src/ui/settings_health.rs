@@ -193,6 +193,57 @@ fn transport_summary_label(transport: &NatsTransportHealthState) -> (&'static st
     }
 }
 
+/// Snapshot / JetStream / KV fields from backend publisher or REST health merge (optional).
+fn transport_snapshot_jetstream_kv_summary(transport: &NatsTransportHealthState) -> String {
+    let conn = if transport.connection_state.is_empty() {
+        "—".to_string()
+    } else {
+        transport.connection_state.clone()
+    };
+    let snap = match (
+        transport.snapshot_backend_id.as_deref(),
+        transport.snapshot_generated_at.as_deref(),
+    ) {
+        (Some(bid), Some(ts)) => {
+            let age = DateTime::parse_from_rfc3339(ts)
+                .ok()
+                .map(|dt| (Utc::now() - dt.with_timezone(&Utc)).num_seconds());
+            format!(
+                "{} @ {} ({}s)",
+                bid,
+                truncate(ts, 19),
+                age.map(|a| a.to_string())
+                    .unwrap_or_else(|| "—".to_string())
+            )
+        }
+        (Some(bid), None) => format!("{bid} (no ts)"),
+        _ => "—".to_string(),
+    };
+    let js = match (
+        transport.jetstream_enabled,
+        transport.jetstream_stream_ready,
+        transport.jetstream_publish_failures,
+    ) {
+        (Some(en), Some(rd), Some(fail)) => format!("js on={en} ready={rd} fail={fail}"),
+        (Some(en), Some(rd), None) => format!("js on={en} ready={rd}"),
+        (Some(en), None, _) => format!("js on={en}"),
+        _ => "js —".to_string(),
+    };
+    let kv = match (
+        transport.kv_reachable,
+        transport.kv_bucket.as_deref(),
+        transport.kv_last_check_at.as_deref(),
+    ) {
+        (Some(ok), Some(b), Some(at)) => {
+            format!("kv ok={ok} {} @ {}", truncate(b, 12), truncate(at, 19))
+        }
+        (Some(ok), Some(b), None) => format!("kv ok={ok} {}", truncate(b, 16)),
+        (Some(ok), None, _) => format!("kv ok={ok}"),
+        _ => "kv —".to_string(),
+    };
+    format!("link: {conn}  snap: {snap}  {js}  {kv}")
+}
+
 fn settings_health_flow_lines(
     app: &App,
     transport: &NatsTransportHealthState,
@@ -331,6 +382,13 @@ fn settings_health_flow_lines(
             ),
         ]),
         Line::from(vec![
+            Span::raw("  "),
+            Span::styled(
+                truncate(&transport_snapshot_jetstream_kv_summary(transport), 72),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]),
+        Line::from(vec![
             Span::raw(" TUI -> "),
             Span::styled(nats_sym.clone(), Style::default().fg(nats_color)),
             Span::raw(" connection "),
@@ -338,6 +396,21 @@ fn settings_health_flow_lines(
             Span::raw("  detail: "),
             Span::styled(
                 truncate(&transport_detail, 42),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]),
+        Line::from(vec![
+            Span::raw(" Strategy NATS "),
+            Span::styled(
+                format!(
+                    "signals {}  decisions {}",
+                    app.strategy_nats_signal_count, app.strategy_nats_decision_count
+                ),
+                Style::default().fg(Color::Cyan),
+            ),
+            Span::raw("  last: "),
+            Span::styled(
+                truncate(&app.strategy_nats_last, 44),
                 Style::default().fg(Color::DarkGray),
             ),
         ]),
@@ -447,6 +520,13 @@ fn settings_component_lines(
             ),
             Span::raw("  "),
             Span::styled(transport_detail, Style::default().fg(Color::DarkGray)),
+        ]),
+        Line::from(vec![
+            Span::raw("  "),
+            Span::styled(
+                truncate(&transport_snapshot_jetstream_kv_summary(transport), 72),
+                Style::default().fg(Color::DarkGray),
+            ),
         ]),
         Line::from(vec![
             Span::styled(

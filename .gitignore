@@ -1,3 +1,6 @@
+# R analytics sidecar (local plots)
+analytics/r/out/
+
 # Build directories
 build/
 build-*/

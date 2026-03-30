@@ -38,6 +38,20 @@ const SEARCH_RESULTS: &[&str] = &[
 
 const DEFAULT_STRIKE_WIDTHS: &[u32] = &[25, 50, 100, 200];
 
+/// Number of strike-width pills that share keyboard cycling (excludes decorative "custom").
+pub(crate) const CHART_STRIKE_PILL_COUNT: usize = DEFAULT_STRIKE_WIDTHS.len();
+
+/// Max index for expiry pill selection (`chart_expiry_index`), aligned with pill rendering.
+pub(crate) fn chart_expiry_max_index(app: &App) -> usize {
+    app.yield_curve
+        .as_ref()
+        .map(|curve| {
+            let labels = get_expiry_labels(curve);
+            labels.len().saturating_sub(1)
+        })
+        .unwrap_or(0)
+}
+
 pub fn update_search_results(app: &mut App) {
     let now_ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -148,6 +162,9 @@ pub fn render_charts(f: &mut Frame, app: &App, area: Rect) {
                 Span::styled("/", Style::default().add_modifier(Modifier::BOLD)),
                 Span::raw(" to search symbols, or type directly."),
             ]),
+            Line::from(
+                "  With a chart: ←→ or hl (expiry row), ↑↓ or jk (switch row), Enter cycles width.",
+            ),
             Line::from(""),
         ]);
         f.render_widget(hint, inner);

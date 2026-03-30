@@ -657,6 +657,8 @@ fn render_detail_overlay(f: &mut Frame, area: Rect, content: &DetailPopupContent
     f.render_widget(inner.block(block), popup_area);
 }
 
+/// Centered modal keybinding reference (`?` / ⌘/ to open; any key closes). Keep in sync with
+/// `docs/TUI_ARCHITECTURE.md` § Help overlay; update hint bar / `discoverability::context_hints_for` when bindings change.
 fn render_help_overlay(f: &mut Frame, area: Rect) {
     let lines = vec![
         Line::from(""),
@@ -747,14 +749,22 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::raw("/ filter  Esc clear  "),
             Span::styled(" x ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("cancel  "),
-            Span::styled(" Loans ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("n new  b/i bulk JSON  "),
             Span::styled(" Disc ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("r refresh  ↑↓ PgUp/Dn"),
         ]),
         Line::from(vec![
+            Span::styled(" Loans ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(
+                "n new  b/i bulk JSON path  ↑↓ PgUp/Dn scroll  ",
+            ),
+            Span::styled("form ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("Tab/Shift-Tab fields · Enter submit · Esc  "),
+            Span::styled("path ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("Enter import · Esc cancel"),
+        ]),
+        Line::from(vec![
             Span::styled(" Charts ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("/ search  Enter/Esc  ←→ pills  ↑↓ width  "),
+            Span::raw("/ search · Enter pick · Esc close  ←→ expiry pills  ↑↓ row (width)  "),
             Span::styled(" Yield ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("←→ symbol  ↑↓ curve  Enter point  r refresh"),
         ]),
@@ -768,7 +778,9 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::styled(" Settings ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("←/→ columns  ↑↓ row  e/Enter edit  a add  d/Del remove  r reset  "),
+            Span::raw(
+                "0 tab jump (also ⌘0)  ←/→ columns  ↑↓ row  e/Enter edit  a add  d/Del remove  r reset  ",
+            ),
             Span::raw("Alpaca & Sources rows: e edit cred  d clear"),
         ]),
         Line::from(vec![
@@ -789,7 +801,7 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         .title(" Help ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
-    let area = centered_rect(86, 32, area);
+    let area = centered_rect(86, 34, area);
     f.render_widget(ratatui::widgets::Clear, area);
     f.render_widget(inner.block(block), area);
 }
@@ -942,7 +954,12 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
                 "w",
                 Style::default().add_modifier(Modifier::BOLD),
             ));
-            spans.push(Span::raw(":width"));
+            spans.push(Span::raw(":width  "));
+            spans.push(Span::styled(
+                "o",
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::raw(":execute (off)"));
             if scenarios::filtered_scenarios(app).is_empty() {
                 spans.push(Span::raw("  | "));
                 spans.push(Span::styled(
@@ -1011,8 +1028,59 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         ));
     }
+    if app.active_tab == Tab::Loans {
+        spans.push(Span::raw("  "));
+        match app.input_mode() {
+            InputMode::LoanImportPath => {
+                spans.push(Span::styled(
+                    "Enter",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":import  "));
+                spans.push(Span::styled(
+                    "Esc",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":cancel path"));
+            }
+            InputMode::LoanForm => {
+                spans.push(Span::styled(
+                    "Tab",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":next field  "));
+                spans.push(Span::styled(
+                    "Enter",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":submit  "));
+                spans.push(Span::styled(
+                    "Esc",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":cancel"));
+            }
+            _ => {
+                spans.push(Span::styled(
+                    "n",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":new  "));
+                spans.push(Span::styled(
+                    "b/i",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":bulk JSON"));
+            }
+        }
+    }
     if app.active_tab == Tab::Settings {
         spans.push(Span::raw("  "));
+        spans.push(Span::styled(
+            "e",
+            Style::default().add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::raw(":edit  "));
         spans.push(Span::styled(
             "a",
             Style::default().add_modifier(Modifier::BOLD),

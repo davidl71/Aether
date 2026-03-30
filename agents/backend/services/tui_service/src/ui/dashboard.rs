@@ -66,7 +66,7 @@ pub fn render_dashboard_market_view(f: &mut Frame, app: &App, area: Rect) {
             .enumerate()
             .map(|(i, s)| {
                 let in_watchlist = watchlist_upper.contains(&s.symbol.to_uppercase());
-                let is_selected = i == app.dashboard_scroll;
+                let is_selected = i == app.dashboard_table.selected();
                 let style = if is_selected {
                     Style::default()
                         .add_modifier(Modifier::REVERSED)

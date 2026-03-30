@@ -91,6 +91,8 @@ pub enum Action {
     ChartSearchDown,
     ChartSearchEnter,
     ChartSearchEscape,
+    ChartSearchFirst,
+    ChartSearchLast,
     ChartPillLeft,
     ChartPillRight,
     ChartPillUp,
@@ -286,7 +288,7 @@ pub fn apply_action(app: &mut App, action: Action) {
             let len = app.watchlist().len();
             if len > 0 {
                 app.yield_symbol_index = (app.yield_symbol_index + len - 1) % len;
-                app.yield_curve_scroll = 0;
+                app.yield_curve_table.reset();
                 app.sync_yield_curve_from_cache();
             }
         }
@@ -294,22 +296,21 @@ pub fn apply_action(app: &mut App, action: Action) {
             let len = app.watchlist().len();
             if len > 0 {
                 app.yield_symbol_index = (app.yield_symbol_index + 1) % len;
-                app.yield_curve_scroll = 0;
+                app.yield_curve_table.reset();
                 app.sync_yield_curve_from_cache();
             }
         }
         Action::YieldCurveScrollUp => {
-            app.yield_curve_scroll = app.yield_curve_scroll.saturating_sub(1);
+            app.yield_curve_table.move_up();
         }
         Action::YieldCurveScrollDown => {
             if let Some(ref curve) = app.yield_curve {
-                let max = curve.point_count.saturating_sub(1);
-                app.yield_curve_scroll = (app.yield_curve_scroll + 1).min(max);
+                app.yield_curve_table.move_down(curve.point_count);
             }
         }
         Action::YieldCurveDetail => {
             if let Some(ref curve) = app.yield_curve {
-                if let Some(point) = curve.points.get(app.yield_curve_scroll) {
+                if let Some(point) = curve.points.get(app.yield_curve_table.selected()) {
                     app.detail_popup =
                         Some(crate::app::DetailPopupContent::YieldPoint(point.clone()));
                 }
@@ -317,17 +318,35 @@ pub fn apply_action(app: &mut App, action: Action) {
         }
         Action::PositionsToggleCombo => {
             app.positions_combo_view = !app.positions_combo_view;
-            app.positions_scroll = 0;
+            app.positions_table.reset();
         }
         Action::MouseScrollUp => match app.active_tab {
             crate::app::Tab::Positions => {
-                app.positions_scroll = app.positions_scroll.saturating_sub(3);
+                let len = app
+                    .snapshot()
+                    .as_ref()
+                    .map(|s| {
+                        crate::ui::positions_display_info(
+                            &s.dto().positions,
+                            app.positions_combo_view,
+                            &app.positions_expanded_combos,
+                        )
+                        .0
+                    })
+                    .unwrap_or(0);
+                app.positions_table.shift_selected(-3, len);
             }
             crate::app::Tab::Orders => {
-                app.orders_scroll = app.orders_scroll.saturating_sub(3);
+                app.orders_table
+                    .shift_selected(-3, app.filtered_orders_len());
             }
             crate::app::Tab::Dashboard => {
-                app.dashboard_scroll = app.dashboard_scroll.saturating_sub(3);
+                let len = app
+                    .snapshot()
+                    .as_ref()
+                    .map(|s| s.inner.symbols.len())
+                    .unwrap_or(0);
+                app.dashboard_table.shift_selected(-3, len);
             }
             _ => {}
         },
@@ -345,34 +364,24 @@ pub fn apply_action(app: &mut App, action: Action) {
                         .0
                     })
                     .unwrap_or(0);
-                if len > 0 {
-                    app.positions_scroll = (app.positions_scroll + 3).min(len - 1);
-                }
+                app.positions_table.shift_selected(3, len);
             }
             crate::app::Tab::Orders => {
-                let len = app
-                    .snapshot()
-                    .as_ref()
-                    .map(|s| s.dto().orders.len())
-                    .unwrap_or(0);
-                if len > 0 {
-                    app.orders_scroll = (app.orders_scroll + 3).min(len - 1);
-                }
+                let len = app.filtered_orders_len();
+                app.orders_table.shift_selected(3, len);
             }
             crate::app::Tab::Dashboard => {
                 let len = app
                     .snapshot()
                     .as_ref()
-                    .map(|s| s.dto().positions.len())
+                    .map(|s| s.inner.symbols.len())
                     .unwrap_or(0);
-                if len > 0 {
-                    app.dashboard_scroll = (app.dashboard_scroll + 3).min(len - 1);
-                }
+                app.dashboard_table.shift_selected(3, len);
             }
             _ => {}
         },
         Action::PositionsScrollUp => {
-            app.positions_scroll = app.positions_scroll.saturating_sub(1);
+            app.positions_table.move_up();
         }
         Action::PositionsScrollDown => {
             let len = app
@@ -387,12 +396,22 @@ pub fn apply_action(app: &mut App, action: Action) {
                     .0
                 })
                 .unwrap_or(0);
-            if len > 0 {
-                app.positions_scroll = (app.positions_scroll + 1).min(len - 1);
-            }
+            app.positions_table.move_down(len);
         }
         Action::PositionsScrollPageUp => {
-            app.positions_scroll = app.positions_scroll.saturating_sub(10);
+            let len = app
+                .snapshot()
+                .as_ref()
+                .map(|s| {
+                    crate::ui::positions_display_info(
+                        &s.dto().positions,
+                        app.positions_combo_view,
+                        &app.positions_expanded_combos,
+                    )
+                    .0
+                })
+                .unwrap_or(0);
+            app.positions_table.shift_selected(-10, len);
         }
         Action::PositionsScrollPageDown => {
             let len = app
@@ -407,9 +426,7 @@ pub fn apply_action(app: &mut App, action: Action) {
                     .0
                 })
                 .unwrap_or(0);
-            if len > 0 {
-                app.positions_scroll = (app.positions_scroll + 10).min(len - 1);
-            }
+            app.positions_table.shift_selected(10, len);
         }
         Action::PositionsDetail => {
             // Collect what we need while borrow is live, then drop it before mutating app.
@@ -424,9 +441,10 @@ pub fn apply_action(app: &mut App, action: Action) {
                         app.positions_combo_view,
                         &app.positions_expanded_combos,
                     );
-                if let Some(Some(combo_key)) = combo_key_per_row.get(app.positions_scroll) {
+                if let Some(Some(combo_key)) = combo_key_per_row.get(app.positions_table.selected())
+                {
                     Some(PosDetailAction::ToggleCombo(combo_key.clone()))
-                } else if let Some(Some(pos_idx)) = index_map.get(app.positions_scroll) {
+                } else if let Some(Some(pos_idx)) = index_map.get(app.positions_table.selected()) {
                     snap.dto()
                         .positions
                         .get(*pos_idx)

@@ -1075,10 +1075,12 @@ fn run_loans_export_csv(out: &PathBuf) -> Result<()> {
             .await
             .map_err(|e| anyhow::anyhow!("NATS: {e}"))?;
 
-        let res: Result<Vec<LoanRecord>, String> =
-            request_json_with_retry::<(), Result<Vec<LoanRecord>, String>>(&nc, "api.loans.list", &())
-                .await
-                .map_err(|e| anyhow::anyhow!("api.loans.list: {e}"))?;
+        let res: Result<Vec<LoanRecord>, String> = request_json_with_retry::<
+            (),
+            Result<Vec<LoanRecord>, String>,
+        >(&nc, "api.loans.list", &())
+        .await
+        .map_err(|e| anyhow::anyhow!("api.loans.list: {e}"))?;
 
         res.map_err(|e| anyhow::anyhow!("api.loans.list: {e}"))
     })?;
@@ -1122,7 +1124,9 @@ where
     if out.as_os_str() == "-" {
         let stdout = std::io::stdout();
         let handle = stdout.lock();
-        let mut wtr = csv::WriterBuilder::new().has_headers(true).from_writer(handle);
+        let mut wtr = csv::WriterBuilder::new()
+            .has_headers(true)
+            .from_writer(handle);
         for row in rows {
             wtr.serialize(row)?;
         }
@@ -1131,7 +1135,9 @@ where
     }
 
     let file = std::fs::File::create(out)?;
-    let mut wtr = csv::WriterBuilder::new().has_headers(true).from_writer(file);
+    let mut wtr = csv::WriterBuilder::new()
+        .has_headers(true)
+        .from_writer(file);
     for row in rows {
         wtr.serialize(row)?;
     }

@@ -44,6 +44,10 @@ There is **no** dedicated “MockYieldCurve” type in-tree today. Closest deter
 
 Backlog task **“Yield curve: add Mock provider end-to-end”** should introduce an explicit mock (config-driven or test-only) that writes the same KV shape without TWS/Yahoo, for baseline tests.
 
+## R sidecar (deferred, T-1774201865476785000)
+
+- **`analytics/r/yield_curve/`** — optional **plumber** API (`POST /estimate`): sparse zero pillars → smoothed zero/forward grid (base R spline). Optional CRAN **`termstrc`** / **`YieldCurve`** in a follow-up. No NATS/KV write; Rust would call HTTP off the hot path if integrated later.
+
 ## File index (quick navigation)
 
 - `crates/tws_yield_curve/src/lib.rs` — TWS fetch  

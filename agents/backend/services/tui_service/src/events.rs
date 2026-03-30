@@ -286,4 +286,16 @@ pub enum AppEvent {
         status: String,
         last_error: Option<String>,
     },
+    /// NATS `strategy.signal.*` — diagnostic only (counts + last line in Settings health).
+    StrategyNatsSignal {
+        symbol: String,
+        price: f64,
+    },
+    /// NATS `strategy.decision.*` — diagnostic only.
+    StrategyNatsDecision {
+        symbol: String,
+        side: String,
+        quantity: i32,
+        mark: f64,
+    },
 }

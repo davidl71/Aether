@@ -1,6 +1,6 @@
 # TUI Architecture
 
-**Last updated:** 2026-03-25
+**Last updated:** 2026-03-30
 **Service:** `agents/backend/services/tui_service`
 **Framework:** ratatui + crossterm + tokio
 
@@ -93,6 +93,46 @@ tui_service/src/
     ├── loans.rs          # Loans tab
     └── discount_bank.rs  # Discount bank tab
 ```
+
+---
+
+## Help overlay
+
+The help overlay is a **centered, modal reference** for global and per-tab key bindings. It is the **authoritative in-app list** of what the TUI documents to the operator; this section describes behavior and where to edit it.
+
+### Opening and closing
+
+| Action | Keys |
+|--------|------|
+| Open | `?` (from `input_shell::global_key_action`), **Command palette → Show Help**, or macOS **⌘/** (maps to help, not chart search) |
+| Close | **Any key** while the overlay is visible (`App::handle_key` in `InputMode::Help` clears `show_help` and returns) |
+
+State flag: `App::show_help`. Rendering runs before other overlays when true (`ui/mod.rs` `render`).
+
+### What it shows (summary)
+
+Content is hard-coded in **`render_help_overlay`** in `ui/mod.rs` (not generated from `discoverability.rs`). Lines cover, in order:
+
+- Global: quit, help, command palette (`:`), Tab / Shift-Tab (tabs vs workspace panes)
+- Status bar modes (NAV / EDIT / VIEW), toasts
+- macOS chords: ⌘, Settings; ⌘/ help; ⌘⇧P palette; ⌘0–⌘9; ⌘p split; ⌘r refresh; ⌘w close
+- Digit jumps `1`–`9`, `0` → tab mnemonic map (Dash … Settings)
+- Utilities: `M` mode cycle, `` ` `` log panel, `g` tree panel, `p` split, `f` FMP vs refresh, `Esc` dismiss
+- Composed workspaces (Market / Operations / Credit): Tab cycles **inner** panes when the workspace hint is active
+- Per-area bindings: Dashboard/Positions/Alerts; Orders; Discount Bank; Loans (list, form, bulk path); Charts + Yield (shared line); Scenarios + Logs; Settings (including `0` / ⌘0 jump); exploration-mode letters **S T K O** / **X** (Orders)
+
+The block uses `centered_rect(86, 34, …)` (percent of terminal). Footer: *Press any key to close*.
+
+### Hint bar and discoverability (related, not the same)
+
+| Surface | Role |
+|---------|------|
+| **Help overlay** | Full static cheat sheet; one place for all tabs |
+| **Hint bar** (`render_hint_bar` in `ui/mod.rs`) | Short, **tab- and mode-aware** strip (e.g. Charts search shows Enter/Esc; Loans shows form vs import hints) |
+| **Command palette** (`discoverability.rs`) | Searchable actions + key hints; includes **Show Help** |
+| **`context_hints_for`** (`discoverability.rs`) | Optional extra hints for mode+tab (used if wired to UI); keep roughly aligned with overlay when you change bindings |
+
+When you add or change a key binding, update **`render_help_overlay`** first, then the hint bar and/or `context_hints_for` if the shortcut is tab-specific.
 
 ---
 

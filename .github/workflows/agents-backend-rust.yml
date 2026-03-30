@@ -117,4 +117,4 @@ jobs:
         run: cargo install cargo-sweep
 
       - name: Sweep old target artifacts (trim cache)
-        run: cargo sweep sweep . --time 0
+        run: cargo sweep --time 0 .

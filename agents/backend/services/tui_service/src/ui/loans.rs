@@ -58,7 +58,7 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
             let hint_area = Rect::new(inner.x, inner.y + inner.height - 1, inner.width, 1);
             f.render_widget(
                 Paragraph::new(Line::from(Span::styled(
-                    " n=new  b=bulk JSON ",
+                    " n=new  b/i=bulk JSON ",
                     Style::default().fg(Color::DarkGray),
                 ))),
                 hint_area,
@@ -135,7 +135,7 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
     let scroll = if len <= 1 {
         0
     } else {
-        app.loans_scroll.min(len.saturating_sub(1))
+        app.loans_table.selected().min(len.saturating_sub(1))
     };
     let window: Vec<Row> = all_rows
         .into_iter()
@@ -160,7 +160,7 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
 
     // Hint line
     let hint = Line::from(Span::styled(
-        " ↑↓ scroll  n=new  b=bulk JSON ",
+        " ↑↓ scroll  n=new  b/i=bulk JSON ",
         Style::default().fg(Color::DarkGray),
     ));
     let hint_area = Rect::new(inner.x, inner.y + inner.height - 1, inner.width, 1);

@@ -53,6 +53,8 @@ fn charts_key_action(key: KeyCode, input_mode: InputMode) -> Option<Action> {
         (KeyCode::Char('/'), _) => Some(Action::ChartSearchFocus),
         (KeyCode::Left, InputMode::ChartSearch) => None,
         (KeyCode::Right, InputMode::ChartSearch) => None,
+        (KeyCode::Home, InputMode::ChartSearch) => Some(Action::ChartSearchFirst),
+        (KeyCode::End, InputMode::ChartSearch) => Some(Action::ChartSearchLast),
         (KeyCode::Left, _) => Some(Action::ChartPillLeft),
         (KeyCode::Right, _) => Some(Action::ChartPillRight),
         (KeyCode::Up, InputMode::ChartSearch) => Some(Action::ChartSearchUp),
@@ -63,6 +65,10 @@ fn charts_key_action(key: KeyCode, input_mode: InputMode) -> Option<Action> {
         (KeyCode::Char(c), InputMode::ChartSearch) if !c.is_control() => {
             Some(Action::ChartSearchChar(c))
         }
+        (KeyCode::Char('h') | KeyCode::Char('H'), _) => Some(Action::ChartPillLeft),
+        (KeyCode::Char('l') | KeyCode::Char('L'), _) => Some(Action::ChartPillRight),
+        (KeyCode::Char('j') | KeyCode::Char('J'), _) => Some(Action::ChartPillDown),
+        (KeyCode::Char('k') | KeyCode::Char('K'), _) => Some(Action::ChartPillUp),
         (KeyCode::Up, _) => Some(Action::ChartPillUp),
         (KeyCode::Down, _) => Some(Action::ChartPillDown),
         (KeyCode::Enter, _) => Some(Action::ChartPillSelect),
@@ -117,6 +123,7 @@ fn loans_key_action(key: KeyCode, input_mode: InputMode) -> Option<Action> {
         (KeyCode::PageDown, _) => Some(Action::LoansScrollPageDown),
         (KeyCode::Char('n') | KeyCode::Char('N'), _) => Some(Action::LoansNewLoan),
         (KeyCode::Char('b') | KeyCode::Char('B'), _) => Some(Action::LoansBulkImportFocus),
+        (KeyCode::Char('i') | KeyCode::Char('I'), _) => Some(Action::LoansBulkImportFocus),
         _ => None,
     }
 }

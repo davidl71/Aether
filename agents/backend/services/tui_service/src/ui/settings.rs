@@ -45,6 +45,17 @@ pub(crate) struct SettingsLayout {
     pub hint: Rect,
 }
 
+/// Renders settings sub-panels only (no credential modal). Use from embedded
+/// layouts (e.g. Operations workspace); full Settings tab also runs the modal.
+pub(crate) fn render_settings_sections(f: &mut Frame, app: &App, layout: SettingsLayout) {
+    render_settings_health_section(f, app, layout.health);
+    render_settings_config_section(f, app, layout.config);
+    render_settings_symbols_section(f, app, layout.symbols);
+    render_settings_sources_section(f, app, layout.sources);
+    render_settings_alpaca_section(f, app, layout.alpaca);
+    render_settings_hint_section(f, app, layout.hint);
+}
+
 pub(crate) fn settings_layout(area: Rect) -> SettingsLayout {
     let wide_layout = area.width >= 120 && area.height >= 18;
     if wide_layout {
@@ -100,20 +111,8 @@ pub(crate) fn settings_layout(area: Rect) -> SettingsLayout {
 }
 
 pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
-    let SettingsLayout {
-        health,
-        config,
-        symbols,
-        sources,
-        alpaca,
-        hint,
-    } = settings_layout(area);
-    render_settings_health_section(f, app, health);
-    render_settings_config_section(f, app, config);
-    render_settings_symbols_section(f, app, symbols);
-    render_settings_sources_section(f, app, sources);
-    render_settings_alpaca_section(f, app, alpaca);
-    render_settings_hint_section(f, app, hint);
+    let layout = settings_layout(area);
+    render_settings_sections(f, app, layout);
     render_settings_credential_modal_if_any(f, app, area);
 }
 

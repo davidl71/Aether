@@ -5,6 +5,9 @@
 //!
 //! Under the current read-only exploration mode, execution-only order and BAG
 //! domain types live in `broker_execution_legacy` rather than this active crate.
+//!
+//! **Serde:** only [`OptionContract`] implements `Serialize`/`Deserialize` (wire/config).
+//! Other structs here are intentionally in-memory only; see `docs/SERDE_CHRONO_MODEL_AUDIT.md`.
 
 use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};

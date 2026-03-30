@@ -175,7 +175,9 @@ pub fn render_scenarios(f: &mut Frame, app: &App, area: Rect) {
     let scroll = if sorted.is_empty() {
         0
     } else {
-        app.scenarios_scroll.min(sorted.len().saturating_sub(1))
+        app.scenarios_table
+            .selected()
+            .min(sorted.len().saturating_sub(1))
     };
 
     let rows: Vec<Row> = if sorted.is_empty() {

@@ -3,7 +3,9 @@
 //! # Resolution order (per [`CredentialKey`])
 //! 1. Primary environment variable (and Alpaca legacy env names where applicable)
 //! 2. OS keyring (when built with `--features keyring`)
-//! 3. File under [`dirs::config_dir()`]`/aether/{key}.cred`
+//! 3. File under [`aether_config_dir()`]`/{key}.cred`
+//!
+//! Use [`aether_config_dir()`] for other non-secret files (e.g. TUI JSON state) so paths stay consistent.
 //!
 //! # Dependency graph
 //! This crate depends only on `dirs`, `tracing`, and optional `keyring`. The `api` crate
@@ -23,6 +25,12 @@ use std::path::PathBuf;
 const SERVICE: &str = "aether";
 
 fn config_dir() -> PathBuf {
+    aether_config_dir()
+}
+
+/// Returns `dirs::config_dir()/aether`, the same directory used for `{key}.cred` files.
+/// Safe for non-secret JSON or preference files (e.g. TUI state).
+pub fn aether_config_dir() -> PathBuf {
     dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("."))
         .join("aether")
@@ -504,6 +512,12 @@ mod tests {
             CredentialKey::from_name("alpaca-secret"),
             Some(CredentialKey::AlpacaPaperSecretKey)
         ));
+    }
+
+    #[test]
+    fn aether_config_dir_ends_with_aether() {
+        let p = aether_config_dir();
+        assert_eq!(p.file_name().and_then(|s| s.to_str()), Some("aether"));
     }
 
     #[test]

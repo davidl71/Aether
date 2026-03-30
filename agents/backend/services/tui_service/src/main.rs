@@ -68,6 +68,7 @@ use tracing_subscriber::{
 mod alpaca_health;
 mod app;
 mod app_config;
+mod chart_search_history;
 mod circuit_breaker;
 mod config;
 mod config_watcher;
@@ -91,6 +92,8 @@ mod portfolio_summary;
 mod scrollable_table;
 mod ui;
 mod workspace;
+
+use crate::app::LoansUiOutcome;
 
 use app::{App, FmpDetail, GreeksDisplay, GreeksFetchRequest};
 use config::TuiConfig;
@@ -201,7 +204,7 @@ async fn main() -> color_eyre::Result<()> {
         Result<(HashMap<String, CurveResponse>, BenchmarksResponse), String>,
     >();
     let (loans_fetch_tx, loans_fetch_rx) = mpsc::unbounded_channel();
-    let (loans_result_tx, loans_result_rx) = mpsc::unbounded_channel();
+    let (loans_result_tx, loans_result_rx) = mpsc::unbounded_channel::<LoansUiOutcome>();
     let (loan_create_tx, loan_create_rx) = mpsc::unbounded_channel();
     let (loan_bulk_import_tx, loan_bulk_import_rx) =
         mpsc::unbounded_channel::<std::path::PathBuf>();
@@ -286,6 +289,48 @@ async fn main() -> color_eyre::Result<()> {
             }
         }
     });
+
+    // Optional diagnostic: strategy.signal.* / strategy.decision.* (see nats::strategy_nats_subscribe_enabled).
+    if nats::strategy_nats_subscribe_enabled() {
+        let nats_url_strategy_sig = config.nats_url.clone();
+        let strategy_sig_tx = event_tx.clone();
+        tokio::spawn(async move {
+            match nats_adapter::NatsClient::connect(&nats_url_strategy_sig).await {
+                Ok(client) => {
+                    if let Err(e) =
+                        nats::run_strategy_signal_subscriber(client, strategy_sig_tx).await
+                    {
+                        tracing::warn!(error = %e, "Strategy signal subscriber ended");
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        error = %e,
+                        "Failed to connect strategy.signal subscriber to NATS"
+                    );
+                }
+            }
+        });
+        let nats_url_strategy_dec = config.nats_url.clone();
+        let strategy_dec_tx = event_tx.clone();
+        tokio::spawn(async move {
+            match nats_adapter::NatsClient::connect(&nats_url_strategy_dec).await {
+                Ok(client) => {
+                    if let Err(e) =
+                        nats::run_strategy_decision_subscriber(client, strategy_dec_tx).await
+                    {
+                        tracing::warn!(error = %e, "Strategy decision subscriber ended");
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        error = %e,
+                        "Failed to connect strategy.decision subscriber to NATS"
+                    );
+                }
+            }
+        });
+    }
 
     let nats_url_alerts = config.nats_url.clone();
     let alert_event_tx = event_tx.clone();
@@ -454,6 +499,8 @@ async fn main() -> color_eyre::Result<()> {
     )
     .await;
 
+    chart_search_history::save_chart_search_history(&app.chart_search_history);
+
     // Always restore terminal on exit (color-eyre panic hook also restores on panic)
     if let Err(err) = restore_terminal(use_alternate_screen) {
         error!(error = %err, "Failed to restore terminal state");
@@ -545,7 +592,7 @@ async fn run_discount_bank_fetcher(
 async fn run_loans_fetcher(
     nats_url: String,
     mut rx: mpsc::UnboundedReceiver<()>,
-    result_tx: mpsc::UnboundedSender<Result<Vec<LoanRecord>, String>>,
+    result_tx: mpsc::UnboundedSender<LoansUiOutcome>,
 ) {
     while rx.recv().await.is_some() {
         let res = match NatsClient::connect(&nats_url).await {
@@ -559,7 +606,7 @@ async fn run_loans_fetcher(
             .and_then(|r| r),
             Err(e) => Err(e.to_string()),
         };
-        let _ = result_tx.send(res);
+        let _ = result_tx.send(LoansUiOutcome::Plain(res));
     }
 }
 
@@ -568,20 +615,26 @@ async fn run_loans_fetcher(
 async fn run_loan_bulk_importer(
     nats_url: String,
     mut rx: mpsc::UnboundedReceiver<std::path::PathBuf>,
-    result_tx: mpsc::UnboundedSender<Result<Vec<LoanRecord>, String>>,
+    result_tx: mpsc::UnboundedSender<LoansUiOutcome>,
 ) {
     while let Some(path) = rx.recv().await {
         let text = match tokio::fs::read_to_string(&path).await {
             Ok(t) => t,
             Err(e) => {
-                let _ = result_tx.send(Err(format!("bulk import: read {}: {e}", path.display())));
+                let _ = result_tx.send(LoansUiOutcome::Plain(Err(format!(
+                    "bulk import: read {}: {e}",
+                    path.display()
+                ))));
                 continue;
             }
         };
         let loans = match parse_loans_import_file_json(&text) {
             Ok(l) => l,
             Err(e) => {
-                let _ = result_tx.send(Err(format!("bulk import: parse {}: {e}", path.display())));
+                let _ = result_tx.send(LoansUiOutcome::Plain(Err(format!(
+                    "bulk import: parse {}: {e}",
+                    path.display()
+                ))));
                 continue;
             }
         };
@@ -596,7 +649,9 @@ async fn run_loan_bulk_importer(
 
         let inner = match res {
             Err(e) => {
-                let _ = result_tx.send(Err(e));
+                let _ = result_tx.send(LoansUiOutcome::Plain(Err(format!(
+                    "bulk import: NATS request failed: {e}"
+                ))));
                 continue;
             }
             Ok(v) => v,
@@ -604,7 +659,7 @@ async fn run_loan_bulk_importer(
 
         match inner {
             Err(e) => {
-                let _ = result_tx.send(Err(e));
+                let _ = result_tx.send(LoansUiOutcome::Plain(Err(format!("bulk import: {e}"))));
             }
             Ok(summary) => {
                 if !summary.errors.is_empty() {
@@ -625,7 +680,10 @@ async fn run_loan_bulk_importer(
                     .and_then(|r| r),
                     Err(e) => Err(e.to_string()),
                 };
-                let _ = result_tx.send(refresh_res);
+                let _ = result_tx.send(LoansUiOutcome::BulkSuccess {
+                    summary,
+                    list: refresh_res,
+                });
             }
         }
     }
@@ -634,7 +692,7 @@ async fn run_loan_bulk_importer(
 async fn run_loan_creator(
     nats_url: String,
     mut rx: mpsc::UnboundedReceiver<LoanRecord>,
-    result_tx: mpsc::UnboundedSender<Result<Vec<LoanRecord>, String>>,
+    result_tx: mpsc::UnboundedSender<LoansUiOutcome>,
 ) {
     while let Some(loan) = rx.recv().await {
         let res: Result<Result<(), String>, String> = match NatsClient::connect(&nats_url).await {
@@ -646,7 +704,7 @@ async fn run_loan_creator(
 
         let inner = match res {
             Err(e) => {
-                let _ = result_tx.send(Err(e));
+                let _ = result_tx.send(LoansUiOutcome::Plain(Err(e)));
                 continue;
             }
             Ok(v) => v,
@@ -654,7 +712,7 @@ async fn run_loan_creator(
 
         match inner {
             Err(e) => {
-                let _ = result_tx.send(Err(e));
+                let _ = result_tx.send(LoansUiOutcome::Plain(Err(e)));
             }
             Ok(()) => {
                 let refresh_res = match NatsClient::connect(&nats_url).await {
@@ -668,7 +726,7 @@ async fn run_loan_creator(
                     .and_then(|r| r),
                     Err(e) => Err(e.to_string()),
                 };
-                let _ = result_tx.send(refresh_res);
+                let _ = result_tx.send(LoansUiOutcome::Plain(refresh_res));
             }
         }
     }
@@ -749,7 +807,7 @@ async fn run_loop(
     mut yield_result_rx: mpsc::UnboundedReceiver<
         Result<(HashMap<String, CurveResponse>, BenchmarksResponse), String>,
     >,
-    mut loans_result_rx: mpsc::UnboundedReceiver<Result<Vec<LoanRecord>, String>>,
+    mut loans_result_rx: mpsc::UnboundedReceiver<LoansUiOutcome>,
     mut fmp_result_rx: mpsc::UnboundedReceiver<Result<FmpDetail, String>>,
     mut greeks_result_rx: mpsc::UnboundedReceiver<Result<GreeksDisplay, String>>,
     mut discount_bank_result_rx: mpsc::UnboundedReceiver<(
@@ -805,9 +863,9 @@ async fn run_loop(
                 app.set_yield_data(res);
             }
 
-            // Loans fetch result
-            Some(res) = loans_result_rx.recv() => {
-                app.set_loans_data(res);
+            // Loans fetch / bulk import result
+            Some(outcome) = loans_result_rx.recv() => {
+                app.apply_loans_outcome(outcome);
             }
 
             // FMP quote + fundamentals result

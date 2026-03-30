@@ -174,10 +174,22 @@ fn nats_transport_to_proto(t: &NatsTransportHealthState) -> pb::NatsTransportHea
         in_messages: t.in_messages,
         out_messages: t.out_messages,
         connects: t.connects,
+        connection_state: t.connection_state.clone(),
+        snapshot_backend_id: t.snapshot_backend_id.clone().unwrap_or_default(),
+        snapshot_generated_at: t.snapshot_generated_at.clone().unwrap_or_default(),
+        jetstream_enabled: t.jetstream_enabled.unwrap_or(false),
+        jetstream_stream_ready: t.jetstream_stream_ready.unwrap_or(false),
+        jetstream_publish_failures: t.jetstream_publish_failures.unwrap_or(0),
+        kv_reachable: t.kv_reachable.unwrap_or(false),
+        kv_bucket: t.kv_bucket.clone().unwrap_or_default(),
+        kv_last_check_at: t.kv_last_check_at.clone().unwrap_or_default(),
     }
 }
 
 fn nats_transport_from_proto(p: pb::NatsTransportHealth) -> NatsTransportHealthState {
+    let kv_bucket_empty = p.kv_bucket.is_empty();
+    let kv_last_check_empty = p.kv_last_check_at.is_empty();
+    let kv_reachable_flag = p.kv_reachable;
     NatsTransportHealthState {
         connected: p.connected,
         status: p.status,
@@ -194,6 +206,19 @@ fn nats_transport_from_proto(p: pb::NatsTransportHealth) -> NatsTransportHealthS
         in_messages: p.in_messages,
         out_messages: p.out_messages,
         connects: p.connects,
+        connection_state: p.connection_state,
+        snapshot_backend_id: none_if_empty(p.snapshot_backend_id),
+        snapshot_generated_at: none_if_empty(p.snapshot_generated_at),
+        jetstream_enabled: Some(p.jetstream_enabled),
+        jetstream_stream_ready: Some(p.jetstream_stream_ready),
+        jetstream_publish_failures: Some(p.jetstream_publish_failures),
+        kv_bucket: none_if_empty(p.kv_bucket),
+        kv_last_check_at: none_if_empty(p.kv_last_check_at),
+        kv_reachable: if kv_bucket_empty && kv_last_check_empty {
+            None
+        } else {
+            Some(kv_reachable_flag)
+        },
     }
 }
 

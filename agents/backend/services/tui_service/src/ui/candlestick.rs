@@ -224,3 +224,93 @@ pub fn render_volume(f: &mut Frame, candles: &[Candle], area: Rect) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ratatui::buffer::Buffer;
+
+    fn buffer_text(buf: &Buffer, area: Rect) -> String {
+        let mut s = String::new();
+        for y in area.y..area.y + area.height {
+            for x in area.x..area.x + area.width {
+                s.push_str(buf.cell((x, y)).map(|c| c.symbol()).unwrap_or(" "));
+            }
+        }
+        s
+    }
+
+    #[test]
+    fn candle_bullish_when_close_equals_open() {
+        let c = Candle {
+            open: 100.0,
+            high: 101.0,
+            low: 99.0,
+            close: 100.0,
+            volume: None,
+        };
+        assert!(c.bullish());
+    }
+
+    #[test]
+    fn candle_bearish_when_close_below_open() {
+        let c = Candle {
+            open: 100.0,
+            high: 100.5,
+            low: 98.0,
+            close: 99.0,
+            volume: Some(1.0),
+        };
+        assert!(!c.bullish());
+    }
+
+    #[test]
+    fn candlestick_empty_renders_no_data_label() {
+        let area = Rect::new(0, 0, 40, 12);
+        let mut buf = Buffer::empty(area);
+        CandlestickChart::new("ZZZ".into(), vec![]).render(area, &mut buf);
+        let text = buffer_text(&buf, area);
+        assert!(
+            text.contains("No data"),
+            "expected placeholder; got len {} sample {:?}",
+            text.len(),
+            text.chars()
+                .filter(|c| !c.is_whitespace())
+                .take(40)
+                .collect::<String>()
+        );
+    }
+
+    #[test]
+    fn candlestick_with_ohlcv_renders_wick_and_body_chars() {
+        let area = Rect::new(0, 0, 48, 14);
+        let candles = vec![Candle {
+            open: 100.0,
+            high: 108.0,
+            low: 95.0,
+            close: 106.0,
+            volume: Some(5000.0),
+        }];
+        let mut buf = Buffer::empty(area);
+        CandlestickChart::new("TEST".into(), candles).render(area, &mut buf);
+        let text = buffer_text(&buf, area);
+        assert!(
+            text.contains('│'),
+            "expected vertical wick; text sample: {:?}",
+            text.chars()
+                .filter(|&c| c != ' ')
+                .take(80)
+                .collect::<String>()
+        );
+        assert!(
+            text.contains('█'),
+            "expected body blocks; text sample: {:?}",
+            text.chars()
+                .filter(|&c| c != ' ')
+                .take(80)
+                .collect::<String>()
+        );
+        assert!(text.contains("TEST"), "title should include symbol");
+        assert!(text.contains("108.00") || text.contains("95.00"));
+    }
+}

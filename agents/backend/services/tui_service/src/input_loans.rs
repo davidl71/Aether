@@ -29,7 +29,7 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
             app.loan_entry = None;
             app.active_tab = Tab::Loans;
             app.loan_import_path = Some(String::new());
-            app.request_loans_fetch();
+            app.request_loans_fetch_if_uncached();
         }
         Action::LoansImportPathEscape => {
             app.loan_import_path = None;
@@ -72,7 +72,12 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
 
             if let Some(ref tx) = app.loan_bulk_import_tx {
                 if tx.send(path).is_ok() {
+                    app.loans_bulk_import_inflight = true;
                     app.loans_fetch_pending = true;
+                    app.push_toast(
+                        "Bulk import started (read JSON → api.loans.import_bulk)…",
+                        ToastLevel::Info,
+                    );
                 } else {
                     app.push_toast("Bulk import channel closed.", ToastLevel::Error);
                 }
@@ -81,7 +86,7 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
             }
         }
         Action::LoansScrollUp => {
-            app.loans_scroll = app.loans_scroll.saturating_sub(1);
+            app.loans_table.move_up();
         }
         Action::LoansScrollDown => {
             let len = app
@@ -90,12 +95,16 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
                 .and_then(|r| r.as_ref().ok())
                 .map(|l| l.len())
                 .unwrap_or(0);
-            if len > 0 {
-                app.loans_scroll = (app.loans_scroll + 1).min(len - 1);
-            }
+            app.loans_table.move_down(len);
         }
         Action::LoansScrollPageUp => {
-            app.loans_scroll = app.loans_scroll.saturating_sub(10);
+            let len = app
+                .loans_list
+                .as_ref()
+                .and_then(|r| r.as_ref().ok())
+                .map(|l| l.len())
+                .unwrap_or(0);
+            app.loans_table.shift_selected(-10, len);
         }
         Action::LoansScrollPageDown => {
             let len = app
@@ -104,9 +113,7 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
                 .and_then(|r| r.as_ref().ok())
                 .map(|l| l.len())
                 .unwrap_or(0);
-            if len > 0 {
-                app.loans_scroll = (app.loans_scroll + 10).min(len - 1);
-            }
+            app.loans_table.shift_selected(10, len);
         }
         Action::LoansNewLoan => {
             app.loan_import_path = None;
@@ -225,7 +232,7 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
             }
         }
         Action::DiscountBankScrollUp => {
-            app.discount_bank_scroll = app.discount_bank_scroll.saturating_sub(1);
+            app.discount_bank_table.move_up();
         }
         Action::DiscountBankScrollDown => {
             let len = app
@@ -234,12 +241,16 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
                 .and_then(|r| r.as_ref().ok())
                 .map(|t| t.transactions.len())
                 .unwrap_or(0);
-            if len > 0 {
-                app.discount_bank_scroll = (app.discount_bank_scroll + 1).min(len - 1);
-            }
+            app.discount_bank_table.move_down(len);
         }
         Action::DiscountBankScrollPageUp => {
-            app.discount_bank_scroll = app.discount_bank_scroll.saturating_sub(10);
+            let len = app
+                .discount_bank_transactions
+                .as_ref()
+                .and_then(|r| r.as_ref().ok())
+                .map(|t| t.transactions.len())
+                .unwrap_or(0);
+            app.discount_bank_table.shift_selected(-10, len);
         }
         Action::DiscountBankScrollPageDown => {
             let len = app
@@ -248,9 +259,7 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
                 .and_then(|r| r.as_ref().ok())
                 .map(|t| t.transactions.len())
                 .unwrap_or(0);
-            if len > 0 {
-                app.discount_bank_scroll = (app.discount_bank_scroll + 10).min(len - 1);
-            }
+            app.discount_bank_table.shift_selected(10, len);
         }
         Action::DiscountBankRefresh => {
             app.request_discount_bank_fetch();

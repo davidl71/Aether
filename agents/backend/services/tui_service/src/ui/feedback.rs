@@ -21,9 +21,11 @@ const MAX_VISIBLE_TOASTS: usize = 3;
 const DEFAULT_TOAST_DURATION: Duration = Duration::from_secs(4);
 /// Extended duration for error toasts
 const ERROR_TOAST_DURATION: Duration = Duration::from_secs(6);
+/// Cap on queued toasts (including expired until next tick); prevents unbounded memory
+const MAX_QUEUED_TOASTS: usize = 32;
 
-/// Severity level for toast notifications
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Severity level for toast notifications (`Info` is lowest; `Error` is highest).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ToastLevel {
     Info,
     Success,
@@ -59,6 +61,11 @@ impl ToastLevel {
             _ => DEFAULT_TOAST_DURATION,
         }
     }
+}
+
+/// Normalize message for dedupe: trim runs of whitespace so near-identical strings match.
+fn normalize_toast_message(msg: &str) -> String {
+    msg.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 /// A single toast notification
@@ -99,24 +106,53 @@ impl ToastManager {
         Self {
             toasts: VecDeque::new(),
             next_id: 1,
-            max_history: 10,
+            max_history: MAX_QUEUED_TOASTS,
         }
     }
 
-    /// Push a new toast notification
+    /// Push a new toast notification.
+    ///
+    /// Policy: **dedupe** — an active toast with the same normalized message is refreshed
+    /// (TTL reset, severity raised if the new level is higher, wording updated) and moved to the
+    /// back of the queue instead of adding a duplicate row. Resize/refocus paths that replay the
+    /// same notice therefore do not spam the stack.
     pub fn push(&mut self, message: impl Into<String>, level: ToastLevel) {
         let now = Instant::now();
+        let message = message.into();
+        let norm = normalize_toast_message(&message);
+
+        if !norm.is_empty() {
+            if let Some(pos) = self
+                .toasts
+                .iter()
+                .position(|t| t.expires_at > now && normalize_toast_message(&t.message) == norm)
+            {
+                let mut t = self
+                    .toasts
+                    .remove(pos)
+                    .unwrap_or_else(|| panic!("ToastManager::push: invalid index {pos}"));
+                t.message = message;
+                t.level = t.level.max(level);
+                t.expires_at = now + t.level.duration();
+                self.toasts.push_back(t);
+                self.trim_queue();
+                return;
+            }
+        }
+
         let toast = Toast {
             id: self.next_id,
-            message: message.into(),
+            message,
             level,
             created_at: now,
             expires_at: now + level.duration(),
         };
         self.next_id += 1;
         self.toasts.push_back(toast);
+        self.trim_queue();
+    }
 
-        // Trim old toasts if we exceed max history
+    fn trim_queue(&mut self) {
         while self.toasts.len() > self.max_history {
             self.toasts.pop_front();
         }
@@ -176,9 +212,31 @@ impl ToastManager {
         self.toasts.clear();
     }
 
-    /// Get the visible toasts (limited to MAX_VISIBLE_TOASTS)
-    pub fn visible_toasts(&self) -> impl Iterator<Item = &Toast> {
-        self.active_toasts().take(MAX_VISIBLE_TOASTS)
+    /// Most prominent active toast for one-line surfaces (hint bar): highest severity first,
+    /// then newest among ties. Aligns with operator attention to errors over info noise.
+    pub fn latest_active_toast(&self) -> Option<&Toast> {
+        let now = Instant::now();
+        self.toasts
+            .iter()
+            .filter(|t| t.expires_at > now)
+            .max_by_key(|t| (t.level, t.id))
+    }
+
+    /// Up to [`MAX_VISIBLE_TOASTS`] active toasts: **severity-first** selection (errors likely
+    /// visible even when many infos follow), then **newest** within the same rank. Returned in
+    /// **chronological id order** (oldest first in the batch) so stacked bottom-right rendering
+    /// keeps the usual oldest-low / newest-high layout.
+    pub fn visible_toasts(&self) -> Vec<&Toast> {
+        let now = Instant::now();
+        let mut active: Vec<&Toast> = self.toasts.iter().filter(|t| t.expires_at > now).collect();
+        if active.len() <= MAX_VISIBLE_TOASTS {
+            active.sort_by_key(|t| t.id);
+            return active;
+        }
+        active.sort_by_key(|t| (std::cmp::Reverse(t.level), std::cmp::Reverse(t.id)));
+        active.truncate(MAX_VISIBLE_TOASTS);
+        active.sort_by_key(|t| t.id);
+        active
     }
 }
 
@@ -293,7 +351,7 @@ impl StatusIndicator {
 
 /// Render a toast notification popup
 pub fn render_toast_area(frame: &mut Frame, toasts: &ToastManager, area: Rect) {
-    let visible: Vec<_> = toasts.visible_toasts().collect();
+    let visible = toasts.visible_toasts();
     if visible.is_empty() {
         return;
     }
@@ -331,12 +389,16 @@ pub fn render_toast_area(frame: &mut Frame, toasts: &ToastManager, area: Rect) {
             .border_style(Style::default().fg(color))
             .style(Style::default().bg(Color::Black));
 
+        let msg = super::truncate_detail(
+            &toast.message,
+            (toast_rect.width.saturating_sub(4)) as usize,
+        );
         let content = Paragraph::new(Line::from(vec![
             Span::styled(
                 format!("{} ", icon),
                 Style::default().fg(color).add_modifier(Modifier::BOLD),
             ),
-            Span::styled(&toast.message, Style::default().fg(Color::White)),
+            Span::styled(msg, Style::default().fg(Color::White)),
         ]))
         .wrap(Wrap { trim: true })
         .block(block);
@@ -440,6 +502,32 @@ mod tests {
         // Note: This would need time manipulation to test properly
         manager.info("Test");
         assert!(!manager.cleanup_expired()); // Should not clean up fresh toast
+    }
+
+    #[test]
+    fn latest_active_toast_is_newest() {
+        let mut m = ToastManager::new();
+        m.info("first");
+        m.success("second");
+        assert_eq!(
+            m.latest_active_toast().map(|t| t.message.as_str()),
+            Some("second")
+        );
+    }
+
+    #[test]
+    fn visible_toasts_prefers_newest_when_over_cap() {
+        let mut m = ToastManager::new();
+        for i in 0..5 {
+            m.info(format!("t{i}"));
+        }
+        let labels: Vec<_> = m
+            .visible_toasts()
+            .into_iter()
+            .map(|t| t.message.clone())
+            .collect();
+        assert_eq!(labels.len(), MAX_VISIBLE_TOASTS);
+        assert_eq!(labels, vec!["t2", "t3", "t4"]);
     }
 
     #[test]

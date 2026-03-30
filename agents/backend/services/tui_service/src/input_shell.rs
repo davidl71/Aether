@@ -142,7 +142,7 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
                 app.snapshot().as_ref().and_then(|snap| {
                     snap.inner
                         .symbols
-                        .get(app.dashboard_scroll)
+                        .get(app.dashboard_table.selected())
                         .map(|s| s.symbol.clone())
                 })
             } else {
@@ -153,7 +153,7 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
                             app.positions_combo_view,
                             &app.positions_expanded_combos,
                         );
-                    if let Some(Some(pos_idx)) = index_map.get(app.positions_scroll) {
+                    if let Some(Some(pos_idx)) = index_map.get(app.positions_table.selected()) {
                         snap.dto().positions.get(*pos_idx).map(|p| {
                             p.symbol
                                 .split_whitespace()
@@ -172,7 +172,7 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
         }
         Action::SplitPaneToggle => {
             app.split_pane = !app.split_pane;
-            app.positions_scroll = 0;
+            app.positions_table.reset();
         }
         Action::WorkspaceFocusPrev => {
             if let Some(target) = workspace_focus_target(app, false) {
@@ -208,7 +208,7 @@ fn set_active_tab(app: &mut App, tab: Tab) {
     if app.active_tab == Tab::Yield {
         app.sync_yield_curve_from_cache();
     } else if app.active_tab == Tab::Loans {
-        app.request_loans_fetch();
+        app.request_loans_fetch_if_uncached();
     } else if app.active_tab == Tab::DiscountBank {
         app.request_discount_bank_fetch();
     }

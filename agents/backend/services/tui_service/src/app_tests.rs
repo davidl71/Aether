@@ -1,4 +1,5 @@
 use api::finance_rates::{CurveResponse, RatePointResponse};
+use api::loans::{LoanStatus, LoanType as ApiLoanType};
 use api::{Alert, AlertLevel, NatsTransportHealthState, OrderSnapshot, SystemSnapshot};
 use chrono::{Duration, Utc};
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -6,7 +7,7 @@ use ratatui::backend::TestBackend;
 use ratatui::Terminal;
 use tokio::sync::{mpsc, watch};
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use crate::workspace::{SettingsHealthFocus, SettingsSection};
 use crate::{
@@ -14,10 +15,14 @@ use crate::{
     events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget},
     models::SnapshotSource,
     models::TuiSnapshot,
-    ui::{charts::render_charts, render},
+    ui::{charts::render_charts, render, Candle},
 };
 
-use super::{App, InputMode, Tab};
+use super::{App, InputMode, LoanEntryState, LoanType, Tab};
+use crate::mode::AppMode;
+
+use crate::input::Action;
+use crate::input_loans::{apply_loan_action, loan_form_key_action};
 
 fn make_app() -> (
     App,
@@ -68,6 +73,72 @@ fn input_mode_reports_chart_search_when_active() {
     app.chart_search_visible = true;
 
     assert_eq!(app.input_mode(), InputMode::ChartSearch);
+}
+
+#[test]
+fn app_mode_tracks_input_mode_chart_search_and_normal() {
+    assert_eq!(
+        App::app_mode_for_input_mode(InputMode::Normal),
+        AppMode::Navigation
+    );
+    assert_eq!(
+        App::app_mode_for_input_mode(InputMode::ChartSearch),
+        AppMode::Edit
+    );
+    assert_eq!(App::app_mode_for_input_mode(InputMode::Help), AppMode::View);
+}
+
+#[test]
+fn update_app_mode_pushes_toast_on_transition() {
+    let (mut app, _, _) = make_app();
+    app.app_mode = AppMode::Navigation;
+    app.active_tab = Tab::Charts;
+    app.chart_search_visible = true;
+    let before = app.toast_manager.active_count();
+    app.update_app_mode();
+    assert_eq!(app.app_mode, AppMode::Edit);
+    assert!(app.toast_manager.active_count() > before);
+}
+
+#[test]
+fn charts_tab_k_prefers_pill_navigation_over_strategy_cancel() {
+    let (app, _, _) = make_app();
+    let press = |code: KeyCode| KeyEvent {
+        kind: KeyEventKind::Press,
+        ..KeyEvent::from(code)
+    };
+    assert_eq!(
+        crate::input::key_to_action(&app, press(KeyCode::Char('k'))),
+        Some(crate::input::Action::StrategyCancelAll)
+    );
+
+    let (mut app_charts, _, _) = make_app();
+    app_charts.active_tab = Tab::Charts;
+    assert_eq!(
+        crate::input::key_to_action(&app_charts, press(KeyCode::Char('k'))),
+        Some(crate::input::Action::ChartPillUp)
+    );
+}
+
+#[test]
+fn chart_symbol_search_home_end_jumps_list_ends() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Charts;
+    app.chart_search_visible = true;
+    app.chart_search_results = vec!["A".into(), "B".into(), "C".into()];
+    app.chart_search_selected = 0;
+
+    app.handle_key(KeyEvent {
+        kind: KeyEventKind::Press,
+        ..KeyEvent::from(KeyCode::End)
+    });
+    assert_eq!(app.chart_search_selected, 2);
+
+    app.handle_key(KeyEvent {
+        kind: KeyEventKind::Press,
+        ..KeyEvent::from(KeyCode::Home)
+    });
+    assert_eq!(app.chart_search_selected, 0);
 }
 
 #[test]
@@ -296,6 +367,56 @@ fn yield_curve_tab_renders_empty_state() {
 }
 
 #[test]
+fn charts_tab_renders_ohlcv_when_history_present() {
+    let (mut app, _, _) = make_app();
+    app.symbol_for_chart = "SPX".to_string();
+    app.active_tab = Tab::Charts;
+
+    let mut history = VecDeque::new();
+    history.push_back(Candle {
+        open: 100.0,
+        high: 105.0,
+        low: 99.0,
+        close: 104.0,
+        volume: Some(1_000_000.0),
+    });
+    history.push_back(Candle {
+        open: 104.0,
+        high: 104.5,
+        low: 102.0,
+        close: 102.5,
+        volume: Some(800_000.0),
+    });
+    app.chart_history.insert("SPX".to_string(), history);
+
+    let backend = TestBackend::new(80, 24);
+    let mut terminal = Terminal::new(backend).unwrap();
+    let frame = terminal.draw(|f| render_charts(f, &app, f.area())).unwrap();
+
+    let content = buffer_to_string(&frame.area, &frame.buffer);
+    assert!(
+        content.contains(" SPX "),
+        "candlestick block title should include symbol; got:\n{}",
+        content
+    );
+    assert!(
+        content.contains('│') || content.contains('█'),
+        "expected OHLCV wick/body glyphs; got:\n{}",
+        content
+    );
+    assert!(
+        content.contains("Volume"),
+        "volume subchart title; got:\n{}",
+        content
+    );
+    assert!(
+        !content.contains("Waiting for live candle data for SPX."),
+        "with history, should not show empty-state copy; got:\n{}",
+        content
+    );
+}
+
+#[test]
 fn charts_tab_shows_waiting_state_without_history() {
     let (mut app, _, _) = make_app();
     app.symbol_for_chart = "SPX".to_string();
@@ -337,7 +458,7 @@ fn alerts_tab_displays_placeholder_when_no_snapshot() {
 
     let backend = TestBackend::new(80, 18);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("No alerts"));
@@ -366,7 +487,7 @@ fn alerts_tab_renders_live_alert_messages() {
 
     let backend = TestBackend::new(80, 18);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("provider switched to polygon"));
@@ -393,7 +514,7 @@ fn help_overlay_documents_mode_aware_bindings() {
 
     let backend = TestBackend::new(100, 32);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Key bindings"));
@@ -443,7 +564,7 @@ fn split_pane_renders_visible_mode_label() {
 
     let backend = TestBackend::new(100, 28);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Split pane"));
@@ -458,7 +579,7 @@ fn split_pane_tab_cycles_focus_between_dashboard_and_positions() {
     app.active_tab = Tab::Dashboard;
     let backend = TestBackend::new(100, 28);
     let mut terminal = Terminal::new(backend).unwrap();
-    let _ = terminal.draw(|f| render(f, &app)).unwrap();
+    let _ = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     app.handle_key(KeyEvent::from(KeyCode::Tab));
     assert_eq!(app.active_tab, Tab::Positions);
@@ -527,7 +648,7 @@ fn wide_terminal_renders_market_workspace() {
 
     let backend = TestBackend::new(190, 32);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Market Workspace"));
@@ -541,7 +662,7 @@ fn wide_terminal_renders_operations_workspace() {
 
     let backend = TestBackend::new(190, 32);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Operations Workspace"));
@@ -559,7 +680,7 @@ fn standalone_alerts_tab_renders_logs_below_alerts() {
 
     let backend = TestBackend::new(120, 24);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Alerts"));
@@ -573,7 +694,7 @@ fn wide_operations_workspace_tab_cycles_focus_between_panes() {
 
     let backend = TestBackend::new(190, 32);
     let mut terminal = Terminal::new(backend).unwrap();
-    let _ = terminal.draw(|f| render(f, &app)).unwrap();
+    let _ = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     app.handle_key(KeyEvent::from(KeyCode::Tab));
     assert_eq!(app.active_tab, Tab::Logs);
@@ -594,7 +715,7 @@ fn operations_workspace_banner_shows_nested_settings_focus() {
 
     let backend = TestBackend::new(190, 32);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Focus: Settings / Health / Services"));
@@ -609,7 +730,7 @@ fn settings_hint_bar_shows_secondary_focus_label() {
 
     let backend = TestBackend::new(180, 20);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("focus:Transport"));
@@ -650,7 +771,7 @@ fn orders_tab_renders_filter_mode_cues() {
 
     let backend = TestBackend::new(100, 20);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Orders [FILTER]"));
@@ -668,7 +789,7 @@ fn settings_tab_renders_config_edit_label_and_prompt() {
 
     let backend = TestBackend::new(100, 28);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Config overrides (editing NATS_URL [editable])"));
@@ -685,9 +806,201 @@ fn hint_bar_renders_async_status_cues() {
 
     let backend = TestBackend::new(240, 12);
     let mut terminal = Terminal::new(backend).unwrap();
-    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Yield:loading"));
     assert!(content.contains("Loans:loading"));
+}
+
+#[test]
+fn request_loans_fetch_if_uncached_skips_when_list_already_ok() {
+    let (loans_tx, mut loans_rx) = mpsc::unbounded_channel();
+    let (_snap_tx, snap_rx) = watch::channel(None);
+    let (_event_tx, event_rx) = mpsc::unbounded_channel();
+    let (_config_tx, config_rx) = watch::channel(TuiConfig::default());
+    let (_health_tx, health_rx) = watch::channel(HashMap::new());
+    let mut app = App::new(
+        TuiConfig::default(),
+        snap_rx,
+        event_rx,
+        config_rx,
+        health_rx,
+        None,
+        Some(loans_tx),
+        None,
+        None,
+        None,
+        None,
+        None,
+    );
+    app.loans_list = Some(Ok(vec![]));
+    app.request_loans_fetch_if_uncached();
+    assert!(!app.loans_fetch_pending);
+    assert!(loans_rx.try_recv().is_err());
+
+    app.loans_list = None;
+    app.request_loans_fetch_if_uncached();
+    assert!(app.loans_fetch_pending);
+    assert!(loans_rx.try_recv().is_ok());
+}
+
+#[test]
+fn loan_form_key_action_maps_navigation_and_input_keys() {
+    assert_eq!(
+        loan_form_key_action(KeyCode::Esc),
+        Some(Action::LoansInputEscape)
+    );
+    assert_eq!(
+        loan_form_key_action(KeyCode::Enter),
+        Some(Action::LoansInputEnter)
+    );
+    assert_eq!(
+        loan_form_key_action(KeyCode::Tab),
+        Some(Action::LoansInputNavDown)
+    );
+    assert_eq!(
+        loan_form_key_action(KeyCode::BackTab),
+        Some(Action::LoansInputNavUp)
+    );
+    assert_eq!(
+        loan_form_key_action(KeyCode::Up),
+        Some(Action::LoansInputNavUp)
+    );
+    assert_eq!(
+        loan_form_key_action(KeyCode::Down),
+        Some(Action::LoansInputNavDown)
+    );
+    assert_eq!(
+        loan_form_key_action(KeyCode::Backspace),
+        Some(Action::LoansInputBackspace)
+    );
+    assert_eq!(
+        loan_form_key_action(KeyCode::Char('7')),
+        Some(Action::LoansInputChar('7'))
+    );
+    assert_eq!(
+        loan_form_key_action(KeyCode::Char('-')),
+        Some(Action::LoansInputChar('-'))
+    );
+    assert_eq!(
+        loan_form_key_action(KeyCode::Char('.')),
+        Some(Action::LoansInputChar('.'))
+    );
+    assert_eq!(
+        loan_form_key_action(KeyCode::Char('a')),
+        Some(Action::LoansInputChar('a'))
+    );
+    assert_eq!(loan_form_key_action(KeyCode::F(1)), Some(Action::NoOp));
+}
+
+#[test]
+fn loan_entry_toggle_loan_type_alternates_variant() {
+    let mut entry = LoanEntryState::new();
+    assert_eq!(entry.loan_type, LoanType::ShirBased);
+    entry.toggle_loan_type();
+    assert_eq!(entry.loan_type, LoanType::CpiLinked);
+    entry.toggle_loan_type();
+    assert_eq!(entry.loan_type, LoanType::ShirBased);
+}
+
+#[test]
+fn loan_entry_to_loan_record_none_when_incomplete_or_invalid() {
+    let entry = LoanEntryState::new();
+    assert!(!entry.is_complete());
+    assert!(entry.to_loan_record().is_none());
+
+    let mut bad = LoanEntryState::new();
+    bad.bank_name = "B".into();
+    bad.account_number = "A".into();
+    bad.principal = "x".into();
+    bad.interest_rate = "5".into();
+    bad.origination_date = "2025-01-01".into();
+    bad.first_payment_date = "2025-02-01".into();
+    bad.num_payments = "12".into();
+    assert!(!bad.is_complete());
+    assert!(bad.to_loan_record().is_none());
+}
+
+fn sample_complete_loan_entry() -> LoanEntryState {
+    let mut e = LoanEntryState::new();
+    e.bank_name = "TestBank".into();
+    e.account_number = "ACC-9".into();
+    e.principal = "100000".into();
+    e.interest_rate = "5.5".into();
+    e.spread = "0.25".into();
+    e.origination_date = "2024-01-01".into();
+    e.first_payment_date = "2024-02-01".into();
+    e.num_payments = "360".into();
+    e.currency = "ILS".into();
+    e.calculate_maturity();
+    e.calculate_monthly_payment();
+    e
+}
+
+#[test]
+fn loan_entry_to_loan_record_builds_api_loan_when_valid() {
+    let e = sample_complete_loan_entry();
+    let expected_maturity = e.maturity_date.clone();
+    assert!(e.is_complete());
+    let rec = e.to_loan_record().expect("loan record");
+    assert_eq!(rec.bank_name, "TestBank");
+    assert_eq!(rec.account_number, "ACC-9");
+    assert_eq!(rec.loan_type, ApiLoanType::ShirBased);
+    assert!((rec.principal - 100_000.0).abs() < 1e-6);
+    assert_eq!(rec.original_principal, rec.principal);
+    assert!((rec.interest_rate - 5.5).abs() < 1e-9);
+    assert!((rec.spread - 0.25).abs() < 1e-9);
+    assert_eq!(rec.origination_date, "2024-01-01");
+    assert_eq!(rec.next_payment_date, "2024-02-01");
+    assert_eq!(rec.maturity_date, expected_maturity);
+    assert_eq!(rec.status, LoanStatus::Active);
+    assert_eq!(rec.currency, "ILS");
+    assert_eq!(rec.payment_frequency_months, 1);
+    assert!(rec.loan_id.starts_with("loan-TestBank-"));
+    assert!(rec.monthly_payment > 0.0);
+}
+
+#[test]
+fn loan_entry_to_loan_record_respects_cpi_linked_type() {
+    let mut e = sample_complete_loan_entry();
+    e.loan_type = LoanType::CpiLinked;
+    let rec = e.to_loan_record().expect("record");
+    assert_eq!(rec.loan_type, ApiLoanType::CpiLinked);
+}
+
+#[test]
+fn loan_entry_empty_spread_defaults_to_zero_in_record() {
+    let mut e = sample_complete_loan_entry();
+    e.spread.clear();
+    let rec = e.to_loan_record().expect("record");
+    assert_eq!(rec.spread, 0.0);
+}
+
+#[test]
+fn apply_loan_enter_sends_record_and_clears_form_when_channel_wired() {
+    let (loan_tx, mut loan_rx) = mpsc::unbounded_channel();
+    let (_snap_tx, snap_rx) = watch::channel(None);
+    let (_event_tx, event_rx) = mpsc::unbounded_channel();
+    let (_config_tx, config_rx) = watch::channel(TuiConfig::default());
+    let (_health_tx, health_rx) = watch::channel(HashMap::new());
+    let mut app = App::new(
+        TuiConfig::default(),
+        snap_rx,
+        event_rx,
+        config_rx,
+        health_rx,
+        None,
+        None,
+        Some(loan_tx),
+        None,
+        None,
+        None,
+        None,
+    );
+    app.loan_entry = Some(sample_complete_loan_entry());
+    assert!(apply_loan_action(&mut app, Action::LoansInputEnter));
+    assert!(app.loan_entry.is_none());
+    let rec = loan_rx.try_recv().expect("loan sent");
+    assert_eq!(rec.bank_name, "TestBank");
 }

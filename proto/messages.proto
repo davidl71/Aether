@@ -233,6 +233,16 @@ message NatsTransportHealth {
   optional uint64 in_messages = 13;
   optional uint64 out_messages = 14;
   optional uint64 connects = 15;
+  // First-class transport read model (backend publisher + REST/TUI surfaces).
+  string connection_state = 16;  // connected|disconnected|degraded (empty if legacy client)
+  string snapshot_backend_id = 17;
+  string snapshot_generated_at = 18;  // RFC3339 wall clock of last embedded snapshot
+  bool jetstream_enabled = 19;
+  bool jetstream_stream_ready = 20;
+  uint64 jetstream_publish_failures = 21;
+  bool kv_reachable = 22;
+  string kv_bucket = 23;
+  string kv_last_check_at = 24;  // RFC3339 of last KV probe (e.g. REST /health)
 }
 
 message SystemSnapshot {

@@ -26,3 +26,11 @@ This document time-boxes the **Phase 5** research outcome from the backlog plan:
 1. Define one **stable export schema** (columns + units) for positions, curves, or scenario grids.
 2. Add a **single** Rust entry point (CLI flag or gated handler) that writes that schema.
 3. Version the schema (`v1`) so R scripts do not break silently when Rust fields evolve.
+
+**Phase 0 (R sidecar scaffold):** `analytics/r/` — `Rscript phase0_equity_metrics.R` reads CSV bars (`date`, `close`) and prints Sharpe, drawdown, and total return; `Rscript box_spread_historical_backtest.R` reads box MTM marks (`date`, `box_mtm`) for cumulative P&L / Sharpe / max DD, with optional `ggplot2`, `plotly`, and `quantstrat` (see `analytics/r/README.md`). Sample data under `analytics/r/fixtures/`. Richer QuestDB option-chain replay stays future export-schema work.
+
+**Yield curve (deferred):** `analytics/r/yield_curve/` — `plumber` HTTP API (`POST /estimate`) smooths sparse zero rates (base R spline); optional CRAN `termstrc` / `YieldCurve` wired later (T-1774201865476785000). Rust integration remains HTTP-only off hot paths.
+
+## Runnable spike
+
+- **`analytics/r/`**: example CSV/JSON fixtures and `scripts/sanity_box_spread.R` (base R for CSV; optional `jsonlite` for JSON). See `analytics/r/README.md`.

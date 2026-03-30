@@ -6,10 +6,10 @@ use api::{PositionSnapshot, RuntimePositionDto};
 
 use crate::config::PositionsSortMode;
 use ratatui::{
-    layout::{Constraint, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::Line,
-    widgets::{Block, Borders, Cell, Row, Table},
+    widgets::{Block, Borders, Cell, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, Table},
     Frame,
 };
 
@@ -121,6 +121,26 @@ pub fn positions_display_info(
     (display_len, index_map, combo_key_per_row)
 }
 
+fn fmt_qty(n: i32) -> String {
+    format!("{:>8}", n)
+}
+
+fn fmt_money(n: f64) -> String {
+    format!("{:>10.2}", n)
+}
+
+fn fmt_pnl(n: f64) -> String {
+    format!("{:>+10.2}", n)
+}
+
+fn pnl_fg(pnl: f64) -> Color {
+    if pnl >= 0.0 {
+        Color::Green
+    } else {
+        Color::Red
+    }
+}
+
 /// Label for position type (e.g. option, equity).
 pub fn position_type_label(typ: Option<&str>) -> &'static str {
     match typ {
@@ -170,7 +190,9 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
         let scroll = if index_map.is_empty() {
             0
         } else {
-            app.positions_scroll.min(index_map.len().saturating_sub(1))
+            app.positions_table
+                .selected()
+                .min(index_map.len().saturating_sub(1))
         };
 
         let table_rows: Vec<Row> = index_map
@@ -179,14 +201,14 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
             .map(|(row_idx, pos_idx)| {
                 let is_selected = row_idx == scroll;
                 let base_style = if is_selected {
-                    Style::default().add_modifier(Modifier::REVERSED)
+                    Style::default().bg(Color::DarkGray)
                 } else {
                     Style::default()
                 };
 
                 if let Some(Some(combo_key)) = combo_key_per_row.get(row_idx) {
                     let group = groups.iter().find(|g| &g.key == combo_key);
-                    let (sym, qty, cost, mark, pnl, strat) = if let Some(g) = group {
+                    let (sym, qty, cost, mark, pnl, strat, combo_pnl) = if let Some(g) = group {
                         let stem = &combo_key.2;
                         let total_cost: f64 = g
                             .position_indices
@@ -203,6 +225,11 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
                             .iter()
                             .map(|&i| positions[i].mark * positions[i].quantity as f64)
                             .sum();
+                        let avg_mark = if g.total_quantity != 0 {
+                            total_mark / g.total_quantity.abs() as f64
+                        } else {
+                            0.0
+                        };
                         (
                             format!(
                                 "{} [{}]",
@@ -213,64 +240,79 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
                                     '+'
                                 }
                             ),
-                            g.total_quantity.to_string(),
-                            format!("{:.2}", avg_cost),
-                            format!("{:.2}", total_mark / g.total_quantity.abs() as f64),
-                            format!("{:+.2}", g.total_pnl),
+                            fmt_qty(g.total_quantity),
+                            fmt_money(avg_cost),
+                            fmt_money(avg_mark),
+                            fmt_pnl(g.total_pnl),
                             combo_key.1.clone(),
+                            g.total_pnl,
                         )
                     } else {
                         (
                             "—".into(),
-                            "0".into(),
+                            fmt_qty(0),
                             "—".into(),
                             "—".into(),
                             "—".into(),
                             "—".into(),
+                            0.0,
                         )
                     };
                     if is_selected {
                         selected_label = sym.clone();
                     }
+                    let pnl_cell_style = Style::default()
+                        .fg(pnl_fg(combo_pnl))
+                        .add_modifier(Modifier::BOLD)
+                        .patch(base_style);
                     Row::new([
-                        Cell::from(sym).style(Style::default().add_modifier(Modifier::BOLD)),
-                        Cell::from(Line::from(qty).right_aligned())
-                            .style(Style::default().add_modifier(Modifier::BOLD)),
-                        Cell::from(Line::from(cost).right_aligned())
-                            .style(Style::default().add_modifier(Modifier::BOLD)),
-                        Cell::from(Line::from(mark).right_aligned())
-                            .style(Style::default().add_modifier(Modifier::BOLD)),
-                        Cell::from(Line::from(pnl).right_aligned())
-                            .style(Style::default().add_modifier(Modifier::BOLD)),
-                        Cell::from(strat).style(Style::default().add_modifier(Modifier::BOLD)),
+                        Cell::from(sym).style(
+                            Style::default()
+                                .add_modifier(Modifier::BOLD)
+                                .patch(base_style),
+                        ),
+                        Cell::from(Line::from(qty).right_aligned()).style(
+                            Style::default()
+                                .add_modifier(Modifier::BOLD)
+                                .patch(base_style),
+                        ),
+                        Cell::from(Line::from(cost).right_aligned()).style(
+                            Style::default()
+                                .add_modifier(Modifier::BOLD)
+                                .patch(base_style),
+                        ),
+                        Cell::from(Line::from(mark).right_aligned()).style(
+                            Style::default()
+                                .add_modifier(Modifier::BOLD)
+                                .patch(base_style),
+                        ),
+                        Cell::from(Line::from(pnl).right_aligned()).style(pnl_cell_style),
+                        Cell::from(strat).style(
+                            Style::default()
+                                .add_modifier(Modifier::BOLD)
+                                .patch(base_style),
+                        ),
                     ])
-                    .style(base_style)
                 } else if let Some(idx) = *pos_idx {
                     let pos = &positions[idx];
-                    let pnl_color = if pos.unrealized_pnl >= 0.0 {
-                        Color::Green
-                    } else {
-                        Color::Red
-                    };
+                    let pnl_color = pnl_fg(pos.unrealized_pnl);
                     if is_selected {
                         selected_label = pos.symbol.clone();
                     }
+                    let pnl_cell_style = Style::default().fg(pnl_color).patch(base_style);
                     Row::new([
-                        Cell::from(format!("  {}", pos.symbol)),
-                        Cell::from(Line::from(pos.quantity.to_string()).right_aligned()),
-                        Cell::from(Line::from(format!("{:.2}", pos.cost_basis)).right_aligned()),
-                        Cell::from(Line::from(format!("{:.2}", pos.mark)).right_aligned()),
-                        Cell::from(
-                            Line::from(format!("{:+.2}", pos.unrealized_pnl)).right_aligned(),
-                        )
-                        .style(if is_selected {
-                            base_style
-                        } else {
-                            Style::default().fg(pnl_color)
-                        }),
-                        Cell::from(pos.strategy.clone().unwrap_or_else(|| "—".into())),
+                        Cell::from(format!("  {}", pos.symbol)).style(base_style),
+                        Cell::from(Line::from(fmt_qty(pos.quantity)).right_aligned())
+                            .style(base_style),
+                        Cell::from(Line::from(fmt_money(pos.cost_basis)).right_aligned())
+                            .style(base_style),
+                        Cell::from(Line::from(fmt_money(pos.mark)).right_aligned())
+                            .style(base_style),
+                        Cell::from(Line::from(fmt_pnl(pos.unrealized_pnl)).right_aligned())
+                            .style(pnl_cell_style),
+                        Cell::from(pos.strategy.clone().unwrap_or_else(|| "—".into()))
+                            .style(base_style),
                     ])
-                    .style(base_style)
                 } else {
                     Row::new(vec![Cell::from(""); 6])
                 }
@@ -314,7 +356,7 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
     let cursor = if len == 0 {
         0
     } else {
-        app.positions_scroll.min(len - 1)
+        app.positions_table.selected().min(len - 1)
     };
     let viewport = if len <= visible_height {
         0
@@ -329,19 +371,38 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
         .take(visible_height.max(1))
         .collect();
 
+    let show_scrollbar = len > visible_height;
+    let h_chunks = show_scrollbar.then(|| {
+        Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Min(0), Constraint::Length(1)])
+            .split(inner)
+    });
+    let table_area = h_chunks.as_ref().map(|c| c[0]).unwrap_or(inner);
+
     let table = Table::new(
         window,
         [
             Constraint::Length(18),
-            Constraint::Length(5),
-            Constraint::Length(7),
-            Constraint::Length(7),
-            Constraint::Length(8),
+            Constraint::Length(10),
+            Constraint::Length(12),
+            Constraint::Length(12),
+            Constraint::Length(12),
             Constraint::Length(8),
         ],
     )
     .header(header);
-    f.render_widget(table, inner);
+    f.render_widget(table, table_area);
+
+    if let Some(chunks) = h_chunks {
+        let mut scrollbar_state = ScrollbarState::new(len)
+            .position(viewport)
+            .viewport_content_length(visible_height);
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(None)
+            .end_symbol(None);
+        f.render_stateful_widget(scrollbar, chunks[1], &mut scrollbar_state);
+    }
 }
 
 #[cfg(test)]

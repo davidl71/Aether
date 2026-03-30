@@ -39,6 +39,26 @@ pub struct NatsTransportHealthState {
     pub out_messages: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub connects: Option<u64>,
+    /// `connected` | `disconnected` | `degraded` (empty when unset / legacy payload).
+    #[serde(default)]
+    pub connection_state: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub snapshot_backend_id: Option<String>,
+    /// RFC3339 timestamp of the last `SystemSnapshot` clock embedded alongside this transport.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub snapshot_generated_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub jetstream_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub jetstream_stream_ready: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub jetstream_publish_failures: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kv_reachable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kv_bucket: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kv_last_check_at: Option<String>,
     #[serde(flatten)]
     pub extra: HashMap<String, String>,
 }
@@ -73,6 +93,15 @@ impl NatsTransportHealthState {
             in_messages: None,
             out_messages: None,
             connects: None,
+            connection_state: "connected".to_string(),
+            snapshot_backend_id: None,
+            snapshot_generated_at: None,
+            jetstream_enabled: None,
+            jetstream_stream_ready: None,
+            jetstream_publish_failures: None,
+            kv_reachable: None,
+            kv_bucket: None,
+            kv_last_check_at: None,
             extra: HashMap::new(),
         }
     }
@@ -85,6 +114,11 @@ impl NatsTransportHealthState {
     ) -> Self {
         let status = if error.is_some() {
             "error".to_string()
+        } else {
+            "degraded".to_string()
+        };
+        let connection_state = if error.is_some() {
+            "disconnected".to_string()
         } else {
             "degraded".to_string()
         };
@@ -103,6 +137,15 @@ impl NatsTransportHealthState {
             in_messages: None,
             out_messages: None,
             connects: None,
+            connection_state,
+            snapshot_backend_id: None,
+            snapshot_generated_at: None,
+            jetstream_enabled: None,
+            jetstream_stream_ready: None,
+            jetstream_publish_failures: None,
+            kv_reachable: None,
+            kv_bucket: None,
+            kv_last_check_at: None,
             extra: HashMap::new(),
         }
     }
@@ -114,6 +157,7 @@ impl NatsTransportHealthState {
         observed.updated_at = updated_at.to_rfc3339();
         observed.error = None;
         observed.hint = None;
+        observed.connection_state = "connected".to_string();
         observed
     }
 

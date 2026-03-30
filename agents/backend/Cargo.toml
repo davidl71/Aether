@@ -75,3 +75,7 @@ financial_symbols = "1.0"
 trading-calendar = "0.2"
 # cxx = "1.0" # Available for C++ ↔ Rust interop exploration (see task T-1773475473747582000)
 
+# Smaller release artifacts in target/release (dev is already minimized in .cargo/config.toml).
+# Omit thin/fat LTO here: it speeds links but can enlarge intermediate deps/ during builds.
+[profile.release]
+strip = "debuginfo"
