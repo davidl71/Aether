@@ -54,9 +54,22 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
             let trimmed = buf.trim();
             if trimmed.is_empty() {
                 app.push_toast("Enter a path to a loans JSON file.", ToastLevel::Warning);
+                app.loan_import_path = Some(buf);
                 return true;
             }
+
             let path = PathBuf::from(trimmed);
+            if !path.exists() {
+                app.push_toast("File does not exist.", ToastLevel::Warning);
+                app.loan_import_path = Some(buf);
+                return true;
+            }
+            if !path.is_file() {
+                app.push_toast("Path is not a file.", ToastLevel::Warning);
+                app.loan_import_path = Some(buf);
+                return true;
+            }
+
             if let Some(ref tx) = app.loan_bulk_import_tx {
                 if tx.send(path).is_ok() {
                     app.loans_fetch_pending = true;
