@@ -831,6 +831,7 @@ dependencies = [
  "chrono",
  "clap",
  "clap_complete",
+ "csv",
  "discount_bank_parser",
  "market_data",
  "nats_adapter",

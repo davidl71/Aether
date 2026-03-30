@@ -17,6 +17,9 @@ tracing-subscriber.workspace = true
 clap = { version = "4", features = ["derive", "env"] }
 clap_complete = "4"
 
+# CSV import/export
+csv = "1"
+
 # Configuration: shared JSON (same as TUI/backend) + TOML fallback
 api = { path = "../../crates/api", features = ["keyring"] }
 market_data = { path = "../../crates/market_data" }

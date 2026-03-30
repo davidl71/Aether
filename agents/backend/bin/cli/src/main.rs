@@ -357,6 +357,12 @@ enum LoansCmd {
         #[arg(long)]
         json: bool,
     },
+    /// Export loans (from backend via NATS api.loans.list) to a CSV file.
+    ExportCsv {
+        /// Output path (use '-' for stdout)
+        #[arg(long, default_value = "-")]
+        out: PathBuf,
+    },
     /// Import loans from a JSON file into the loan database.
     Import {
         /// Path to JSON file (config/loans.json or custom)
@@ -399,6 +405,16 @@ enum DiscountBankCmd {
         /// Output as JSON (default: human-readable summary)
         #[arg(long)]
         json: bool,
+    },
+
+    /// Export latest Discount Bank transactions to a CSV file.
+    ExportCsv {
+        /// Max number of rows (most recent first)
+        #[arg(long, default_value_t = 500)]
+        limit: usize,
+        /// Output path (use '-' for stdout)
+        #[arg(long, default_value = "-")]
+        out: PathBuf,
     },
 }
 
@@ -535,6 +551,7 @@ fn main() -> Result<()> {
         Commands::SnapshotWrite { json } => run_snapshot_write(format, json)?,
         Commands::Loans { sub } => match sub {
             LoansCmd::List { json } => run_loans_list(format, json)?,
+            LoansCmd::ExportCsv { out } => run_loans_export_csv(&out)?,
             LoansCmd::Import { path, json } => run_loans_import(&path, format, json)?,
             LoansCmd::ImportCsv { path, json } => run_loans_import_csv(&path, format, json)?,
             LoansCmd::ImportPdf {
@@ -549,6 +566,7 @@ fn main() -> Result<()> {
                 exchange_rate,
                 json,
             } => run_discount_bank_import(&path, exchange_rate, format, json)?,
+            DiscountBankCmd::ExportCsv { limit, out } => run_discount_bank_export_csv(limit, &out)?,
         },
         Commands::Cred { sub } => run_cred(sub)?,
         Commands::Alpaca { sub } => tokio::runtime::Runtime::new()?.block_on(run_alpaca(sub))?,
@@ -1025,6 +1043,137 @@ fn run_loans_list(format: OutputFormat, json: bool) -> Result<()> {
         Err(e) => anyhow::bail!("api.loans.list: {}", e),
     }
     Ok(())
+}
+
+fn run_loans_export_csv(out: &PathBuf) -> Result<()> {
+    #[derive(serde::Serialize)]
+    struct LoanCsvRow {
+        loan_id: String,
+        bank_name: String,
+        account_number: String,
+        loan_type: String,
+        principal: f64,
+        original_principal: f64,
+        interest_rate: f64,
+        spread: f64,
+        base_cpi: f64,
+        current_cpi: f64,
+        origination_date: String,
+        maturity_date: String,
+        next_payment_date: String,
+        monthly_payment: f64,
+        payment_frequency_months: i32,
+        status: String,
+        last_update: String,
+        currency: String,
+    }
+
+    let nats_url =
+        std::env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
+    let loans: Vec<LoanRecord> = tokio::runtime::Runtime::new()?.block_on(async {
+        let nc = NatsClient::connect(&nats_url)
+            .await
+            .map_err(|e| anyhow::anyhow!("NATS: {e}"))?;
+
+        let res: Result<Vec<LoanRecord>, String> =
+            request_json_with_retry::<(), Result<Vec<LoanRecord>, String>>(&nc, "api.loans.list", &())
+                .await
+                .map_err(|e| anyhow::anyhow!("api.loans.list: {e}"))?;
+
+        res.map_err(|e| anyhow::anyhow!("api.loans.list: {e}"))
+    })?;
+
+    let rows = loans.into_iter().map(|l| LoanCsvRow {
+        loan_id: l.loan_id,
+        bank_name: l.bank_name,
+        account_number: l.account_number,
+        loan_type: match l.loan_type {
+            api::loans::LoanType::ShirBased => "SHIR".to_string(),
+            api::loans::LoanType::CpiLinked => "CPI".to_string(),
+        },
+        principal: l.principal,
+        original_principal: l.original_principal,
+        interest_rate: l.interest_rate,
+        spread: l.spread,
+        base_cpi: l.base_cpi,
+        current_cpi: l.current_cpi,
+        origination_date: l.origination_date,
+        maturity_date: l.maturity_date,
+        next_payment_date: l.next_payment_date,
+        monthly_payment: l.monthly_payment,
+        payment_frequency_months: l.payment_frequency_months,
+        status: match l.status {
+            api::loans::LoanStatus::Active => "ACTIVE".to_string(),
+            api::loans::LoanStatus::PaidOff => "PAID_OFF".to_string(),
+            api::loans::LoanStatus::Defaulted => "DEFAULTED".to_string(),
+        },
+        last_update: l.last_update,
+        currency: l.currency,
+    });
+
+    write_csv_rows(out, rows)
+}
+
+fn write_csv_rows<I, T>(out: &PathBuf, rows: I) -> Result<()>
+where
+    I: IntoIterator<Item = T>,
+    T: Serialize,
+{
+    if out.as_os_str() == "-" {
+        let stdout = std::io::stdout();
+        let handle = stdout.lock();
+        let mut wtr = csv::WriterBuilder::new().has_headers(true).from_writer(handle);
+        for row in rows {
+            wtr.serialize(row)?;
+        }
+        wtr.flush()?;
+        return Ok(());
+    }
+
+    let file = std::fs::File::create(out)?;
+    let mut wtr = csv::WriterBuilder::new().has_headers(true).from_writer(file);
+    for row in rows {
+        wtr.serialize(row)?;
+    }
+    wtr.flush()?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod csv_export_tests {
+    use super::*;
+
+    #[test]
+    fn write_csv_rows_writes_headers_and_rows() {
+        #[derive(serde::Serialize)]
+        struct Row {
+            a: i32,
+            b: String,
+        }
+
+        let out = std::env::temp_dir().join(format!(
+            "aether_cli_write_csv_rows_test_{}.csv",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_file(&out);
+
+        write_csv_rows(
+            &out,
+            vec![Row {
+                a: 1,
+                b: "x".to_string(),
+            }],
+        )
+        .expect("write_csv_rows should succeed");
+
+        let text = std::fs::read_to_string(&out).expect("output file should exist");
+        assert!(
+            text.starts_with("a,b\n1,x\n") || text.starts_with("a,b\r\n1,x\r\n"),
+            "unexpected CSV output: {text:?}"
+        );
+
+        let _ = std::fs::remove_file(&out);
+    }
 }
 
 fn run_loans_import(path: &PathBuf, format: OutputFormat, json: bool) -> Result<()> {
@@ -1530,6 +1679,44 @@ fn run_loans_import_pdf(
     }
 
     Ok(())
+}
+
+fn run_discount_bank_export_csv(limit: usize, out: &PathBuf) -> Result<()> {
+    #[derive(serde::Serialize)]
+    struct DiscountBankTxnCsvRow {
+        account_id: String,
+        institution: String,
+        account_number: String,
+        branch_number: String,
+        section_number: String,
+        currency: String,
+        value_date: String,
+        amount: f64,
+        is_debit: bool,
+        reference: String,
+    }
+
+    let dto = tokio::runtime::Runtime::new()?.block_on(async {
+        api::discount_bank::get_transactions(limit)
+            .await
+            .map_err(|e| anyhow::anyhow!("discount_bank.get_transactions: {e}"))
+    })?;
+
+    let acct = dto.account;
+    let rows = dto.transactions.into_iter().map(|t| DiscountBankTxnCsvRow {
+        account_id: acct.id.clone(),
+        institution: acct.institution.clone(),
+        account_number: acct.account_number.clone(),
+        branch_number: acct.branch_number.clone(),
+        section_number: acct.section_number.clone(),
+        currency: acct.currency.clone(),
+        value_date: t.value_date,
+        amount: t.amount,
+        is_debit: t.is_debit,
+        reference: t.reference,
+    });
+
+    write_csv_rows(out, rows)
 }
 
 fn run_discount_bank_import(

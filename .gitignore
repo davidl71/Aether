@@ -22,8 +22,10 @@ tags
 bin/
 # But allow CLI source code (not build artifacts)
 /agents/backend/bin/
-!/agents/backend/bin/cli/src/
-!/agents/backend/bin/cli/Cargo.toml
+!/agents/backend/bin/
+/agents/backend/bin/*
+!/agents/backend/bin/cli/
+!/agents/backend/bin/cli/**
 *.o
 *.so
 *.dylib
