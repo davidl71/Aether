@@ -35,31 +35,84 @@ def load_waves(root: str) -> dict[str, list[str]]:
     return data if isinstance(data, dict) else {}
 
 
+def resolve_exarp_invocation(root: str) -> tuple[list[str], dict[str, str]] | None:
+    """Prefer a direct exarp-go binary; run_exarp_go.sh can fail in some CI/sandbox setups."""
+    env = os.environ.copy()
+    env.setdefault("PROJECT_ROOT", root)
+    candidates: list[str] = []
+    if os.environ.get("EXARP_GO_BIN"):
+        candidates.append(os.environ["EXARP_GO_BIN"])
+    for rel in (
+        os.path.join(root, "..", "..", "mcp", "exarp-go", "bin", "exarp-go"),
+        os.path.join(root, "..", "mcp", "exarp-go", "bin", "exarp-go"),
+    ):
+        candidates.append(os.path.normpath(rel))
+    for exe in candidates:
+        if exe and os.path.isfile(exe) and os.access(exe, os.X_OK):
+            return ([exe], env)
+    script = os.path.join(root, "scripts", "run_exarp_go.sh")
+    if os.path.isfile(script) and os.access(script, os.X_OK):
+        return ([script], env)
+    return None
+
+
+def parse_exarp_tool_stdout(stdout: str) -> dict | list | None:
+    """Strip CLI banner lines; exarp-go -tool prints 'Result:\\n{...}' not raw JSON."""
+    raw = (stdout or "").strip()
+    if not raw:
+        return None
+    if "Result:" in raw:
+        raw = raw.split("Result:", 1)[1].lstrip("\n\r").strip()
+    try:
+        out = json.loads(raw)
+    except json.JSONDecodeError:
+        start = raw.find("{")
+        if start < 0:
+            start = raw.find("[")
+        if start < 0:
+            return None
+        try:
+            out = json.loads(raw[start:])
+        except json.JSONDecodeError:
+            return None
+    return out
+
+
 def get_non_done_ids(root: str) -> set[str]:
     """Call exarp-go task_workflow list for Todo and In Progress; return union of task IDs."""
-    script = os.path.join(root, "scripts", "run_exarp_go.sh")
-    if not os.path.isfile(script) or not os.access(script, os.X_OK):
+    inv = resolve_exarp_invocation(root)
+    if not inv:
         return set()
+    argv0, env = inv
     ids: set[str] = set()
     for status in ("Todo", "In Progress"):
         try:
+            cmd = argv0 + [
+                "-tool",
+                "task_workflow",
+                "-args",
+                json.dumps(
+                    {
+                        "action": "list",
+                        "status": status,
+                        "output_format": "json",
+                        "compact": True,
+                    }
+                ),
+            ]
             out = subprocess.run(
-                [script, "-tool", "task_workflow", "-args", json.dumps({
-                    "action": "list",
-                    "status_filter": status,
-                    "output_format": "json",
-                }), "-quiet"],
+                cmd,
                 cwd=root,
+                env=env,
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=60,
             )
             if out.returncode != 0:
                 continue
-            data = out.stdout.strip()
-            if not data:
+            parsed = parse_exarp_tool_stdout(out.stdout)
+            if parsed is None:
                 continue
-            parsed = json.loads(data)
             if isinstance(parsed, list):
                 for t in parsed:
                     if isinstance(t, dict) and "id" in t:
@@ -78,15 +131,19 @@ def get_non_done_ids(root: str) -> set[str]:
     # Also scrape T-* from stdout if JSON didn't work
     if not ids:
         try:
+            cmd = argv0 + [
+                "-tool",
+                "task_workflow",
+                "-args",
+                json.dumps({"action": "list", "status": "Todo"}),
+            ]
             out = subprocess.run(
-                [script, "-tool", "task_workflow", "-args", json.dumps({
-                    "action": "list",
-                    "status_filter": "Todo",
-                }), "-quiet"],
+                cmd,
                 cwd=root,
+                env=env,
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=60,
             )
             for line in (out.stdout or "").splitlines():
                 for m in re.finditer(r"T-\d+", line):
