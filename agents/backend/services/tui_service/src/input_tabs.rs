@@ -5,6 +5,10 @@ use crate::input::Action;
 use crate::input_settings::settings_key_action;
 
 pub(crate) fn tab_key_action(app: &App, key: KeyCode, input_mode: InputMode) -> Option<Action> {
+    if matches!(input_mode, InputMode::TreePanel) {
+        return tree_panel_key_action(key);
+    }
+
     match app.active_tab {
         Tab::Yield => yield_key_action(key),
         Tab::Charts => charts_key_action(key, input_mode),
@@ -17,6 +21,18 @@ pub(crate) fn tab_key_action(app: &App, key: KeyCode, input_mode: InputMode) -> 
         Tab::Dashboard => dashboard_key_action(key),
         Tab::Scenarios => scenarios_key_action(key),
         Tab::Logs => logs_key_action(key),
+    }
+}
+
+fn tree_panel_key_action(key: KeyCode) -> Option<Action> {
+    match key {
+        KeyCode::Up => Some(Action::TreeUp),
+        KeyCode::Down => Some(Action::TreeDown),
+        KeyCode::Left => Some(Action::TreeLeft),
+        KeyCode::Right => Some(Action::TreeRight),
+        KeyCode::Enter => Some(Action::TreeToggle),
+        KeyCode::Esc => Some(Action::TreeEscape),
+        _ => None,
     }
 }
 

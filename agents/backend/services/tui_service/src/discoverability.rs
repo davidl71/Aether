@@ -257,6 +257,9 @@ fn build_command_registry() -> Vec<Command> {
         Command::new("log_panel", "Toggle Log Panel", Action::ToggleLogPanel)
             .description("Toggle log panel overlay")
             .keys(vec!["`".into(), "~".into()]),
+        Command::new("tree_panel", "Toggle Tree Panel", Action::ToggleTreePanel)
+            .description("Toggle tree panel overlay (spike)")
+            .keys(vec!["g".into()]),
         Command::new("mode_cycle", "Cycle Mode", Action::ModeCycle)
             .description("Cycle through application modes")
             .keys(vec!["m".into()]),

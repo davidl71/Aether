@@ -1,6 +1,6 @@
 //! Application state and event dispatch.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Instant;
 
@@ -130,6 +130,7 @@ pub enum InputMode {
     ChartSearch,
     OrdersFilter,
     LogPanel,
+    TreePanel,
 }
 
 /// Latest command state shown in the TUI status area.
@@ -456,6 +457,13 @@ pub struct App {
     pub show_help: bool,
     /// When true, show the debug log panel overlay (toggled with backtick).
     pub show_log_panel: bool,
+
+    /// When true, show the tree panel overlay (tui-tree-widget spike).
+    pub show_tree_panel: bool,
+    /// Stateful selection/open state for the tree panel.
+    pub tree_state: RefCell<tui_tree_widget::TreeState<&'static str>>,
+    /// Spike tree items; next step is mapping domain objects.
+    pub tree_items: Vec<tui_tree_widget::TreeItem<'static, &'static str>>,
     /// When Some, show detail overlay for selected Order or Position (Enter to open, Esc to close).
     pub detail_popup: Option<DetailPopupContent>,
     /// Config validation warning (e.g. missing NATS_URL); shown in status bar when set.
@@ -649,6 +657,9 @@ impl App {
             command_palette: crate::discoverability::CommandPalette::new(),
             show_help: false,
             show_log_panel: false,
+            show_tree_panel: false,
+            tree_state: RefCell::new(tui_tree_widget::TreeState::default()),
+            tree_items: Vec::new(),
             detail_popup: None,
             config_warning,
             backend_health: HashMap::new(),
@@ -820,6 +831,8 @@ impl App {
             InputMode::OrdersFilter
         } else if self.show_log_panel {
             InputMode::LogPanel
+        } else if self.show_tree_panel {
+            InputMode::TreePanel
         } else {
             InputMode::Normal
         }
@@ -836,7 +849,9 @@ impl App {
             | InputMode::LoanImportPath
             | InputMode::ChartSearch
             | InputMode::OrdersFilter => AppMode::Edit,
-            InputMode::Help | InputMode::DetailPopup | InputMode::LogPanel => AppMode::View,
+            InputMode::Help | InputMode::DetailPopup | InputMode::LogPanel | InputMode::TreePanel => {
+                AppMode::View
+            }
             InputMode::Normal => AppMode::Navigation,
         };
     }

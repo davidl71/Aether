@@ -299,6 +299,24 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
             app.log_display_level = log::LevelFilter::Debug;
             tui_logger::set_default_level(log::LevelFilter::Debug);
         }
+        Action::TreeUp => {
+            app.tree_state.borrow_mut().key_up();
+        }
+        Action::TreeDown => {
+            app.tree_state.borrow_mut().key_down();
+        }
+        Action::TreeLeft => {
+            app.tree_state.borrow_mut().key_left();
+        }
+        Action::TreeRight => {
+            app.tree_state.borrow_mut().key_right();
+        }
+        Action::TreeToggle => {
+            app.tree_state.borrow_mut().toggle_selected();
+        }
+        Action::TreeEscape => {
+            app.show_tree_panel = false;
+        }
         _ => return false,
     }
     true

@@ -8,6 +8,7 @@ mod discount_bank;
 pub mod feedback;
 mod loans;
 pub mod logs;
+pub(crate) mod tree_panel;
 mod orders;
 mod positions;
 pub use positions::positions_display_info;
@@ -61,6 +62,9 @@ pub fn render(f: &mut Frame, app: &App) {
     }
     if app.show_log_panel {
         render_log_panel_overlay(f, app, f.area());
+    }
+    if app.show_tree_panel {
+        tree_panel::render_tree_panel_overlay(f, app, f.area());
     }
     if let Some(ref content) = app.detail_popup {
         render_detail_overlay(f, f.area(), content);
@@ -1110,6 +1114,7 @@ fn settings_mode_indicator(app: &App) -> Option<(String, Color)> {
         InputMode::LoanForm => Some(("LOANS:FORM".into(), Color::Yellow)),
         InputMode::LoanImportPath => Some(("LOANS:IMPORT".into(), Color::Yellow)),
         InputMode::LogPanel => Some(("LOGS:PANEL".into(), Color::Yellow)),
+        InputMode::TreePanel => Some(("TREE:PANEL".into(), Color::Yellow)),
         _ => None,
     }
 }

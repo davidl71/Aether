@@ -9,9 +9,11 @@ pub(crate) fn global_key_action(input_mode: InputMode, key: KeyCode) -> Option<A
         KeyCode::Char('?') => Some(Action::ShowHelp),
         KeyCode::Char(':') => Some(Action::CommandPalette),
         KeyCode::Char('`') | KeyCode::Char('~') => Some(Action::ToggleLogPanel),
+        KeyCode::Char('g') | KeyCode::Char('G') => Some(Action::ToggleTreePanel),
         KeyCode::Esc if matches!(input_mode, InputMode::Normal | InputMode::LogPanel) => {
             Some(Action::ToggleLogPanel)
         }
+        KeyCode::Esc if matches!(input_mode, InputMode::TreePanel) => Some(Action::ToggleTreePanel),
         _ => None,
     }
 }
@@ -68,10 +70,17 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
         Action::ToggleLogPanel => {
             app.show_log_panel = !app.show_log_panel;
         }
+        Action::ToggleTreePanel => {
+            app.show_tree_panel = !app.show_tree_panel;
+            if app.show_tree_panel {
+                crate::ui::tree_panel::ensure_initialized(app);
+            }
+        }
         Action::CloseDetail => {
             app.detail_popup = None;
             app.show_help = false;
             app.show_log_panel = false;
+            app.show_tree_panel = false;
         }
         Action::TabNext => {
             set_active_tab(app, app.active_tab.next());
