@@ -110,6 +110,7 @@ native/third_party/IntelRDFPMathLib20U2/**/*.a
 sweep.timestamp
 /agents/backend-mock/target/
 /agents/backend-data/target/
+/target/
 /web/node_modules/
 # Root-level node_modules (for markdownlint-cli2)
 node_modules/
