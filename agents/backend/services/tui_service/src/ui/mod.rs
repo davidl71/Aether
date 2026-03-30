@@ -1,6 +1,6 @@
 //! Ratatui rendering: frame layout, tab bar, and per-tab view delegation.
 
-mod alerts;
+pub(crate) mod alerts;
 mod candlestick;
 pub mod charts;
 mod dashboard;
@@ -8,9 +8,9 @@ mod discount_bank;
 pub mod feedback;
 mod loans;
 pub mod logs;
-pub(crate) mod tree_panel;
 mod orders;
 mod positions;
+pub(crate) mod tree_panel;
 pub use positions::positions_display_info;
 pub(crate) use positions::sort_positions_for_operator;
 mod scenarios;
@@ -40,7 +40,21 @@ use crate::mode::AppMode;
 use crate::pane::{pane_spec, PaneHintMode};
 use crate::workspace::{VisibleWorkspace, WorkspaceSpec};
 
-pub fn render(f: &mut Frame, app: &App) {
+/// True when a layered widget may sit above the main layout; partial base redraws must repaint these.
+fn layered_chrome_active(app: &App) -> bool {
+    app.show_help
+        || app.show_log_panel
+        || app.show_tree_panel
+        || app.detail_popup.is_some()
+        || app.command_palette.visible
+        || app.toast_manager.has_active()
+}
+
+pub fn render(f: &mut Frame, app: &mut App) {
+    let flags = app.dirty_flags;
+    let paint_all = !flags.is_dirty();
+    let paint_layered = paint_all || flags.overlay || layered_chrome_active(app);
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -51,25 +65,37 @@ pub fn render(f: &mut Frame, app: &App) {
         ])
         .split(f.area());
 
-    render_tab_bar(f, app, chunks[0]);
-    render_main(f, app, chunks[1]);
-    render_hint_bar(f, app, chunks[2]);
-    render_status_bar(f, app, chunks[3]);
-    render_toast_area(f, &app.toast_manager, f.area());
+    if paint_all || flags.tabs {
+        render_tab_bar(f, app, chunks[0]);
+    }
+    if paint_all || flags.content {
+        render_main(f, app, chunks[1]);
+    }
+    if paint_all || flags.hint_bar {
+        render_hint_bar(f, app, chunks[2]);
+    }
+    if paint_all || flags.status_bar {
+        render_status_bar(f, app, chunks[3]);
+    }
 
-    if app.show_help {
-        render_help_overlay(f, f.area());
+    if paint_layered {
+        render_toast_area(f, &app.toast_manager, f.area());
+        if app.show_help {
+            render_help_overlay(f, f.area());
+        }
+        if app.show_log_panel {
+            render_log_panel_overlay(f, app, f.area());
+        }
+        if app.show_tree_panel {
+            tree_panel::render_tree_panel_overlay(f, app, f.area());
+        }
+        if let Some(ref content) = app.detail_popup {
+            render_detail_overlay(f, f.area(), content);
+        }
+        crate::discoverability::render_command_palette(f, &app.command_palette, f.area());
     }
-    if app.show_log_panel {
-        render_log_panel_overlay(f, app, f.area());
-    }
-    if app.show_tree_panel {
-        tree_panel::render_tree_panel_overlay(f, app, f.area());
-    }
-    if let Some(ref content) = app.detail_popup {
-        render_detail_overlay(f, f.area(), content);
-    }
-    crate::discoverability::render_command_palette(f, &app.command_palette, f.area());
+
+    app.dirty_flags.clear_all();
 }
 
 fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
@@ -102,7 +128,7 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     let mut spans = vec![
         Span::raw(format!(" {} | ", app.config.backend_id.to_uppercase())),
         Span::styled(
-            app.app_mode.label(),
+            format!("{} {}", app.app_mode.icon(), app.app_mode.label()),
             app.app_mode.style().add_modifier(Modifier::BOLD),
         ),
         Span::raw(" | "),
@@ -303,11 +329,17 @@ fn render_operations_tab(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(logs_widget, rows[1]);
 }
 
-fn render_split_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
+/// Single-line workspace banner row plus remaining content (shared by split + tile workspaces).
+fn workspace_outer_rows(area: Rect) -> (Rect, Rect) {
     let outer = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(1), Constraint::Min(0)])
         .split(area);
+    (outer[0], outer[1])
+}
+
+fn render_split_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
+    let (banner_row, body) = workspace_outer_rows(area);
     let split_label = Paragraph::new(Line::from(vec![
         Span::styled(
             format!(" {} ", spec.title),
@@ -317,12 +349,12 @@ fn render_split_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceS
         ),
         Span::raw(format!("{}  |  Tab/Shift-Tab: focus panes", spec.summary)),
     ]));
-    f.render_widget(split_label, outer[0]);
+    f.render_widget(split_label, banner_row);
 
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-        .split(outer[1]);
+        .split(body);
     dashboard::render_dashboard_panel(f, app, chunks[0]);
     positions::render_positions_panel(f, app, chunks[1]);
 }
@@ -346,25 +378,15 @@ fn workspace_banner(spec: WorkspaceSpec, focus_label: &str) -> Paragraph<'static
     ]))
 }
 
-fn workspace_focus_label(app: &App) -> String {
-    app.focus_label()
-}
-
 fn render_market_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
-    let outer = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(1), Constraint::Min(0)])
-        .split(area);
+    let (banner_row, body) = workspace_outer_rows(area);
 
-    f.render_widget(
-        workspace_banner(spec, &workspace_focus_label(app)),
-        outer[0],
-    );
+    f.render_widget(workspace_banner(spec, &app.focus_label()), banner_row);
 
     let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-        .split(outer[1]);
+        .split(body);
     let top = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(52), Constraint::Percentage(48)])
@@ -381,20 +403,14 @@ fn render_market_workspace(f: &mut Frame, app: &App, area: Rect, spec: Workspace
 }
 
 fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
-    let outer = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(1), Constraint::Min(0)])
-        .split(area);
+    let (banner_row, body) = workspace_outer_rows(area);
 
-    f.render_widget(
-        workspace_banner(spec, &workspace_focus_label(app)),
-        outer[0],
-    );
+    f.render_widget(workspace_banner(spec, &app.focus_label()), banner_row);
 
     let columns = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(38), Constraint::Percentage(62)])
-        .split(outer[1]);
+        .split(body);
     let left = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(42), Constraint::Percentage(58)])
@@ -407,29 +423,18 @@ fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: Works
     f.render_widget(logs_widget, left[1]);
 
     let layout = settings::settings_layout(columns[1]);
-    settings::render_settings_health_section(f, app, layout.health);
-    settings::render_settings_config_section(f, app, layout.config);
-    settings::render_settings_symbols_section(f, app, layout.symbols);
-    settings::render_settings_sources_section(f, app, layout.sources);
-    settings::render_settings_alpaca_section(f, app, layout.alpaca);
-    settings::render_settings_hint_section(f, app, layout.hint);
+    settings::render_settings_sections(f, app, layout);
 }
 
 fn render_credit_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
-    let outer = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(1), Constraint::Min(0)])
-        .split(area);
+    let (banner_row, body) = workspace_outer_rows(area);
 
     let (loans_width, bank_width) = if app.active_tab == Tab::Loans {
         (52, 48)
     } else {
         (48, 52)
     };
-    f.render_widget(
-        workspace_banner(spec, &workspace_focus_label(app)),
-        outer[0],
-    );
+    f.render_widget(workspace_banner(spec, &app.focus_label()), banner_row);
 
     let panes = Layout::default()
         .direction(Direction::Horizontal)
@@ -437,7 +442,7 @@ fn render_credit_workspace(f: &mut Frame, app: &App, area: Rect, spec: Workspace
             Constraint::Percentage(loans_width),
             Constraint::Percentage(bank_width),
         ])
-        .split(outer[1]);
+        .split(body);
     loans::render_loans(f, app, panes[0]);
     discount_bank::render_discount_bank(f, app, panes[1]);
 }
@@ -704,12 +709,27 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::raw("mode / discoverability tips  "),
             Span::styled(" ` ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("log panel  "),
+            Span::styled(" g ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("tree panel  "),
             Span::styled(" p ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("split pane  "),
             Span::styled(" f ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("FMP (Dash/Pos) or snapshot refresh (other tabs)  "),
             Span::styled(" Esc ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("close overlay / filter / etc."),
+        ]),
+        Line::from(vec![
+            Span::styled(
+                " Workspaces ",
+                Style::default().add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(
+                "Market · Operations · Credit: when the yellow workspace tag shows in the hint bar, ",
+            ),
+            Span::styled("Tab", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(" / "),
+            Span::styled("Shift-Tab", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(" cycle inner panes (not global tab order)."),
         ]),
         Line::from(vec![
             Span::styled(
@@ -728,7 +748,7 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::styled(" x ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("cancel  "),
             Span::styled(" Loans ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("n new  b bulk JSON  "),
+            Span::raw("n new  b/i bulk JSON  "),
             Span::styled(" Disc ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("r refresh  ↑↓ PgUp/Dn"),
         ]),
@@ -769,7 +789,7 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         .title(" Help ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
-    let area = centered_rect(86, 30, area);
+    let area = centered_rect(86, 32, area);
     f.render_widget(ratatui::widgets::Clear, area);
     f.render_widget(inner.block(block), area);
 }
@@ -853,13 +873,37 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
                 "/",
                 Style::default().add_modifier(Modifier::BOLD),
             ));
-            spans.push(Span::raw(
-                if matches!(app.input_mode(), InputMode::ChartSearch) {
-                    ":search active"
-                } else {
-                    ":chart search"
-                },
-            ));
+            spans.push(Span::raw(":search"));
+            if matches!(app.input_mode(), InputMode::ChartSearch) {
+                spans.push(Span::raw("  "));
+                spans.push(Span::styled(
+                    "↑↓ Home End",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":pick  "));
+                spans.push(Span::styled(
+                    "Enter Esc",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":apply/close"));
+            } else {
+                spans.push(Span::raw("  "));
+                spans.push(Span::styled(
+                    "←→·hl",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":expiry  "));
+                spans.push(Span::styled(
+                    "↑↓·jk",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":row  "));
+                spans.push(Span::styled(
+                    "Enter",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(":width"));
+            }
         }
         PaneHintMode::Orders => {
             spans.push(Span::raw("  "));
@@ -1040,11 +1084,15 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         spans.push(Span::styled(n.to_string(), alert_style));
     }
 
-    if let Some(toast) = app.toast_manager.active_toasts().next() {
+    if let Some(toast) = app.toast_manager.latest_active_toast() {
         let color = toast.level.color();
         spans.push(Span::raw("  | "));
         spans.push(Span::styled(
-            truncate_detail(&toast.message, 40),
+            format!(
+                "{} {}",
+                toast.level.icon(),
+                truncate_detail(&toast.message, 36)
+            ),
             Style::default().fg(color).add_modifier(Modifier::BOLD),
         ));
     }
@@ -1078,17 +1126,20 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         }
     }
 
-    if matches!(app.app_mode, AppMode::Navigation) {
-        let ctx = crate::discoverability::context_hints_for(app.app_mode, app.active_tab);
-        for (key, desc) in ctx.into_iter().skip(3).take(4) {
-            spans.push(Span::raw("  "));
-            spans.push(Span::styled(
-                key,
-                Style::default().add_modifier(Modifier::BOLD),
-            ));
-            spans.push(Span::raw(":"));
-            spans.push(Span::styled(desc, Style::default().fg(Color::DarkGray)));
-        }
+    let ctx = crate::discoverability::context_hints_for(app.app_mode, app.active_tab);
+    let skip_global = if matches!(app.app_mode, AppMode::Navigation) {
+        3
+    } else {
+        0
+    };
+    for (key, desc) in ctx.into_iter().skip(skip_global).take(4) {
+        spans.push(Span::raw("  "));
+        spans.push(Span::styled(
+            key,
+            Style::default().add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::raw(":"));
+        spans.push(Span::styled(desc, Style::default().fg(Color::DarkGray)));
     }
 
     let line = Line::from(spans);

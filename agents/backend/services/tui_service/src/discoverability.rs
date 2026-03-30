@@ -237,7 +237,7 @@ fn build_command_registry() -> Vec<Command> {
             Action::LoansBulkImportFocus,
         )
         .description("Open path prompt; file is `{ \"loans\": [...] }` or legacy loan export")
-        .keys(vec!["b (Loans tab)".into()]),
+        .keys(vec!["b or i (Loans tab)".into()]),
         Command::new(
             "jump_discount_bank",
             "Jump to Discount Bank",
@@ -263,6 +263,20 @@ fn build_command_registry() -> Vec<Command> {
         Command::new("mode_cycle", "Cycle Mode", Action::ModeCycle)
             .description("Cycle through application modes")
             .keys(vec!["m".into()]),
+        Command::new(
+            "workspace_focus_next",
+            "Next pane (composed workspace)",
+            Action::WorkspaceFocusNext,
+        )
+        .description("Next tab inside Market / Operations / Credit workspace (when Tab cycles panes)")
+        .keys(vec!["Tab (workspace)".into()]),
+        Command::new(
+            "workspace_focus_prev",
+            "Previous pane (composed workspace)",
+            Action::WorkspaceFocusPrev,
+        )
+        .description("Previous tab inside composed workspace")
+        .keys(vec!["Shift+Tab (workspace)".into()]),
     ]
 }
 
@@ -369,6 +383,10 @@ pub(crate) fn context_hints_for(mode: AppMode, tab: Tab) -> Vec<(String, String)
             hints.push((":".into(), "palette".into()));
 
             match tab {
+                Tab::Dashboard => {
+                    hints.push(("↑↓".into(), "scroll".into()));
+                    hints.push(("Enter".into(), "charts".into()));
+                }
                 Tab::Positions => {
                     hints.push(("↑↓".into(), "scroll".into()));
                     hints.push(("Enter".into(), "detail".into()));
@@ -378,6 +396,29 @@ pub(crate) fn context_hints_for(mode: AppMode, tab: Tab) -> Vec<(String, String)
                 }
                 Tab::Charts => {
                     hints.push(("/".into(), "search".into()));
+                    hints.push(("←→ · hl".into(), "expiry".into()));
+                    hints.push(("↑↓ · jk".into(), "pill row".into()));
+                    hints.push(("Home/End".into(), "search jump".into()));
+                }
+                Tab::Alerts => {
+                    hints.push(("↑↓".into(), "scroll".into()));
+                }
+                Tab::Logs => {
+                    hints.push(("↑↓".into(), "scroll".into()));
+                    hints.push(("+/-".into(), "level".into()));
+                    hints.push(("h".into(), "hide".into()));
+                }
+                Tab::Yield => {
+                    hints.push(("←→".into(), "symbol".into()));
+                    hints.push(("↑↓".into(), "curve".into()));
+                }
+                Tab::DiscountBank => {
+                    hints.push(("r".into(), "refresh".into()));
+                    hints.push(("↑↓".into(), "scroll".into()));
+                }
+                Tab::Scenarios => {
+                    hints.push(("[ ]".into(), "DTE".into()));
+                    hints.push(("w".into(), "width".into()));
                 }
                 _ => {}
             }
@@ -385,6 +426,13 @@ pub(crate) fn context_hints_for(mode: AppMode, tab: Tab) -> Vec<(String, String)
         AppMode::Edit => {
             hints.push(("Esc".into(), "cancel".into()));
             hints.push(("Enter".into(), "confirm".into()));
+            match tab {
+                Tab::Charts => hints.push(("↑↓".into(), "search hit".into())),
+                Tab::Orders => hints.push(("Char".into(), "filter".into())),
+                Tab::Loans => hints.push(("Tab".into(), "field".into())),
+                Tab::Settings => hints.push(("↑↓".into(), "value".into())),
+                _ => {}
+            }
         }
         AppMode::View => {
             hints.push(("Esc".into(), "close".into()));
@@ -453,5 +501,23 @@ mod tests {
     fn test_context_hints_navigation() {
         let hints = context_hints_for(AppMode::Navigation, Tab::Dashboard);
         assert!(hints.iter().any(|(k, _)| k == "Tab"));
+    }
+
+    #[test]
+    fn test_context_hints_edit_includes_tab_charts() {
+        let hints = context_hints_for(AppMode::Edit, Tab::Charts);
+        assert!(hints.iter().any(|(k, _)| k == "↑↓"));
+    }
+
+    #[test]
+    fn test_context_hints_dashboard_navigation() {
+        let hints = context_hints_for(AppMode::Navigation, Tab::Dashboard);
+        assert!(hints.iter().any(|(k, _)| k == "Enter"));
+    }
+
+    #[test]
+    fn test_context_hints_logs_navigation() {
+        let hints = context_hints_for(AppMode::Navigation, Tab::Logs);
+        assert!(hints.iter().any(|(k, _)| k == "+/-"));
     }
 }
