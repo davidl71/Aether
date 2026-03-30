@@ -2,7 +2,7 @@
 
 **Date**: March 2026  
 **Status**: Evaluation in Progress  
-**Task**: T-1774479830564215000
+**Tasks**: T-1774479830564215000 (original), **T-1774862718741621000** (research + recommendation; implementation out of scope per task)
 
 ---
 
@@ -20,6 +20,19 @@ ratatui-interact provides 30+ interactive TUI components with focus management a
 
 ---
 
+## Interaction approaches (2–4 viable patterns)
+
+| Approach | Mechanism | Fits Aether today? |
+|----------|-----------|-------------------|
+| **A. Central `App` + `Action` enum** | `crossterm` events → `shell_key_action` / tab handlers → `apply_shell_action`; workspace Tab cycles via `workspace_focus_target` (`input_shell.rs`) | **Default** — already ships; explicit and grep-friendly. |
+| **B. ratatui-interact `FocusManager`** | Register focus IDs; Tab/BackTab call `next()`/`prev()`; dispatch keys by focused id | **Incremental** — reduces ad-hoc order for complex panes; migration cost across `input_*.rs`. |
+| **C. Dedicated input crate (e.g. `tui-input`)** | Widget-local input state for text fields | **Pockets** — useful for loans/settings forms; not a global navigation replacement. |
+| **D. Mouse-first / `ClickRegion` stacks** | Layer hit-testing on top of ratatui | **Optional** — operator console is keyboard-first; defer until product asks for mouse parity. |
+
+**Recommendation (T-1774862718741621000):** Keep **A** as the backbone. Prototype **B** only for one vertical (e.g. Settings subsection list + editor) if Tab order bugs or focus drift become painful. Use **C** when adding a new multi-field form rather than rewriting global navigation.
+
+---
+
 ## Current Aether TUI Architecture
 
 ### Focus Management (Current)
@@ -30,47 +43,50 @@ From `app.rs` and `workspace.rs`:
 // Current: Manual focus tracking in App
 pub struct App {
     pub active_tab: Tab,
-    pub secondary_focus: SecondaryFocus,
+    pub settings_section: SettingsSection,
     pub settings_health_focus: SettingsHealthFocus,
-    // ... more focus state
+    // ... table scroll state, overlays, etc.
 }
 
-// Tab switching
+// Tab switching (includes Logs, Settings, …)
 pub enum Tab {
     Dashboard, Positions, Charts, Orders, Alerts,
     Yield, Loans, DiscountBank, Scenarios, Logs, Settings,
 }
 
-// Settings section focus
+// Settings section focus (see workspace.rs)
 pub enum SettingsSection {
     Health,
-    BackendConfig,
-    SymbolConfig,
+    Config,
+    Symbols,
+    Sources,
+    Alpaca,
 }
 ```
 
-**Issues with Current Approach**:
-1. **Scattered focus state** - Spread across App, workspace, and input handlers
-2. **Manual tab order** - No centralized focus navigation
-3. **No mouse support** - Keyboard-only navigation
-4. **Inconsistent patterns** - Each tab implements focus differently
+**Tradeoffs**:
+1. **Explicit state** — Easy to reason about; `focus_label()` reflects Settings nesting (`app.rs`).
+2. **Workspace-aware Tab** — When `visible_workspace_spec()` is `Some`, Tab cycles **workspace tabs** only (`input_shell.rs`).
+3. **No global FocusManager** — Order is encoded in `Tab::next` / workspace tab slices / settings enums.
+4. **Mouse** — Not a primary target; keyboard and command palette (`:`) cover operators.
 
 ### Input Handling (Current)
 
-From `input.rs`:
+From `input.rs` + `input_shell.rs`:
 
 ```rust
 pub enum Action {
     Quit, ShowHelp, ToggleLogPanel,
-    TabNext, TabPrev, JumpToTab(u8),
-    // ... 100+ actions
+    TabNext, TabPrev, WorkspaceFocusNext, WorkspaceFocusPrev,
+    JumpToTab(u8),
+    // ... many more
 }
 ```
 
-**Issues**:
-1. **Action explosion** - 100+ actions in single enum
-2. **No context awareness** - Actions don't know their focus context
-3. **Manual dispatch** - Each handler manually checks focus state
+**Notes**:
+1. Large `Action` enum is the **explicit command set** for the terminal UI (acceptable for a dense operator console).
+2. **Context** enters via `InputMode` (`app.rs`) and `active_tab` before dispatch to `input_tabs`, `input_loans`, etc.
+3. **Resize / key repeat** — Handled by ratatui loop + crossterm; no extra abstraction required unless profiling shows issues.
 
 ---
 
