@@ -66,6 +66,13 @@ async fn run(
     loop {
         ticker.tick().await;
 
+        let stats = client.client().statistics();
+        let stats_in_bytes = stats.in_bytes.load(Ordering::Relaxed);
+        let stats_out_bytes = stats.out_bytes.load(Ordering::Relaxed);
+        let stats_in_messages = stats.in_messages.load(Ordering::Relaxed);
+        let stats_out_messages = stats.out_messages.load(Ordering::Relaxed);
+        let stats_connects = stats.connects.load(Ordering::Relaxed);
+
         let (flush_rtt_ms, flush_err) = {
             let start = Instant::now();
             match client.flush().await {
@@ -98,6 +105,11 @@ async fn run(
                 .with_subject(subject.clone())
                 .with_role("snapshot-publisher")
             };
+            transport.in_bytes = Some(stats_in_bytes);
+            transport.out_bytes = Some(stats_out_bytes);
+            transport.in_messages = Some(stats_in_messages);
+            transport.out_messages = Some(stats_out_messages);
+            transport.connects = Some(stats_connects);
             transport.extra.insert(
                 "publish_errors".to_string(),
                 publish_errors.load(Ordering::Relaxed).to_string(),

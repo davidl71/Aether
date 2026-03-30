@@ -20,6 +20,12 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
         loop {
             match async_nats::connect(&nats_url).await {
                 Ok(client) => {
+                    let stats = client.statistics();
+                    let stats_in_bytes = stats.in_bytes.load(Ordering::Relaxed);
+                    let stats_out_bytes = stats.out_bytes.load(Ordering::Relaxed);
+                    let stats_in_messages = stats.in_messages.load(Ordering::Relaxed);
+                    let stats_out_messages = stats.out_messages.load(Ordering::Relaxed);
+                    let stats_connects = stats.connects.load(Ordering::Relaxed);
                     {
                         let mut health = state.write().await;
                         health.nats_connected = true;
@@ -28,6 +34,11 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                                 .with_subject(topics::system::health())
                                 .with_role("subscriber");
                         t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+                        t.in_bytes = Some(stats_in_bytes);
+                        t.out_bytes = Some(stats_out_bytes);
+                        t.in_messages = Some(stats_in_messages);
+                        t.out_messages = Some(stats_out_messages);
+                        t.connects = Some(stats_connects);
                         health.transport = t;
                     }
                     info!(
@@ -53,6 +64,11 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                                     .with_role("subscriber");
                                 transport.reconnect_count =
                                     reconnect_cycles.load(Ordering::Relaxed);
+                                transport.in_bytes = Some(stats_in_bytes);
+                                transport.out_bytes = Some(stats_out_bytes);
+                                transport.in_messages = Some(stats_in_messages);
+                                transport.out_messages = Some(stats_out_messages);
+                                transport.connects = Some(stats_connects);
                                 health.transport = transport;
                             }
                         }
@@ -68,6 +84,11 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                             .with_subject(topics::system::health())
                             .with_role("subscriber");
                             t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+                            t.in_bytes = Some(stats_in_bytes);
+                            t.out_bytes = Some(stats_out_bytes);
+                            t.in_messages = Some(stats_in_messages);
+                            t.out_messages = Some(stats_out_messages);
+                            t.connects = Some(stats_connects);
                             health.transport = t;
                             warn!(%err, "failed to subscribe to system.health");
                         }
@@ -85,6 +106,11 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                         .with_subject(topics::system::health())
                         .with_role("subscriber");
                         t.reconnect_count = reconnect_cycles.load(Ordering::Relaxed);
+                        t.in_bytes = Some(stats_in_bytes);
+                        t.out_bytes = Some(stats_out_bytes);
+                        t.in_messages = Some(stats_in_messages);
+                        t.out_messages = Some(stats_out_messages);
+                        t.connects = Some(stats_connects);
                         health.transport = t;
                     }
                 }

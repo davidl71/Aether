@@ -28,6 +28,17 @@ pub struct NatsTransportHealthState {
     pub last_rtt_ms: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active_subscriptions: Option<u32>,
+    // async-nats client lifetime counters (Client::statistics()).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub in_bytes: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub out_bytes: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub in_messages: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub out_messages: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub connects: Option<u64>,
     #[serde(flatten)]
     pub extra: HashMap<String, String>,
 }
@@ -57,6 +68,11 @@ impl NatsTransportHealthState {
             reconnect_count: 0,
             last_rtt_ms: None,
             active_subscriptions: None,
+            in_bytes: None,
+            out_bytes: None,
+            in_messages: None,
+            out_messages: None,
+            connects: None,
             extra: HashMap::new(),
         }
     }
@@ -82,6 +98,11 @@ impl NatsTransportHealthState {
             reconnect_count: 0,
             last_rtt_ms: None,
             active_subscriptions: None,
+            in_bytes: None,
+            out_bytes: None,
+            in_messages: None,
+            out_messages: None,
+            connects: None,
             extra: HashMap::new(),
         }
     }

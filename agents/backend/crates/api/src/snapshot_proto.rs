@@ -169,6 +169,11 @@ fn nats_transport_to_proto(t: &NatsTransportHealthState) -> pb::NatsTransportHea
         reconnect_count: t.reconnect_count,
         last_rtt_ms: t.last_rtt_ms,
         active_subscriptions: t.active_subscriptions,
+        in_bytes: t.in_bytes,
+        out_bytes: t.out_bytes,
+        in_messages: t.in_messages,
+        out_messages: t.out_messages,
+        connects: t.connects,
     }
 }
 
@@ -184,6 +189,11 @@ fn nats_transport_from_proto(p: pb::NatsTransportHealth) -> NatsTransportHealthS
         reconnect_count: p.reconnect_count,
         last_rtt_ms: p.last_rtt_ms,
         active_subscriptions: p.active_subscriptions,
+        in_bytes: p.in_bytes,
+        out_bytes: p.out_bytes,
+        in_messages: p.in_messages,
+        out_messages: p.out_messages,
+        connects: p.connects,
     }
 }
 
@@ -447,6 +457,11 @@ mod tests {
         t.last_rtt_ms = Some(12);
         t.reconnect_count = 3;
         t.active_subscriptions = Some(2);
+        t.in_bytes = Some(123);
+        t.out_bytes = Some(456);
+        t.in_messages = Some(7);
+        t.out_messages = Some(8);
+        t.connects = Some(2);
         snap.nats_transport = Some(t);
 
         let pb = snapshot_to_proto(&snap);
@@ -456,6 +471,11 @@ mod tests {
         assert_eq!(nt.last_rtt_ms, Some(12));
         assert_eq!(nt.reconnect_count, 3);
         assert_eq!(nt.active_subscriptions, Some(2));
+        assert_eq!(nt.in_bytes, Some(123));
+        assert_eq!(nt.out_bytes, Some(456));
+        assert_eq!(nt.in_messages, Some(7));
+        assert_eq!(nt.out_messages, Some(8));
+        assert_eq!(nt.connects, Some(2));
         assert_eq!(nt.subject(), Some("snapshot.test"));
         assert_eq!(nt.role(), Some("snapshot-publisher"));
     }

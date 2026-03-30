@@ -26,6 +26,7 @@ use chrono::Utc;
 use futures::StreamExt;
 use nats_adapter::{extract_proto_payload, proto::v1 as pb, topics, NatsClient};
 use std::collections::HashMap;
+use std::sync::atomic::Ordering;
 use tokio::sync::{mpsc, watch};
 use tracing::{debug, info, warn};
 
@@ -79,9 +80,19 @@ pub async fn run(
                 );
                 emit_transport_health(
                     &event_tx,
-                    NatsTransportHealthState::connected(Some(config.nats_url.clone()), Utc::now())
+                    {
+                        let stats = client.client().statistics();
+                        let mut t =
+                            NatsTransportHealthState::connected(Some(config.nats_url.clone()), Utc::now())
                         .with_subject(&subject)
-                        .with_role("snapshot-subscriber"),
+                        .with_role("snapshot-subscriber");
+                        t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
+                        t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
+                        t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
+                        t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
+                        t.connects = Some(stats.connects.load(Ordering::Relaxed));
+                        t
+                    },
                 );
                 // Spawn health subscriber on same connection (drops when connection drops)
                 let client_health = client.clone();
@@ -105,14 +116,23 @@ pub async fn run(
                     emit_status(&event_tx, ConnectionState::Retrying, e.to_string());
                     emit_transport_health(
                         &event_tx,
-                        NatsTransportHealthState::disconnected(
+                        {
+                            let stats = client.client().statistics();
+                            let mut t = NatsTransportHealthState::disconnected(
                             Some(config.nats_url.clone()),
                             Utc::now(),
                             Some(e.to_string()),
                             Some("snapshot subscription lost".to_string()),
                         )
                         .with_subject(&subject)
-                        .with_role("snapshot-subscriber"),
+                        .with_role("snapshot-subscriber");
+                            t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
+                            t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
+                            t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
+                            t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
+                            t.connects = Some(stats.connects.load(Ordering::Relaxed));
+                            t
+                        },
                     );
                     tokio::time::sleep(delay).await;
                 }
@@ -185,9 +205,18 @@ async fn run_health_subscriber(
     while let Some(msg) = sub.next().await {
         emit_transport_health(
             &event_tx,
-            NatsTransportHealthState::connected(None, Utc::now())
-                .with_subject(subject)
-                .with_role("health-subscriber"),
+            {
+                let stats = client.client().statistics();
+                let mut t = NatsTransportHealthState::connected(None, Utc::now())
+                    .with_subject(subject)
+                    .with_role("health-subscriber");
+                t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
+                t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
+                t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
+                t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
+                t.connects = Some(stats.connects.load(Ordering::Relaxed));
+                t
+            },
         );
         if let Some(health) = backend_health_from_message(&msg.payload) {
             let state = BackendHealthState::from_proto(health);
@@ -199,14 +228,23 @@ async fn run_health_subscriber(
 
     emit_transport_health(
         &event_tx,
-        NatsTransportHealthState::disconnected(
+        {
+            let stats = client.client().statistics();
+            let mut t = NatsTransportHealthState::disconnected(
             None,
             Utc::now(),
             None,
             Some("system.health subscription ended".to_string()),
         )
         .with_subject(subject)
-        .with_role("health-subscriber"),
+        .with_role("health-subscriber");
+            t.in_bytes = Some(stats.in_bytes.load(Ordering::Relaxed));
+            t.out_bytes = Some(stats.out_bytes.load(Ordering::Relaxed));
+            t.in_messages = Some(stats.in_messages.load(Ordering::Relaxed));
+            t.out_messages = Some(stats.out_messages.load(Ordering::Relaxed));
+            t.connects = Some(stats.connects.load(Ordering::Relaxed));
+            t
+        },
     );
 
     anyhow::bail!("Health subscription ended");

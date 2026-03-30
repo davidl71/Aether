@@ -216,6 +216,21 @@ fn settings_health_flow_lines(
     backend_counts: &BackendHealthCounts,
     snapshot_age: String,
 ) -> Vec<Line<'static>> {
+    fn fmt_bytes(bytes: u64) -> String {
+        const KB: u64 = 1024;
+        const MB: u64 = 1024 * 1024;
+        const GB: u64 = 1024 * 1024 * 1024;
+        if bytes >= GB {
+            format!("{:.1}GiB", bytes as f64 / GB as f64)
+        } else if bytes >= MB {
+            format!("{:.1}MiB", bytes as f64 / MB as f64)
+        } else if bytes >= KB {
+            format!("{:.1}KiB", bytes as f64 / KB as f64)
+        } else {
+            format!("{bytes}B")
+        }
+    }
+
     let yield_age = yield_age
         .map(|a| a.to_string())
         .unwrap_or_else(|| "—".to_string());
@@ -238,6 +253,27 @@ fn settings_health_flow_lines(
     let transport_role = transport.role().unwrap_or("subscriber").to_string();
     let transport_subject = transport.subject().unwrap_or("system.health").to_string();
     let (transport_sym, transport_color) = transport_summary_label(transport);
+    let transport_rtt = transport
+        .last_rtt_ms
+        .map(|v| format!("{v}ms"))
+        .unwrap_or_else(|| "—".to_string());
+    let transport_stats = match (
+        transport.in_bytes,
+        transport.out_bytes,
+        transport.in_messages,
+        transport.out_messages,
+        transport.connects,
+    ) {
+        (Some(in_b), Some(out_b), Some(in_m), Some(out_m), Some(connects)) => format!(
+            "io: in {} out {}  msgs {}/{}  connects {}",
+            fmt_bytes(in_b),
+            fmt_bytes(out_b),
+            in_m,
+            out_m,
+            connects
+        ),
+        _ => "io: —".to_string(),
+    };
     let yw_entry = backends
         .get("tws_yield_curve_daemon")
         .or_else(|| backends.get("yield_curve_writer"));
@@ -279,6 +315,20 @@ fn settings_health_flow_lines(
             ),
             Span::raw("  age: "),
             Span::styled(transport_age, Style::default().fg(Color::Cyan)),
+            Span::raw("  rtt: "),
+            Span::styled(transport_rtt, Style::default().fg(Color::Cyan)),
+            Span::raw("  reconnects: "),
+            Span::styled(
+                transport.reconnect_count.to_string(),
+                Style::default().fg(Color::Cyan),
+            ),
+        ]),
+        Line::from(vec![
+            Span::raw("  "),
+            Span::styled(
+                truncate(&transport_stats, 72),
+                Style::default().fg(Color::DarkGray),
+            ),
         ]),
         Line::from(vec![
             Span::raw(" TUI -> "),
