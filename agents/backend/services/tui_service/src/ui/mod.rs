@@ -507,7 +507,7 @@ fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: Works
     let logs_widget = logs::build_logs_widget(app, logs::logs_title(app));
     f.render_widget(logs_widget, left[1]);
 
-    let layout = settings::settings_layout(columns[1]);
+    let layout = settings::settings_layout_embedded(columns[1]);
     settings::render_settings_sections(f, app, layout);
 }
 

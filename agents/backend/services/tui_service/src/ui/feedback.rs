@@ -444,7 +444,7 @@ pub fn render_progress_bar(frame: &mut Frame, progress: &ProgressBar, area: Rect
 }
 
 /// Render a status indicator line
-pub fn render_status_line(items: &[(String, StatusIndicator)]) -> Line {
+pub fn render_status_line(items: &[(String, StatusIndicator)]) -> Line<'_> {
     let mut spans = vec![];
 
     for (i, (label, status)) in items.iter().enumerate() {

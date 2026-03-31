@@ -1,5 +1,11 @@
 //! Alpaca account/position read API (paper or live endpoints) for exploration snapshots — not order flow.
 
+use std::sync::Mutex;
+
+/// Serialize Alpaca HTTP calls: `alpaca_api_client` reads `APCA_API_KEY_*` from the environment
+/// (`expect`), so we temporarily inject credential-store values and restore afterward.
+static ALPACA_API_ENV_LOCK: Mutex<()> = Mutex::new(());
+
 /// Position information from Alpaca.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AlpacaPosition {
@@ -25,6 +31,8 @@ pub struct AlpacaAccountInfo {
 #[derive(Clone)]
 pub struct AlpacaPositionSource {
     is_paper: bool,
+    /// When true, inject keyring/file credentials into `APCA_*` env for each sync call (see module static lock).
+    use_credential_store: bool,
 }
 
 impl AlpacaPositionSource {
@@ -41,25 +49,27 @@ impl AlpacaPositionSource {
             .map(|url| url.contains("paper"))
             .unwrap_or(true);
 
-        Some(Self { is_paper })
+        Some(Self {
+            is_paper,
+            use_credential_store: false,
+        })
     }
 
     /// Create position source for Alpaca **paper vs live REST** credentials (read-only account data).
     /// Returns None if credentials are not configured for the requested environment.
     pub fn from_paper(is_paper: bool) -> Option<Self> {
-        use crate::credentials::{credential_source, CredentialKey};
+        use crate::credentials::{alpaca_credentials, AlpacaEnvironment};
 
-        let key = if is_paper {
-            CredentialKey::AlpacaPaperApiKeyId
+        let env = if is_paper {
+            AlpacaEnvironment::Paper
         } else {
-            CredentialKey::AlpacaLiveApiKeyId
+            AlpacaEnvironment::Live
         };
 
-        if credential_source(key).is_some() {
-            Some(Self { is_paper })
-        } else {
-            None
-        }
+        alpaca_credentials(env).map(|_| Self {
+            is_paper,
+            use_credential_store: true,
+        })
     }
 
     /// True when using Alpaca paper API credentials (vs live account API).
@@ -80,38 +90,59 @@ impl AlpacaPositionSource {
     pub fn fetch_positions_sync(&self) -> Result<Vec<AlpacaPosition>, anyhow::Error> {
         use alpaca_api_client::trading::positions::PositionsQuery;
 
-        let query = PositionsQuery::new(self.account_type());
-        let positions = query
-            .get_all_open_positions()
-            .map_err(|e| anyhow::anyhow!("Failed to fetch positions: {}", e))?;
+        let account_type = self.account_type();
 
-        Ok(positions
-            .into_iter()
-            .map(|p| AlpacaPosition {
-                symbol: p.symbol,
-                quantity: p.qty.parse().unwrap_or(0.0) as i32,
-                cost_basis: p.cost_basis.parse().unwrap_or(0.0),
-                market_value: p.market_value.parse().unwrap_or(0.0),
-                unrealized_pl: p.unrealized_pl.parse().unwrap_or(0.0),
-            })
-            .collect())
+        let run = || {
+            let query = PositionsQuery::new(account_type);
+            let positions = query
+                .get_all_open_positions()
+                .map_err(|e| anyhow::anyhow!("Failed to fetch positions: {}", e))?;
+
+            Ok(positions
+                .into_iter()
+                .map(|p| AlpacaPosition {
+                    symbol: p.symbol,
+                    quantity: p.qty.parse().unwrap_or(0.0) as i32,
+                    cost_basis: p.cost_basis.parse().unwrap_or(0.0),
+                    market_value: p.market_value.parse().unwrap_or(0.0),
+                    unrealized_pl: p.unrealized_pl.parse().unwrap_or(0.0),
+                })
+                .collect())
+        };
+
+        if self.use_credential_store {
+            with_alpaca_env_for_credential_store(self.is_paper, run)
+        } else {
+            run()
+        }
     }
 
     /// Fetch account information.
     pub fn fetch_account_sync(&self) -> Result<AlpacaAccountInfo, anyhow::Error> {
         use alpaca_api_client::trading::account::get_account;
 
-        let account = get_account(self.account_type())
-            .map_err(|e| anyhow::anyhow!("Failed to fetch account: {}", e))?;
+        let is_paper = self.is_paper;
+        let account_type = self.account_type();
 
-        Ok(AlpacaAccountInfo {
-            account_id: account.id,
-            cash: account.cash.parse().unwrap_or(0.0),
-            buying_power: account.buying_power.parse().unwrap_or(0.0),
-            equity: account.equity.parse().unwrap_or(0.0),
-            portfolio_value: account.portfolio_value.parse().unwrap_or(0.0),
-            is_paper: self.is_paper,
-        })
+        let run = || {
+            let account = get_account(account_type)
+                .map_err(|e| anyhow::anyhow!("Failed to fetch account: {}", e))?;
+
+            Ok(AlpacaAccountInfo {
+                account_id: account.id,
+                cash: account.cash.parse().unwrap_or(0.0),
+                buying_power: account.buying_power.parse().unwrap_or(0.0),
+                equity: account.equity.parse().unwrap_or(0.0),
+                portfolio_value: account.portfolio_value.parse().unwrap_or(0.0),
+                is_paper,
+            })
+        };
+
+        if self.use_credential_store {
+            with_alpaca_env_for_credential_store(self.is_paper, run)
+        } else {
+            run()
+        }
     }
 
     /// Fetch all open positions (async wrapper).
@@ -127,12 +158,68 @@ impl AlpacaPositionSource {
     }
 }
 
+fn with_alpaca_env_for_credential_store<R>(
+    is_paper: bool,
+    f: impl FnOnce() -> Result<R, anyhow::Error>,
+) -> Result<R, anyhow::Error> {
+    use crate::credentials::{alpaca_credentials, AlpacaEnvironment};
+
+    let env = if is_paper {
+        AlpacaEnvironment::Paper
+    } else {
+        AlpacaEnvironment::Live
+    };
+    let creds = alpaca_credentials(env)
+        .ok_or_else(|| anyhow::anyhow!("Alpaca credentials not configured"))?;
+
+    let _lock = ALPACA_API_ENV_LOCK
+        .lock()
+        .map_err(|_| anyhow::anyhow!("Alpaca API env lock poisoned"))?;
+
+    struct AlpacaEnvRestore {
+        prev_id: Option<String>,
+        prev_secret: Option<String>,
+    }
+
+    impl Drop for AlpacaEnvRestore {
+        fn drop(&mut self) {
+            match self.prev_id.as_deref() {
+                Some(v) => std::env::set_var("APCA_API_KEY_ID", v),
+                None => {
+                    let _ = std::env::remove_var("APCA_API_KEY_ID");
+                }
+            }
+            match self.prev_secret.as_deref() {
+                Some(v) => std::env::set_var("APCA_API_SECRET_KEY", v),
+                None => {
+                    let _ = std::env::remove_var("APCA_API_SECRET_KEY");
+                }
+            }
+        }
+    }
+
+    let prev_id = std::env::var("APCA_API_KEY_ID").ok();
+    let prev_secret = std::env::var("APCA_API_SECRET_KEY").ok();
+    let _restore = AlpacaEnvRestore {
+        prev_id,
+        prev_secret,
+    };
+
+    std::env::set_var("APCA_API_KEY_ID", creds.api_key_id.trim());
+    std::env::set_var("APCA_API_SECRET_KEY", creds.api_secret_key.trim());
+
+    f()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_alpaca_position_source() {
-        let _ = AlpacaPositionSource { is_paper: true };
+        let _ = AlpacaPositionSource {
+            is_paper: true,
+            use_credential_store: false,
+        };
     }
 }
