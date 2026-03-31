@@ -1,4 +1,5 @@
 use super::*;
+use market_data::yield_curve::synthetic_yield_curve as market_data_synthetic_yield_curve;
 use serde_json::json;
 use std::collections::HashMap;
 
@@ -260,6 +261,49 @@ fn build_synthetic_curve_live_base_rate_changes_shape_vs_default() {
         "live_base_rate should alter synthetic mids"
     );
     assert!((liveish.points[0].mid_rate - LIVE_BASE_RATE_FOR_TEST).abs() < 1e-9);
+}
+
+/// Ensure the `market_data` synthetic yield curve can feed the finance_rates curve builder.
+///
+/// This exercises the “synthetic curve via market_data path” without any network calls.
+#[test]
+fn market_data_synthetic_curve_can_build_finance_rates_curve() {
+    let curve = market_data_synthetic_yield_curve("XSP", 6000.0, 0.05);
+    assert_eq!(curve.source, "synthetic");
+    assert!(!curve.points.is_empty());
+
+    let opportunities = curve
+        .points
+        .iter()
+        .map(|p| {
+            let expiry = p.expiry.format("%Y%m%d").to_string();
+            json!({
+                "spread": {
+                    "symbol": curve.symbol,
+                    "expiry": expiry,
+                    "days_to_expiry": p.dte,
+                    "strike_width": p.strike_width,
+                    "strike_low": p.strike_low,
+                    "strike_high": p.strike_high,
+                    "buy_implied_rate": p.buy_implied_rate,
+                    "sell_implied_rate": p.sell_implied_rate,
+                    "net_debit": p.net_debit,
+                    "net_credit": p.net_credit,
+                    "liquidity_score": p.liquidity_score
+                },
+                "data_source": "synthetic"
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let request = CurveRequest::Named {
+        symbol: Some(curve.symbol),
+        opportunities,
+    };
+    let response = build_curve(request, None).expect("curve");
+    assert!(response.point_count > 0);
+    assert!(response.points.iter().all(|p| p.data_source.as_deref() == Some("synthetic")));
+    assert!(response.points.iter().all(|p| p.mid_rate > 0.0 && p.mid_rate < 1.0));
 }
 
 /// When the only benchmarks are farther than the 20 DTE matching window, box points produce no spreads.

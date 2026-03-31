@@ -9,8 +9,13 @@ use api::{LoanRecord, LoanRepository, LoansBulkImportRequest, LoansBulkImportRes
 use nats_adapter::async_nats::Client;
 use nats_adapter::topics;
 use prost::Message;
-use serde_json::Value;
+use serde::Deserialize;
 use tracing::{info, warn};
+
+#[derive(Debug, Deserialize)]
+struct LoanIdRequest {
+    loan_id: String,
+}
 
 /// Spawn Loans NATS API handlers.
 pub async fn spawn(nc: Client, repo: Arc<LoanRepository>) {
@@ -126,8 +131,8 @@ pub async fn spawn(nc: Client, repo: Arc<LoanRepository>) {
             async move {
                 let loan_id = body
                     .as_deref()
-                    .and_then(|b| serde_json::from_slice::<Value>(b).ok())
-                    .and_then(|v| v.get("loan_id").and_then(Value::as_str).map(String::from));
+                    .and_then(|b| serde_json::from_slice::<LoanIdRequest>(b).ok())
+                    .map(|req| req.loan_id);
                 let r = match loan_id {
                     Some(id) => Ok(repo.get(&id).await),
                     None => Err("loan_id required".to_string()),
@@ -208,8 +213,8 @@ pub async fn spawn(nc: Client, repo: Arc<LoanRepository>) {
         async move {
             let loan_id = body
                 .as_deref()
-                .and_then(|b| serde_json::from_slice::<Value>(b).ok())
-                .and_then(|v| v.get("loan_id").and_then(Value::as_str).map(String::from));
+                .and_then(|b| serde_json::from_slice::<LoanIdRequest>(b).ok())
+                .map(|req| req.loan_id);
             let r = match loan_id {
                 Some(id) => repo.delete(&id).await,
                 None => Err("loan_id required".to_string()),

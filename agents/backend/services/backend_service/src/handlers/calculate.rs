@@ -15,6 +15,14 @@ use nats_adapter::async_nats::Client;
 use nats_adapter::topics;
 use tracing::warn;
 
+fn parse_request<T>(body: Option<Vec<u8>>, err: &'static str) -> Result<T, String>
+where
+    T: serde::de::DeserializeOwned,
+{
+    let bytes = body.ok_or_else(|| err.to_string())?;
+    serde_json::from_slice(&bytes).map_err(|_| err.to_string())
+}
+
 /// Spawn Calculate NATS API handlers with parallel processing.
 /// CPU-intensive calculations run on the blocking thread pool.
 pub async fn spawn(nc: Client) {
@@ -128,15 +136,10 @@ pub async fn spawn(nc: Client) {
         nc_greeks,
         sub_greeks,
         move |body: Option<Vec<u8>>| async move {
-            let request: GreeksRequest =
-                match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
-                    Some(r) => r,
-                    None => {
-                        return calculate_result::<api::quant::GreeksResponse>(Err(
-                            "request body must be GreeksRequest JSON".to_string(),
-                        ))
-                    }
-                };
+            let request: GreeksRequest = match parse_request(body, "request body must be GreeksRequest JSON") {
+                Ok(r) => r,
+                Err(e) => return calculate_result::<api::quant::GreeksResponse>(Err(e)),
+            };
             // Offload CPU work to blocking pool
             spawn_cpu_work(move || calculate_result(calculate_greeks(&request))).await
         },
@@ -148,15 +151,10 @@ pub async fn spawn(nc: Client) {
         nc_iv,
         sub_iv,
         move |body: Option<Vec<u8>>| async move {
-            let request: IvRequest =
-                match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
-                    Some(r) => r,
-                    None => {
-                        return calculate_result::<api::quant::IvResponse>(Err(
-                            "request body must be IvRequest JSON".to_string(),
-                        ))
-                    }
-                };
+            let request: IvRequest = match parse_request(body, "request body must be IvRequest JSON") {
+                Ok(r) => r,
+                Err(e) => return calculate_result::<api::quant::IvResponse>(Err(e)),
+            };
             spawn_cpu_work(move || calculate_result(calculate_iv(&request))).await
         },
         limit,
@@ -168,13 +166,9 @@ pub async fn spawn(nc: Client) {
         sub_hv,
         move |body: Option<Vec<u8>>| async move {
             let request: HistoricalVolRequest =
-                match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
-                    Some(r) => r,
-                    None => {
-                        return calculate_result::<api::quant::HistoricalVolResponse>(Err(
-                            "request body must be HistoricalVolRequest JSON".to_string(),
-                        ))
-                    }
+                match parse_request(body, "request body must be HistoricalVolRequest JSON") {
+                    Ok(r) => r,
+                    Err(e) => return calculate_result::<api::quant::HistoricalVolResponse>(Err(e)),
                 };
             spawn_cpu_work(move || calculate_result(calculate_historical_volatility(&request)))
                 .await
@@ -188,13 +182,9 @@ pub async fn spawn(nc: Client) {
         sub_risk,
         move |body: Option<Vec<u8>>| async move {
             let request: RiskMetricsRequest =
-                match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
-                    Some(r) => r,
-                    None => {
-                        return calculate_result::<api::quant::RiskMetricsResponse>(Err(
-                            "request body must be RiskMetricsRequest JSON".to_string(),
-                        ))
-                    }
+                match parse_request(body, "request body must be RiskMetricsRequest JSON") {
+                    Ok(r) => r,
+                    Err(e) => return calculate_result::<api::quant::RiskMetricsResponse>(Err(e)),
                 };
             spawn_cpu_work(move || calculate_result(calculate_risk_metrics(&request))).await
         },
@@ -207,13 +197,9 @@ pub async fn spawn(nc: Client) {
         sub_strategy,
         move |body: Option<Vec<u8>>| async move {
             let request: StrategyRequest =
-                match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
-                    Some(r) => r,
-                    None => {
-                        return calculate_result::<api::quant::StrategyResponse>(Err(
-                            "request body must be StrategyRequest JSON".to_string(),
-                        ))
-                    }
+                match parse_request(body, "request body must be StrategyRequest JSON") {
+                    Ok(r) => r,
+                    Err(e) => return calculate_result::<api::quant::StrategyResponse>(Err(e)),
                 };
             spawn_cpu_work(move || calculate_result(calculate_strategy(&request))).await
         },
@@ -226,13 +212,9 @@ pub async fn spawn(nc: Client) {
         sub_box,
         move |body: Option<Vec<u8>>| async move {
             let request: BoxSpreadRequest =
-                match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
-                    Some(r) => r,
-                    None => {
-                        return calculate_result::<api::quant::BoxSpreadResponse>(Err(
-                            "request body must be BoxSpreadRequest JSON".to_string(),
-                        ))
-                    }
+                match parse_request(body, "request body must be BoxSpreadRequest JSON") {
+                    Ok(r) => r,
+                    Err(e) => return calculate_result::<api::quant::BoxSpreadResponse>(Err(e)),
                 };
             spawn_cpu_work(move || calculate_result(calculate_box_spread(&request))).await
         },
@@ -245,13 +227,9 @@ pub async fn spawn(nc: Client) {
         sub_jelly,
         move |body: Option<Vec<u8>>| async move {
             let request: JellyRollRequest =
-                match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
-                    Some(r) => r,
-                    None => {
-                        return calculate_result::<api::quant::JellyRollResponse>(Err(
-                            "request body must be JellyRollRequest JSON".to_string(),
-                        ))
-                    }
+                match parse_request(body, "request body must be JellyRollRequest JSON") {
+                    Ok(r) => r,
+                    Err(e) => return calculate_result::<api::quant::JellyRollResponse>(Err(e)),
                 };
             spawn_cpu_work(move || calculate_result(calculate_jelly_roll(&request))).await
         },
@@ -264,13 +242,9 @@ pub async fn spawn(nc: Client) {
         sub_ratio,
         move |body: Option<Vec<u8>>| async move {
             let request: RatioSpreadRequest =
-                match body.as_deref().and_then(|b| serde_json::from_slice(b).ok()) {
-                    Some(r) => r,
-                    None => {
-                        return calculate_result::<api::quant::RatioSpreadResponse>(Err(
-                            "request body must be RatioSpreadRequest JSON".to_string(),
-                        ))
-                    }
+                match parse_request(body, "request body must be RatioSpreadRequest JSON") {
+                    Ok(r) => r,
+                    Err(e) => return calculate_result::<api::quant::RatioSpreadResponse>(Err(e)),
                 };
             spawn_cpu_work(move || calculate_result(calculate_ratio_spread(&request))).await
         },
