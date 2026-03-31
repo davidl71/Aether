@@ -12,12 +12,16 @@ fn extract_rate_rejects_low_liquidity() {
         expiry: "20261218".into(),
         days_to_expiry: 100,
         strike_width: 100.0,
+        strike_low: None,
+        strike_high: None,
         buy_implied_rate: 4.9,
         sell_implied_rate: 5.1,
         net_debit: 95.0,
         net_credit: 105.0,
         liquidity_score: 10.0,
         spread_id: None,
+        convenience_yield: None,
+        delayed: None,
     });
 
     assert!(result.is_err());
@@ -82,6 +86,78 @@ fn build_curve_preserves_source_label() {
     let curve = build_curve(request, None).expect("curve");
     assert_eq!(curve.point_count, 1);
     assert_eq!(curve.points[0].data_source.as_deref(), Some("yahoo"));
+}
+
+#[test]
+fn build_curve_preserves_strike_bounds_when_present() {
+    let request = CurveRequest::Named {
+        symbol: Some("XSP".into()),
+        opportunities: vec![json!({
+            "spread": {
+                "symbol": "XSP",
+                "expiry": "20261218",
+                "days_to_expiry": 30,
+                "strike_width": 4.0,
+                "strike_low": 5998.0,
+                "strike_high": 6002.0,
+                "buy_implied_rate": 0.048,
+                "sell_implied_rate": 0.050,
+                "net_debit": 3.98,
+                "net_credit": 3.96,
+                "liquidity_score": 70.0
+            },
+            "data_source": "tws"
+        })],
+    };
+
+    let curve = build_curve(request, None).expect("curve");
+    assert_eq!(curve.point_count, 1);
+    assert_eq!(curve.points[0].data_source.as_deref(), Some("tws"));
+    assert_eq!(curve.points[0].strike_low, Some(5998.0));
+    assert_eq!(curve.points[0].strike_high, Some(6002.0));
+}
+
+#[test]
+fn build_curve_mixed_sources_collapses_label_to_mixed() {
+    let request = CurveRequest::Named {
+        symbol: Some("XSP".into()),
+        opportunities: vec![
+            json!({
+                "spread": {
+                    "symbol": "XSP",
+                    "expiry": "20261218",
+                    "days_to_expiry": 30,
+                    "strike_width": 4.0,
+                    "buy_implied_rate": 0.048,
+                    "sell_implied_rate": 0.050,
+                    "net_debit": 3.98,
+                    "net_credit": 3.96,
+                    "liquidity_score": 70.0
+                },
+                "data_source": "tws",
+                "comparison": { "bag_ms": 12, "legs_ms": 90 }
+            }),
+            json!({
+                "spread": {
+                    "symbol": "XSP",
+                    "expiry": "20261218",
+                    "days_to_expiry": 30,
+                    "strike_width": 4.0,
+                    "buy_implied_rate": 0.049,
+                    "sell_implied_rate": 0.051,
+                    "net_debit": 3.97,
+                    "net_credit": 3.95,
+                    "liquidity_score": 80.0
+                },
+                "data_source": "yahoo"
+            }),
+        ],
+    };
+
+    let curve = build_curve(request, None).expect("curve");
+    assert_eq!(curve.point_count, 1);
+    assert_eq!(curve.points[0].days_to_expiry, 30);
+    assert_eq!(curve.points[0].data_source.as_deref(), Some("mixed"));
 }
 
 #[test]
@@ -201,4 +277,32 @@ fn yield_curve_comparison_benchmark_far_tenor_skips_spread() {
 
     assert_eq!(response.treasury_points, 1);
     assert_eq!(response.spread_points, 0);
+}
+
+/// Live benchmark fetch smoke test (network + optional API keys).
+///
+/// This is intentionally ignored in CI; run it manually when validating the
+/// "live rates" path end-to-end.
+#[test]
+#[ignore]
+fn yield_curve_comparison_fetch_live_smoke() {
+    let response = futures::executor::block_on(yield_curve_comparison(
+        YieldCurveComparisonRequest {
+            // Any box curve points are fine; the goal is to confirm we can
+            // fetch at least one benchmark curve point and not panic.
+            box_spread_rates: HashMap::from([("XSP".into(), HashMap::from([("30".into(), 5.0)]))]),
+            treasury_rates: None,
+            sofr_rates: None,
+            fetch_live: true,
+        },
+        &reqwest::Client::new(),
+    ));
+
+    assert!(
+        response.treasury_points + response.sofr_points > 0,
+        "expected at least one live benchmark point; check network and optional FRED/FMP credentials"
+    );
+    // We may or may not match tenors closely enough to create spreads; just sanity check shape.
+    assert_eq!(response.symbols, vec!["XSP".to_string()]);
+    assert!(response.tenor_count >= response.treasury_points + response.sofr_points);
 }

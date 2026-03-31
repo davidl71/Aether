@@ -58,9 +58,14 @@ pub fn yield_curve_from_opportunities(
 ) -> Option<YieldCurve> {
     let mut points = Vec::new();
     for opp in opportunities {
+        let data_source = opp
+            .get("data_source")
+            .and_then(|value| value.as_str())
+            .filter(|s| !s.trim().is_empty())
+            .map(|s| s.to_string());
         let spread = opp.get("spread")?;
         let input: BoxSpreadInput = serde_json::from_value(spread.clone()).ok()?;
-        points.push(box_spread_input_to_proto_point(&input));
+        points.push(box_spread_input_to_proto_point(&input, data_source));
     }
     if points.is_empty() {
         return None;
@@ -105,14 +110,17 @@ fn proto_point_to_rate_point(
         liquidity_score: 70.0,
         timestamp,
         spread_id: None,
-        data_source: None,
+        data_source: (!p.data_source.trim().is_empty()).then(|| p.data_source.clone()),
         strike_low: None,
         strike_high: None,
         convenience_yield: None,
     }
 }
 
-fn box_spread_input_to_proto_point(input: &BoxSpreadInput) -> YieldCurvePoint {
+fn box_spread_input_to_proto_point(
+    input: &BoxSpreadInput,
+    data_source: Option<String>,
+) -> YieldCurvePoint {
     let mid_rate = if input.buy_implied_rate > 0.0 && input.sell_implied_rate > 0.0 {
         (input.buy_implied_rate + input.sell_implied_rate) / 2.0
     } else if input.buy_implied_rate > 0.0 {
@@ -127,6 +135,7 @@ fn box_spread_input_to_proto_point(input: &BoxSpreadInput) -> YieldCurvePoint {
         net_debit: input.net_debit,
         spread_bps: 0.0,
         as_of: Some(Timestamp::from(std::time::SystemTime::now())),
+        data_source: data_source.unwrap_or_default(),
     }
 }
 
@@ -140,4 +149,43 @@ fn ts_to_rfc3339(ts: &Timestamp) -> String {
 fn expiry_placeholder(dte: i32) -> String {
     let d = Utc::now() + chrono::Duration::days(dte as i64);
     d.format("%Y-%m-%d").to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn opportunities_round_trip_preserves_data_source() {
+        let opportunities = vec![json!({
+            "data_source": "tws",
+            "spread": {
+                "symbol": "SPX",
+                "expiry": "2026-01-16",
+                "days_to_expiry": 30,
+                "strike_width": 4.0,
+                "strike_low": 100.0,
+                "strike_high": 104.0,
+                "buy_implied_rate": 0.05,
+                "sell_implied_rate": 0.05,
+                "mid_rate": 0.05,
+                "net_debit": 3.5,
+                "net_credit": 0.0,
+                "liquidity_score": 70.0,
+                "timestamp": "2026-01-01T00:00:00Z",
+                "spread_id": null,
+                "data_source": null,
+                "convenience_yield": null
+            }
+        })];
+
+        let yc = yield_curve_from_opportunities(&opportunities, "SPX", 4.0).expect("curve");
+        assert_eq!(yc.points.len(), 1);
+        assert_eq!(yc.points[0].data_source, "tws");
+
+        let curve = curve_response_from_proto(&yc, "SPX");
+        assert_eq!(curve.points.len(), 1);
+        assert_eq!(curve.points[0].data_source.as_deref(), Some("tws"));
+    }
 }

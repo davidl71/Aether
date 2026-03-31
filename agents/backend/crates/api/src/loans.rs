@@ -8,6 +8,7 @@ use std::{
 
 use anyhow::{anyhow, Context};
 use chrono::{DateTime, Utc};
+use csv::Trim;
 use nats_adapter::proto::v1::{Loan as ProtoLoan, LoansResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{
@@ -204,6 +205,30 @@ struct LoanFile {
     loans: Vec<LoanRecord>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LoansCsvRow {
+    loan_id: String,
+    bank_name: String,
+    account_number: String,
+    loan_type: LoanType,
+    principal: f64,
+    original_principal: f64,
+    interest_rate: f64,
+    spread: f64,
+    base_cpi: f64,
+    current_cpi: f64,
+    origination_date: String,
+    maturity_date: String,
+    next_payment_date: String,
+    monthly_payment: f64,
+    payment_frequency_months: i32,
+    status: LoanStatus,
+    last_update: String,
+    #[serde(default = "default_ils")]
+    currency: String,
+}
+
 /// Request body for NATS `api.loans.import_bulk`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoansBulkImportRequest {
@@ -225,13 +250,59 @@ pub struct LoansBulkImportResponse {
     pub errors: Vec<BulkImportRowError>,
 }
 
-/// Parse a JSON file that is either `{ "loans": [...] }` or the legacy `{ "version", "last_updated", "loans" }` shape.
+/// Parse a loan bulk import file.
+///
+/// Supported shapes:
+/// - JSON: `{ "loans": [...] }`
+/// - JSON legacy: `{ "version", "last_updated", "loans" }`
+/// - CSV: header row with `LoanRecord` snake_case field names (plus optional `currency`)
 pub fn parse_loans_import_file_json(text: &str) -> Result<Vec<LoanRecord>, String> {
     if let Ok(req) = serde_json::from_str::<LoansBulkImportRequest>(text) {
         return Ok(req.loans);
     }
-    let file: LoanFile = serde_json::from_str(text).map_err(|e| e.to_string())?;
-    Ok(file.loans)
+
+    if let Ok(file) = serde_json::from_str::<LoanFile>(text) {
+        return Ok(file.loans);
+    }
+
+    parse_loans_import_file_csv(text)
+}
+
+fn parse_loans_import_file_csv(text: &str) -> Result<Vec<LoanRecord>, String> {
+    let mut reader = csv::ReaderBuilder::new()
+        .trim(Trim::All)
+        .from_reader(text.as_bytes());
+
+    let mut out = Vec::new();
+    for (index, row) in reader.deserialize::<LoansCsvRow>().enumerate() {
+        let row = row.map_err(|e| format!("CSV row {}: {}", index + 1, e))?;
+        out.push(LoanRecord {
+            loan_id: row.loan_id,
+            bank_name: row.bank_name,
+            account_number: row.account_number,
+            loan_type: row.loan_type,
+            principal: row.principal,
+            original_principal: row.original_principal,
+            interest_rate: row.interest_rate,
+            spread: row.spread,
+            base_cpi: row.base_cpi,
+            current_cpi: row.current_cpi,
+            origination_date: row.origination_date,
+            maturity_date: row.maturity_date,
+            next_payment_date: row.next_payment_date,
+            monthly_payment: row.monthly_payment,
+            payment_frequency_months: row.payment_frequency_months,
+            status: row.status,
+            last_update: row.last_update,
+            currency: row.currency,
+        });
+    }
+
+    if out.is_empty() {
+        return Err("CSV contained no data rows".into());
+    }
+
+    Ok(out)
 }
 
 #[derive(Clone)]
@@ -702,6 +773,22 @@ mod tests {
         let loans = parse_loans_import_file_json(legacy).expect("legacy");
         assert_eq!(loans.len(), 1);
         assert_eq!(loans[0].loan_id, "b");
+    }
+
+    #[test]
+    fn parse_loans_import_accepts_csv_with_header_row() {
+        let csv = concat!(
+            "loan_id,bank_name,account_number,loan_type,principal,original_principal,interest_rate,spread,base_cpi,current_cpi,origination_date,maturity_date,next_payment_date,monthly_payment,payment_frequency_months,status,last_update,currency\n",
+            "csv-1,Discount,123,SHIR_BASED,1000.0,1200.0,4.0,0.5,0.0,0.0,2025-01-01T00:00:00Z,2030-01-01T00:00:00Z,2025-02-01T00:00:00Z,100.0,1,ACTIVE,2025-01-15T00:00:00Z,ILS\n"
+        );
+
+        let loans = parse_loans_import_file_json(csv).expect("csv parse");
+        assert_eq!(loans.len(), 1);
+        assert_eq!(loans[0].loan_id, "csv-1");
+        assert_eq!(loans[0].bank_name, "Discount");
+        assert_eq!(loans[0].loan_type, LoanType::ShirBased);
+        assert_eq!(loans[0].status, LoanStatus::Active);
+        assert_eq!(loans[0].currency, "ILS");
     }
 
     #[tokio::test]

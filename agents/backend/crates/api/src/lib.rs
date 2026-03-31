@@ -9,10 +9,11 @@ pub mod credentials {
 }
 pub mod discount_bank;
 pub mod finance_rates;
+pub mod ledger_journal;
+mod ledger_sqlite;
 mod health;
 pub mod ib_positions;
 pub mod loans;
-pub mod mock_data;
 pub mod project_paths;
 pub mod quant;
 pub mod shared_config;
@@ -33,6 +34,7 @@ pub use health::{
     SharedHealthAggregate,
 };
 pub use ib_positions::{fetch_ib_positions, fetch_ib_positions_all, IbPositionDto};
+pub use ledger_journal::{LedgerJournalEntryDto, LedgerJournalListDto};
 pub use loans::{
     parse_loans_import_file_json, BulkImportRowError, LoanAggregationInput, LoanRecord,
     LoanRepository, LoanStatus, LoanType, LoansBulkImportRequest, LoansBulkImportResponse,

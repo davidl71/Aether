@@ -400,6 +400,7 @@ pub fn system_snapshot_from_proto(p: pb::SystemSnapshot) -> SystemSnapshot {
 /// Converts protobuf `SystemSnapshot` to `RuntimeSnapshotDto` for TUI/JSON consumers.
 pub fn runtime_snapshot_dto_from_proto(p: pb::SystemSnapshot) -> RuntimeSnapshotDto {
     let account_id = p.account_id.clone();
+    let nats_transport = p.nats_transport.map(nats_transport_from_proto);
     let positions: Vec<PositionSnapshot> = p
         .positions
         .into_iter()
@@ -452,6 +453,7 @@ pub fn runtime_snapshot_dto_from_proto(p: pb::SystemSnapshot) -> RuntimeSnapshot
         strategy: p.strategy,
         account_id: p.account_id,
         metrics: p.metrics.map(metrics_from_proto).unwrap_or_default(),
+        nats_transport: nats_transport,
         symbols: p.symbols.into_iter().map(symbol_from_proto).collect(),
         positions: position_dtos,
         historic: historic

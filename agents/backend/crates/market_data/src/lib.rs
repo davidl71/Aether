@@ -39,7 +39,9 @@ pub use yahoo::{
     OptionContractData, OptionsDataSource, OptionsExpiration, YahooFinanceSource,
     YahooFinanceSourceFactory, YahooHistorySource, YahooOptionsSource, YahooOptionsSourceFactory,
 };
-pub use yield_curve::{BoxSpreadResult, YahooYieldCurveSource, YieldCurve, YieldCurvePoint};
+pub use yield_curve::{
+    BoxSpreadResult, PolygonYieldCurveSource, YahooYieldCurveSource, YieldCurve, YieldCurvePoint,
+};
 
 use std::collections::HashMap;
 use std::sync::OnceLock;

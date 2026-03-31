@@ -66,7 +66,11 @@ use thiserror::Error;
 use tracing::{debug, warn};
 use yfinance_rs::{core::conversions::money_to_f64, Interval, Range};
 
+use crate::polygon::PolygonOptionsSource;
 use crate::yahoo::{OptionContractData, OptionsDataSource, YahooHistorySource, YahooOptionsSource};
+
+/// DTE values (days to expiry) for synthetic curve points.
+const SYNTHETIC_DTE_DAYS: &[i32] = &[30, 60, 90, 120, 180, 365];
 
 /// Standard options multiplier (shares per contract).
 const CONTRACT_MULTIPLIER: f64 = 100.0;
@@ -81,6 +85,57 @@ const MIN_LIQUIDITY_SCORE: f64 = 50.0;
 const MAX_EXPIRY_DAYS: i32 = 730;
 const MIN_DTE: i32 = 7;
 const MAX_DTE: i32 = 730;
+
+/// Builds a deterministic synthetic yield curve (no network calls).
+///
+/// This is intended as a placeholder/fallback path for offline development and
+/// test environments where live options sources are unavailable.
+pub fn synthetic_yield_curve(symbol: &str, spot: f64, base_rate: f64) -> YieldCurve {
+    let today = Utc::now().date_naive();
+    let strike_width = 4.0;
+    let strike_low = (spot - strike_width / 2.0 * 10.0).round() / 10.0;
+    let strike_high = (spot + strike_width / 2.0 * 10.0).round() / 10.0;
+    let width = strike_high - strike_low;
+
+    let buy_rate = (base_rate - 0.004).max(0.001);
+    let sell_rate = (base_rate + 0.004).min(0.20);
+    let mid_rate = (buy_rate + sell_rate) / 2.0;
+    let spread_bps = (sell_rate - buy_rate) * 10000.0;
+
+    let mut points = Vec::with_capacity(SYNTHETIC_DTE_DAYS.len());
+    for &dte in SYNTHETIC_DTE_DAYS {
+        let expiry = today + chrono::Duration::days(dte as i64);
+        let t = dte as f64 / 365.0;
+
+        // PV = width * (1 - r*T). Keep the value stable/deterministic.
+        let net_debit = width * (1.0 - buy_rate * t);
+        let net_credit = width * (1.0 - sell_rate * t);
+
+        points.push(YieldCurvePoint {
+            expiry,
+            dte,
+            strike_low,
+            strike_high,
+            strike_width,
+            net_debit,
+            net_credit,
+            buy_implied_rate: buy_rate,
+            sell_implied_rate: sell_rate,
+            liquidity_score: 70.0,
+            mid_rate,
+            spread_bps,
+            source: "synthetic".to_string(),
+        });
+    }
+
+    YieldCurve {
+        symbol: symbol.to_string(),
+        underlying_price: spot,
+        points,
+        timestamp: Utc::now(),
+        source: "synthetic".to_string(),
+    }
+}
 
 #[derive(Debug, Error)]
 pub enum YieldCurveError {
@@ -126,6 +181,141 @@ pub struct YieldCurve {
     pub points: Vec<YieldCurvePoint>,
     pub timestamp: chrono::DateTime<Utc>,
     pub source: String,
+}
+
+/// Polygon.io yield curve source.
+pub struct PolygonYieldCurveSource {
+    options: PolygonOptionsSource,
+}
+
+impl PolygonYieldCurveSource {
+    pub fn from_env() -> anyhow::Result<Self> {
+        Ok(Self {
+            options: PolygonOptionsSource::from_env()?,
+        })
+    }
+
+    pub async fn fetch_yield_curve(&self, symbol: &str) -> anyhow::Result<YieldCurve> {
+        let expiration_timestamps = self.options.get_expirations(symbol).await?;
+        debug!(
+            symbol = %symbol,
+            expirations = expiration_timestamps.len(),
+            "got expirations (Polygon)"
+        );
+        if expiration_timestamps.is_empty() {
+            return Err(anyhow::anyhow!("no expiration dates for {symbol}"));
+        }
+
+        let underlying_price = self.options.fetch_underlying_mid(symbol).await?;
+        debug!(symbol = %symbol, spot = underlying_price, "got underlying mid (Polygon)");
+
+        let today = Utc::now().date_naive();
+        let valid_expirations: Vec<(i64, NaiveDate)> = expiration_timestamps
+            .into_iter()
+            .filter_map(|ts| {
+                Utc.timestamp_opt(ts, 0)
+                    .single()
+                    .map(|dt| (ts, dt.date_naive()))
+            })
+            .filter(|(_, date)| {
+                let dte = (*date - today).num_days() as i32;
+                dte >= MIN_DTE && dte <= MAX_DTE
+            })
+            .collect();
+
+        let mut points = Vec::new();
+        for (ts, expiry) in valid_expirations.into_iter().take(10) {
+            let dte = (expiry - today).num_days() as i32;
+            if let Some(point) = self.fetch_point(symbol, ts, expiry, underlying_price).await {
+                debug!(symbol = %symbol, dte = %dte, "computed point (Polygon)");
+                points.push(point);
+            }
+        }
+
+        if points.is_empty() {
+            return Err(anyhow::anyhow!("could not compute any yield curve points"));
+        }
+
+        Ok(YieldCurve {
+            symbol: symbol.to_string(),
+            underlying_price,
+            points,
+            timestamp: Utc::now(),
+            source: "polygon".to_string(),
+        })
+    }
+
+    async fn fetch_point(
+        &self,
+        symbol: &str,
+        expiration_ts: i64,
+        expiry: NaiveDate,
+        spot: f64,
+    ) -> Option<YieldCurvePoint> {
+        let chain = self.options.get_chain(symbol, expiration_ts).await.ok()?;
+
+        let dte = (expiry - Utc::now().date_naive()).num_days() as i32;
+        if dte <= 0 {
+            return None;
+        }
+
+        let widths = YahooYieldCurveSource::candidate_widths(spot);
+        let mut best: Option<(YieldCurvePoint, f64)> = None;
+
+        for width in &widths {
+            let width = *width;
+            let Some((c_low, c_high, p_low, p_high)) =
+                find_box_legs(&chain.calls, &chain.puts, spot, width)
+            else {
+                continue;
+            };
+
+            let strike_low = c_low.strike;
+            let strike_high = c_high.strike;
+            let actual_width = strike_high - strike_low;
+
+            let Some(box_result) = BoxSpreadResult::from_quotes(
+                (c_low.bid, c_low.ask),
+                (c_high.bid, c_high.ask),
+                (p_low.bid, p_low.ask),
+                (p_high.bid, p_high.ask),
+                actual_width,
+                dte as f64,
+            ) else {
+                continue;
+            };
+
+            if box_result.liquidity_score < MIN_LIQUIDITY_SCORE {
+                continue;
+            }
+
+            let spread_bps = (box_result.sell_rate - box_result.buy_rate) * 10000.0;
+            let point = YieldCurvePoint {
+                expiry,
+                dte,
+                strike_low,
+                strike_high,
+                strike_width: actual_width,
+                net_debit: box_result.net_debit,
+                net_credit: box_result.net_credit,
+                buy_implied_rate: box_result.buy_rate,
+                sell_implied_rate: box_result.sell_rate,
+                liquidity_score: box_result.liquidity_score,
+                mid_rate: box_result.mid_rate,
+                spread_bps,
+                source: "polygon".to_string(),
+            };
+
+            let score = box_result.liquidity_score;
+            match best {
+                None => best = Some((point, score)),
+                Some((_, prev_score)) if score > prev_score => best = Some((point, score)),
+                _ => {}
+            }
+        }
+
+        best.map(|(point, _)| point)
+    }
 }
 
 /// Box spread calculation result.
@@ -490,58 +680,7 @@ impl YahooYieldCurveSource {
         OptionContractData,
         OptionContractData,
     )> {
-        use std::collections::HashMap;
-
-        // Build maps: strike → option, for liquid legs only.
-        let call_map: HashMap<i64, &OptionContractData> = calls
-            .iter()
-            .filter(|o| o.bid > 0.0 && o.ask > 0.0 && o.ask > o.bid)
-            .map(|o| ((o.strike * 100.0).round() as i64, o))
-            .collect();
-        let put_map: HashMap<i64, &OptionContractData> = puts
-            .iter()
-            .filter(|o| o.bid > 0.0 && o.ask > 0.0 && o.ask > o.bid)
-            .map(|o| ((o.strike * 100.0).round() as i64, o))
-            .collect();
-
-        // Valid strikes: those with both a liquid call AND a liquid put.
-        let mut valid_strikes: Vec<f64> = call_map
-            .keys()
-            .filter(|k| put_map.contains_key(k))
-            .map(|&k| k as f64 / 100.0)
-            .collect();
-        valid_strikes.sort_by(|a, b| a.partial_cmp(b).unwrap());
-
-        let target_low = spot - width / 2.0;
-        let target_high = spot + width / 2.0;
-
-        // Find K_low: valid strike closest to target_low.
-        let k_low = valid_strikes
-            .iter()
-            .min_by_key(|&&s| ((s - target_low).abs() * 100.0) as i64)
-            .copied()?;
-
-        // Find K_high: valid strike closest to target_high, strictly above K_low.
-        let k_high = valid_strikes
-            .iter()
-            .filter(|&&s| s > k_low)
-            .min_by_key(|&&s| ((s - target_high).abs() * 100.0) as i64)
-            .copied()?;
-
-        // Reject if the actual width is more than 2× the requested width.
-        if k_high - k_low > width * 2.0 {
-            return None;
-        }
-
-        let k_low_key = (k_low * 100.0).round() as i64;
-        let k_high_key = (k_high * 100.0).round() as i64;
-
-        let c_low = (*call_map.get(&k_low_key)?).clone();
-        let c_high = (*call_map.get(&k_high_key)?).clone();
-        let p_low = (*put_map.get(&k_low_key)?).clone();
-        let p_high = (*put_map.get(&k_high_key)?).clone();
-
-        Some((c_low, c_high, p_low, p_high))
+        find_box_legs(calls, puts, spot, width)
     }
 
     pub async fn fetch_multi_symbol_curve(
@@ -564,6 +703,69 @@ impl YahooYieldCurveSource {
     }
 }
 
+fn find_box_legs(
+    calls: &[OptionContractData],
+    puts: &[OptionContractData],
+    spot: f64,
+    width: f64,
+) -> Option<(
+    OptionContractData,
+    OptionContractData,
+    OptionContractData,
+    OptionContractData,
+)> {
+    // Build maps: strike → option, for liquid legs only.
+    let call_map: HashMap<i64, &OptionContractData> = calls
+        .iter()
+        .filter(|o| o.bid > 0.0 && o.ask > 0.0 && o.ask > o.bid)
+        .map(|o| ((o.strike * 100.0).round() as i64, o))
+        .collect();
+    let put_map: HashMap<i64, &OptionContractData> = puts
+        .iter()
+        .filter(|o| o.bid > 0.0 && o.ask > 0.0 && o.ask > o.bid)
+        .map(|o| ((o.strike * 100.0).round() as i64, o))
+        .collect();
+
+    // Valid strikes: those with both a liquid call AND a liquid put.
+    let mut valid_strikes: Vec<f64> = call_map
+        .keys()
+        .filter(|k| put_map.contains_key(k))
+        .map(|&k| k as f64 / 100.0)
+        .collect();
+    valid_strikes.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+    let target_low = spot - width / 2.0;
+    let target_high = spot + width / 2.0;
+
+    // Find K_low: valid strike closest to target_low.
+    let k_low = valid_strikes
+        .iter()
+        .min_by_key(|&&s| ((s - target_low).abs() * 100.0) as i64)
+        .copied()?;
+
+    // Find K_high: valid strike closest to target_high, strictly above K_low.
+    let k_high = valid_strikes
+        .iter()
+        .filter(|&&s| s > k_low)
+        .min_by_key(|&&s| ((s - target_high).abs() * 100.0) as i64)
+        .copied()?;
+
+    // Reject if the actual width is more than 2× the requested width.
+    if k_high - k_low > width * 2.0 {
+        return None;
+    }
+
+    let k_low_key = (k_low * 100.0).round() as i64;
+    let k_high_key = (k_high * 100.0).round() as i64;
+
+    let c_low = (*call_map.get(&k_low_key)?).clone();
+    let c_high = (*call_map.get(&k_high_key)?).clone();
+    let p_low = (*put_map.get(&k_low_key)?).clone();
+    let p_high = (*put_map.get(&k_high_key)?).clone();
+
+    Some((c_low, c_high, p_low, p_high))
+}
+
 impl Default for YahooYieldCurveSource {
     fn default() -> Self {
         Self::new()
@@ -575,6 +777,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[ignore] // Requires live Yahoo Finance network access; run manually when needed.
     async fn inspects_spy_option_chain() {
         use crate::yahoo::OptionsDataSource;
 
@@ -641,6 +844,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore] // Requires live Yahoo Finance network access; run manually when needed.
     async fn fetches_spy_yield_curve() {
         let source = YahooYieldCurveSource::new();
 
@@ -676,6 +880,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore] // Requires live Yahoo Finance network access; run manually when needed.
     async fn fetches_qqq_yield_curve() {
         let source = YahooYieldCurveSource::new();
 
@@ -709,6 +914,7 @@ mod tests {
     /// Probe Euro Stoxx 50 options availability on Yahoo Finance.
     /// Eurex OESX options are European-style, cash-settled — ideal for box spreads.
     #[tokio::test]
+    #[ignore] // Requires live Yahoo Finance network access; run manually when needed.
     async fn fetches_es50_yield_curve() {
         let source_raw = YahooOptionsSource::new();
         // Try known Yahoo Finance tickers for Euro Stoxx 50
@@ -759,6 +965,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore] // Requires live Yahoo Finance network access; run manually when needed.
     async fn fetches_spx_yield_curve() {
         let source = YahooYieldCurveSource::new();
 
@@ -814,6 +1021,26 @@ mod tests {
             None => {
                 eprintln!("Box spread calculation returned None (expected with these quotes)");
             }
+        }
+    }
+
+    #[test]
+    fn synthetic_curve_is_well_formed() {
+        let curve = synthetic_yield_curve("SPX", 6000.0, 0.05);
+        assert_eq!(curve.symbol, "SPX");
+        assert_eq!(curve.source, "synthetic");
+        assert!(curve.underlying_price > 0.0);
+        assert_eq!(curve.points.len(), SYNTHETIC_DTE_DAYS.len());
+
+        for p in &curve.points {
+            assert!(p.dte > 0);
+            assert!(p.strike_high > p.strike_low);
+            assert!(p.strike_width > 0.0);
+            assert!(p.net_debit.is_finite());
+            assert!(p.net_credit.is_finite());
+            assert!(p.buy_implied_rate > 0.0);
+            assert!(p.sell_implied_rate > 0.0);
+            assert_eq!(p.source, "synthetic");
         }
     }
 }

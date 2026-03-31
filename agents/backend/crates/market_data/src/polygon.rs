@@ -322,6 +322,44 @@ impl PolygonOptionsSource {
 
         Ok(all)
     }
+
+    /// Fetch the underlying NBBO mid price for `symbol` using Polygon `/v2/last/nbbo/{symbol}`.
+    pub async fn fetch_underlying_mid(&self, symbol: &str) -> anyhow::Result<f64> {
+        let mut url = self.base_url.clone();
+        url.set_path(&format!("/v2/last/nbbo/{}", symbol.to_uppercase()));
+
+        let resp = self
+            .client
+            .get(url)
+            .query(&[("apiKey", self.api_key.as_str())])
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("polygon underlying request failed for {symbol}: {e}"))?;
+
+        if resp.status() == StatusCode::UNAUTHORIZED {
+            anyhow::bail!("polygon underlying: invalid API key");
+        }
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            anyhow::bail!("polygon underlying request failed for {symbol} with {status}: {body}");
+        }
+
+        let payload: NbboResponse = resp.json().await.map_err(|e| {
+            anyhow::anyhow!("failed to decode polygon underlying response for {symbol}: {e}")
+        })?;
+        let last = payload
+            .last
+            .ok_or_else(|| anyhow::anyhow!("polygon underlying response missing last quote"))?;
+
+        let bid = last.bid_price.unwrap_or(0.0);
+        let ask = last.ask_price.unwrap_or(0.0);
+        anyhow::ensure!(
+            bid > 0.0 && ask > 0.0 && ask >= bid,
+            "polygon underlying invalid nbbo for {symbol}: bid={bid} ask={ask}"
+        );
+        Ok((bid + ask) / 2.0)
+    }
 }
 
 #[async_trait]

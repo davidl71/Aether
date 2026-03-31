@@ -365,6 +365,8 @@ message YieldCurvePoint {
   double net_debit = 4;
   double spread_bps = 5;
   google.protobuf.Timestamp as_of = 6;
+  // Provider/source label (e.g. "tws", "yahoo", "synthetic") for parity across writers.
+  string data_source = 7;
 }
 
 message YieldCurve {

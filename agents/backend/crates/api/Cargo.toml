@@ -10,6 +10,7 @@ keyring = ["credential_store/keyring"]
 [dependencies]
 anyhow = { workspace = true }
 base64 = "0.22"
+csv = "1"
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

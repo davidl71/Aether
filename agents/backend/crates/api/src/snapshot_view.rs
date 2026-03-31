@@ -6,6 +6,7 @@ use crate::state::{
     Alert, HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot, RiskStatus,
     StrategyDecisionSnapshot, SymbolSnapshot, SystemSnapshot,
 };
+use crate::NatsTransportHealthState;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct RuntimePositionDto {
@@ -116,6 +117,9 @@ pub struct RuntimeSnapshotDto {
     pub strategy: String,
     pub account_id: String,
     pub metrics: Metrics,
+    /// Backend NATS transport telemetry (present when publisher populates it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nats_transport: Option<NatsTransportHealthState>,
     pub symbols: Vec<SymbolSnapshot>,
     pub positions: Vec<RuntimePositionDto>,
     pub historic: Vec<RuntimeHistoricPositionDto>,
@@ -137,6 +141,7 @@ impl From<&SystemSnapshot> for RuntimeSnapshotDto {
             strategy: value.strategy.clone(),
             account_id: value.account_id.clone(),
             metrics: value.metrics.clone(),
+            nats_transport: value.nats_transport.clone(),
             symbols: value.symbols.clone(),
             positions: value
                 .positions
@@ -183,6 +188,7 @@ pub struct ScenarioDto {
 mod tests {
     use super::*;
     use crate::state::SystemSnapshot;
+    use chrono::Utc;
 
     #[test]
     fn runtime_snapshot_dto_includes_positions() {
@@ -200,5 +206,20 @@ mod tests {
         let dto = RuntimeSnapshotDto::from(&snapshot);
         assert_eq!(dto.positions.len(), 1);
         assert_eq!(dto.historic.len(), 0);
+    }
+
+    #[test]
+    fn runtime_snapshot_dto_includes_nats_transport_when_present() {
+        let mut snapshot = SystemSnapshot::default();
+        snapshot.nats_transport = Some(
+            NatsTransportHealthState::connected(Some("nats://127.0.0.1:4222".into()), Utc::now())
+                .with_subject("system.health")
+                .with_role("snapshot-publisher"),
+        );
+        let dto = RuntimeSnapshotDto::from(&snapshot);
+        assert!(dto.nats_transport.is_some());
+        let t = dto.nats_transport.unwrap();
+        assert_eq!(t.role(), Some("snapshot-publisher"));
+        assert_eq!(t.subject(), Some("system.health"));
     }
 }

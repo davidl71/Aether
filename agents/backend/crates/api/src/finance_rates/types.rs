@@ -10,12 +10,20 @@ pub struct BoxSpreadInput {
     pub expiry: String,
     pub days_to_expiry: i32,
     pub strike_width: f64,
+    #[serde(default)]
+    pub strike_low: Option<f64>,
+    #[serde(default)]
+    pub strike_high: Option<f64>,
     pub buy_implied_rate: f64,
     pub sell_implied_rate: f64,
     pub net_debit: f64,
     pub net_credit: f64,
     pub liquidity_score: f64,
     pub spread_id: Option<String>,
+    #[serde(default)]
+    pub convenience_yield: Option<f64>,
+    #[serde(default)]
+    pub delayed: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

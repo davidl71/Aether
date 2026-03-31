@@ -162,6 +162,17 @@ pub(crate) fn aggregate_opportunities(
                     point
                 });
             }
+
+            let same_opt_f64 = |extractor: fn(&RatePointResponse) -> Option<f64>| -> Option<f64> {
+                let mut iter = points.iter().map(|(p, _)| extractor(p));
+                let first = iter.next().flatten()?;
+                if iter.all(|value| value == Some(first)) {
+                    Some(first)
+                } else {
+                    None
+                }
+            };
+
             let total_weight: f64 = points.iter().map(|(point, _)| point.liquidity_score).sum();
             let divisor = if total_weight > 0.0 {
                 total_weight
@@ -203,8 +214,8 @@ pub(crate) fn aggregate_opportunities(
                 timestamp: Utc::now().to_rfc3339(),
                 spread_id: None,
                 data_source: source,
-                strike_low: None,
-                strike_high: None,
+                strike_low: same_opt_f64(|point| point.strike_low),
+                strike_high: same_opt_f64(|point| point.strike_high),
                 convenience_yield: None,
             })
         })
@@ -263,8 +274,8 @@ fn build_rate_point(input: BoxSpreadInput, min_liquidity_score: f64) -> Option<R
         timestamp: Utc::now().to_rfc3339(),
         spread_id: input.spread_id,
         data_source: None,
-        strike_low: None,
-        strike_high: None,
-        convenience_yield: None,
+        strike_low: input.strike_low,
+        strike_high: input.strike_high,
+        convenience_yield: input.convenience_yield,
     })
 }
