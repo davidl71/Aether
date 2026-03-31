@@ -144,7 +144,7 @@ macro_rules! mark_dirty_for_action {
     ($flags:expr, MouseScrollUp | MouseScrollDown | MouseScrollUpIn(_) | MouseScrollDownIn(_)) => {
         $flags.mark_content()
     };
-    ($flags:expr, PositionsToggleCombo | PositionsCycleSort | OrdersFilterFocus | OrdersFilterChar(_) | OrdersFilterBackspace | OrdersFilterClear) => {
+    ($flags:expr, PositionsToggleCombo | PositionsCycleSort | OrdersFilterFocus | OrdersFilterChar(_) | OrdersFilterBackspace | OrdersFilterClear | OrdersFilterFocusNext | OrdersFilterFocusPrev) => {
         $flags.mark_content();
         $flags.mark_hint_bar()
     };

@@ -1,3 +1,13 @@
+//! Quantitative primitives: options pricing (e.g. BSM), Greeks, margin-style helpers, yield curves,
+//! convexity, amortization, and simulation paths (GBM).
+//!
+//! Consumed by `api`, `risk`, and services; keep changes to pricing and risk numerics covered by tests
+//! in this workspace (`cargo test -p quant`).
+//!
+//! # Repository documentation
+//!
+//! Crate ownership: `AGENTS.md` (repo root).
+
 pub mod amortization;
 pub mod bsm;
 pub mod convexity;

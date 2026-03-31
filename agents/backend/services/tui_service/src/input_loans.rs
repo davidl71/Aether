@@ -34,9 +34,13 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
             app.loan_entry = None;
             app.active_tab = Tab::Loans;
             app.loan_import_path = Some(String::new());
+            #[cfg(feature = "tui-interact")]
+            app.loan_import_interact.on_open();
             app.request_loans_fetch_if_uncached();
         }
         Action::LoansImportPathEscape => {
+            #[cfg(feature = "tui-interact")]
+            app.loan_import_interact.on_close();
             app.loan_import_path = None;
         }
         Action::LoansImportPathChar(c) => {
@@ -77,6 +81,8 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
 
             if let Some(ref tx) = app.loan_bulk_import_tx {
                 if tx.send(path).is_ok() {
+                    #[cfg(feature = "tui-interact")]
+                    app.loan_import_interact.on_close();
                     app.loans_bulk_import_inflight = true;
                     app.loans_fetch_pending = true;
                     app.push_toast(
@@ -121,8 +127,20 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
             app.loans_table.shift_selected(10, len);
         }
         Action::LoansNewLoan => {
+            #[cfg(feature = "tui-interact")]
+            if app.loan_import_path.is_some() {
+                app.loan_import_interact.on_close();
+            }
             app.loan_import_path = None;
             app.loan_entry = Some(LoanEntryState::new());
+        }
+        Action::LoanImportFocusNext => {
+            #[cfg(feature = "tui-interact")]
+            app.loan_import_interact.tab_next();
+        }
+        Action::LoanImportFocusPrev => {
+            #[cfg(feature = "tui-interact")]
+            app.loan_import_interact.tab_prev();
         }
         Action::LoansInputEscape => {
             app.loan_entry = None;

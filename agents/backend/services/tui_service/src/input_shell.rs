@@ -116,7 +116,25 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
             );
         }
         Action::CommandPalette => {
+            #[cfg(feature = "tui-interact")]
+            let was_visible = app.command_palette.visible;
             app.command_palette.toggle(app.app_mode, app.active_tab);
+            #[cfg(feature = "tui-interact")]
+            {
+                if app.command_palette.visible && !was_visible {
+                    app.command_palette_interact.on_open();
+                } else if !app.command_palette.visible && was_visible {
+                    app.command_palette_interact.on_close();
+                }
+            }
+        }
+        Action::CommandPaletteFocusNext => {
+            #[cfg(feature = "tui-interact")]
+            app.command_palette_interact.tab_next();
+        }
+        Action::CommandPaletteFocusPrev => {
+            #[cfg(feature = "tui-interact")]
+            app.command_palette_interact.tab_prev();
         }
         Action::CommandPalettePrev => {
             app.command_palette.select_prev();
@@ -196,6 +214,15 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
 }
 
 fn set_active_tab(app: &mut App, tab: Tab) {
+    #[cfg(feature = "tui-interact")]
+    {
+        if app.active_tab == Tab::Loans && tab != Tab::Loans && app.loan_import_path.is_some() {
+            app.loan_import_interact.on_close();
+        }
+        if app.active_tab == Tab::Orders && tab != Tab::Orders && app.order_filter_active {
+            app.orders_filter_interact.on_close();
+        }
+    }
     app.active_tab = tab;
     if app.active_tab != Tab::Loans {
         app.loan_import_path = None;

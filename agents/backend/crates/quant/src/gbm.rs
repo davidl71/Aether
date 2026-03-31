@@ -3,7 +3,7 @@
 use rand::Rng;
 
 /// Euler–Maruyama paths for GBM: dS = mu*S*dt + sigma*S*dW.
-/// Returns paths[sample_idx][time_step]; paths have length (steps + 1).
+/// Returns `paths[sample_idx][time_step]`; paths have length (steps + 1).
 pub fn euler_maruyama(
     rng: &mut impl Rng,
     s0: f64,

@@ -1,3 +1,18 @@
+//! Market data providers (quotes, history, options chains, yield helpers) and ingestion glue.
+//!
+//! Quote sources register in [`provider_registry`] and are built with [`create_provider`]. Options
+//! chains use [`create_options_provider`]. Concrete backends include Yahoo, FMP, Polygon, Alpaca,
+//! TASE, SHIR helpers, cache layers, and mocks.
+//!
+//! # Design constraint
+//!
+//! This crate must **not** depend on `api` (workspace rule). Use [`credential_store`] only for shared credential paths.
+//!
+//! # Repository documentation
+//!
+//! - Provider pattern: `docs/MARKET_DATA_PROVIDER_ARCHITECTURE.md`
+//! - Workspace map: `AGENTS.md`
+
 pub mod aggregator;
 pub mod alpaca;
 pub mod cache;

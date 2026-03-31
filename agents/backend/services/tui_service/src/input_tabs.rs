@@ -15,11 +15,11 @@ pub(crate) fn tab_key_action(app: &App, key: KeyCode, input_mode: InputMode) -> 
 
     match app.active_tab {
         Tab::Yield => yield_key_action(key),
-        Tab::Charts => charts_key_action(key, input_mode),
+        Tab::Charts => charts_key_action(app, key, input_mode),
         Tab::Settings => settings_key_action(app, key),
         Tab::Positions => positions_key_action(key),
-        Tab::Orders => orders_key_action(key, input_mode),
-        Tab::Loans => loans_key_action(key, input_mode),
+        Tab::Orders => orders_key_action(app, key, input_mode),
+        Tab::Loans => loans_key_action(app, key, input_mode),
         Tab::DiscountBank => discount_bank_key_action(key),
         Tab::Ledger => ledger_key_action(key),
         Tab::Alerts => alerts_key_action(key),
@@ -53,7 +53,18 @@ fn yield_key_action(key: KeyCode) -> Option<Action> {
     }
 }
 
-fn charts_key_action(key: KeyCode, input_mode: InputMode) -> Option<Action> {
+fn charts_key_action(app: &App, key: KeyCode, input_mode: InputMode) -> Option<Action> {
+    #[cfg(feature = "tui-interact")]
+    if matches!(input_mode, InputMode::ChartSearch) {
+        match key {
+            KeyCode::Tab => return Some(Action::ChartSearchFocusNext),
+            KeyCode::BackTab => return Some(Action::ChartSearchFocusPrev),
+            _ => {}
+        }
+    }
+    #[cfg(not(feature = "tui-interact"))]
+    let _ = app;
+
     match (key, input_mode) {
         (KeyCode::Char('/'), _) => Some(Action::ChartSearchFocus),
         (KeyCode::Left, InputMode::ChartSearch) => None,
@@ -66,8 +77,18 @@ fn charts_key_action(key: KeyCode, input_mode: InputMode) -> Option<Action> {
         (KeyCode::Down, InputMode::ChartSearch) => Some(Action::ChartSearchDown),
         (KeyCode::Enter, InputMode::ChartSearch) => Some(Action::ChartSearchEnter),
         (KeyCode::Esc, InputMode::ChartSearch) => Some(Action::ChartSearchEscape),
-        (KeyCode::Backspace, InputMode::ChartSearch) => Some(Action::ChartSearchBackspace),
+        (KeyCode::Backspace, InputMode::ChartSearch) => {
+            #[cfg(feature = "tui-interact")]
+            if !app.chart_search_interact.allows_field_edit() {
+                return Some(Action::NoOp);
+            }
+            Some(Action::ChartSearchBackspace)
+        }
         (KeyCode::Char(c), InputMode::ChartSearch) if !c.is_control() => {
+            #[cfg(feature = "tui-interact")]
+            if !app.chart_search_interact.allows_field_edit() {
+                return Some(Action::NoOp);
+            }
             Some(Action::ChartSearchChar(c))
         }
         (KeyCode::Char('h') | KeyCode::Char('H'), _) => Some(Action::ChartPillLeft),
@@ -96,7 +117,18 @@ fn positions_key_action(key: KeyCode) -> Option<Action> {
     }
 }
 
-fn orders_key_action(key: KeyCode, input_mode: InputMode) -> Option<Action> {
+fn orders_key_action(app: &App, key: KeyCode, input_mode: InputMode) -> Option<Action> {
+    #[cfg(feature = "tui-interact")]
+    if matches!(input_mode, InputMode::OrdersFilter) {
+        match key {
+            KeyCode::Tab => return Some(Action::OrdersFilterFocusNext),
+            KeyCode::BackTab => return Some(Action::OrdersFilterFocusPrev),
+            _ => {}
+        }
+    }
+    #[cfg(not(feature = "tui-interact"))]
+    let _ = app;
+
     match (key, input_mode) {
         (KeyCode::Up, _) => Some(Action::OrdersScrollUp),
         (KeyCode::Down, _) => Some(Action::OrdersScrollDown),
@@ -106,21 +138,80 @@ fn orders_key_action(key: KeyCode, input_mode: InputMode) -> Option<Action> {
         (KeyCode::Char('x') | KeyCode::Char('X'), _) => Some(Action::OrdersCancel),
         (KeyCode::Char('/'), _) => Some(Action::OrdersFilterFocus),
         (KeyCode::Esc, InputMode::OrdersFilter) => Some(Action::OrdersFilterClear),
-        (KeyCode::Backspace, InputMode::OrdersFilter) => Some(Action::OrdersFilterBackspace),
+        (KeyCode::Backspace, InputMode::OrdersFilter) => {
+            #[cfg(feature = "tui-interact")]
+            if !app.orders_filter_interact.allows_field_edit() {
+                return Some(Action::NoOp);
+            }
+            Some(Action::OrdersFilterBackspace)
+        }
         (KeyCode::Char(c), InputMode::OrdersFilter) if !c.is_control() => {
+            #[cfg(feature = "tui-interact")]
+            if !app.orders_filter_interact.allows_field_edit() {
+                return Some(Action::NoOp);
+            }
             Some(Action::OrdersFilterChar(c))
         }
         _ => None,
     }
 }
 
-fn loans_key_action(key: KeyCode, input_mode: InputMode) -> Option<Action> {
+fn loans_key_action(app: &App, key: KeyCode, input_mode: InputMode) -> Option<Action> {
+    #[cfg(feature = "tui-interact")]
+    if matches!(input_mode, InputMode::LoanImportPath) {
+        match key {
+            KeyCode::Tab => return Some(Action::LoanImportFocusNext),
+            KeyCode::BackTab => return Some(Action::LoanImportFocusPrev),
+            _ => {}
+        }
+    }
+    #[cfg(not(feature = "tui-interact"))]
+    let _ = app;
+
     match (key, input_mode) {
         (KeyCode::Esc, InputMode::LoanImportPath) => Some(Action::LoansImportPathEscape),
         (KeyCode::Enter, InputMode::LoanImportPath) => Some(Action::LoansImportPathEnter),
-        (KeyCode::Backspace, InputMode::LoanImportPath) => Some(Action::LoansImportPathBackspace),
+        (KeyCode::Backspace, InputMode::LoanImportPath) => {
+            #[cfg(feature = "tui-interact")]
+            if !app.loan_import_interact.allows_field_edit() {
+                return Some(Action::NoOp);
+            }
+            Some(Action::LoansImportPathBackspace)
+        }
         (KeyCode::Char(c), InputMode::LoanImportPath) if !c.is_control() => {
+            #[cfg(feature = "tui-interact")]
+            if !app.loan_import_interact.allows_field_edit() {
+                return Some(Action::NoOp);
+            }
             Some(Action::LoansImportPathChar(c))
+        }
+        (KeyCode::Up, InputMode::LoanImportPath) => {
+            #[cfg(feature = "tui-interact")]
+            if !app.loan_import_interact.allows_field_edit() {
+                return Some(Action::LoansScrollUp);
+            }
+            Some(Action::NoOp)
+        }
+        (KeyCode::Down, InputMode::LoanImportPath) => {
+            #[cfg(feature = "tui-interact")]
+            if !app.loan_import_interact.allows_field_edit() {
+                return Some(Action::LoansScrollDown);
+            }
+            Some(Action::NoOp)
+        }
+        (KeyCode::PageUp, InputMode::LoanImportPath) => {
+            #[cfg(feature = "tui-interact")]
+            if !app.loan_import_interact.allows_field_edit() {
+                return Some(Action::LoansScrollPageUp);
+            }
+            Some(Action::NoOp)
+        }
+        (KeyCode::PageDown, InputMode::LoanImportPath) => {
+            #[cfg(feature = "tui-interact")]
+            if !app.loan_import_interact.allows_field_edit() {
+                return Some(Action::LoansScrollPageDown);
+            }
+            Some(Action::NoOp)
         }
         (_, InputMode::LoanImportPath) => Some(Action::NoOp),
         (KeyCode::Up, _) => Some(Action::LoansScrollUp),

@@ -8,7 +8,7 @@
 //!
 //! **Strategy diagnostics (read-only):** background subscriptions to
 //! `strategy.signal.>` and `strategy.decision.>` (when enabled) decode
-//! `StrategySignal` / `StrategyDecision` and emit [`AppEvent`](crate::events::AppEvent)
+//! `StrategySignal` / `StrategyDecision` and emit [`crate::events::AppEvent`]
 //! for counters + Settings health text — not execution control. Opt-in with
 //! `TUI_STRATEGY_NATS_SUBSCRIBE=1` (or `true` / `yes` / `on`) to avoid extra NATS
 //! traffic when strategy publishers are very chatty.

@@ -43,6 +43,8 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
         }
         Action::OrdersFilterFocus => {
             app.order_filter_active = true;
+            #[cfg(feature = "tui-interact")]
+            app.orders_filter_interact.on_open();
             app.command_success(
                 "orders_filter",
                 "Filter mode active: type symbol, status, or side; Esc to exit.",
@@ -60,8 +62,18 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
         Action::OrdersFilterClear => {
             app.order_filter.clear();
             app.order_filter_active = false;
+            #[cfg(feature = "tui-interact")]
+            app.orders_filter_interact.on_close();
             clamp_filtered_orders_selection(app);
             app.command_success("orders_filter", "Filter cleared.");
+        }
+        Action::OrdersFilterFocusNext => {
+            #[cfg(feature = "tui-interact")]
+            app.orders_filter_interact.tab_next();
+        }
+        Action::OrdersFilterFocusPrev => {
+            #[cfg(feature = "tui-interact")]
+            app.orders_filter_interact.tab_prev();
         }
         Action::OrdersCancel => {
             app.command_disabled("cancel_all");
@@ -106,6 +118,8 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
                 app.symbol_for_chart = symbol;
                 app.chart_search_visible = false;
                 app.chart_search_input.clear();
+                #[cfg(feature = "tui-interact")]
+                app.chart_search_interact.on_close();
             }
         }
         Action::ScenariosScrollUp => {
@@ -188,6 +202,8 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
             app.chart_search_input.clear();
             app.chart_search_results.clear();
             app.chart_search_selected = 0;
+            #[cfg(feature = "tui-interact")]
+            app.chart_search_interact.on_open();
             crate::ui::charts::update_search_results(app);
         }
         Action::ChartSearchChar(c) => {
@@ -237,11 +253,15 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
             crate::chart_search_history::save_chart_search_history(&app.chart_search_history);
             app.chart_search_visible = false;
             app.chart_search_input.clear();
+            #[cfg(feature = "tui-interact")]
+            app.chart_search_interact.on_close();
         }
         Action::ChartSearchEscape => {
             app.chart_search_visible = false;
             app.chart_search_input.clear();
             app.chart_search_results.clear();
+            #[cfg(feature = "tui-interact")]
+            app.chart_search_interact.on_close();
         }
         Action::ChartSearchFirst => {
             if !app.chart_search_results.is_empty() {
@@ -252,6 +272,14 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
             if !app.chart_search_results.is_empty() {
                 app.chart_search_selected = app.chart_search_results.len() - 1;
             }
+        }
+        Action::ChartSearchFocusNext => {
+            #[cfg(feature = "tui-interact")]
+            app.chart_search_interact.tab_next();
+        }
+        Action::ChartSearchFocusPrev => {
+            #[cfg(feature = "tui-interact")]
+            app.chart_search_interact.tab_prev();
         }
         Action::ChartPillLeft => {
             if app.chart_pill_row == 0 {

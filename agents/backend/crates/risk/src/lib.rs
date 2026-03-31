@@ -1,3 +1,12 @@
+//! Risk limits, checks, VaR-related stats, sizing, and portfolio rollups.
+//!
+//! The [`quant`] submodule re-exports selected types from the **`quant` dependency crate** for a
+//! narrow API surface (`risk::quant::Greeks`, etc.).
+//!
+//! # Repository documentation
+//!
+//! Ownership: `AGENTS.md` (repo root).
+
 pub mod calculator;
 pub mod checks;
 pub mod limits;

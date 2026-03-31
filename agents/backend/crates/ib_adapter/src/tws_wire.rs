@@ -40,7 +40,7 @@ impl TwsProtoFrame {
         4u32.saturating_add(self.payload.len() as u32)
     }
 
-    /// Encode to the TWS wire format: [length BE][msg_id BE][payload].
+    /// Encode to the TWS wire format: 4-byte big-endian length, then `msg_id`, then `payload` bytes.
     pub fn encode(&self) -> Vec<u8> {
         let len = self.wire_payload_len();
         let mut out = Vec::with_capacity(4 + 4 + self.payload.len());

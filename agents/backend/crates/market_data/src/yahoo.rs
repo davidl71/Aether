@@ -134,7 +134,7 @@ pub struct OptionContractData {
 #[async_trait]
 pub trait OptionsDataSource: Send + Sync {
     /// Returns raw Unix timestamps for each available expiration.
-    /// Callers should pass these timestamps back to [`get_chain`] unchanged
+    /// Callers should pass these timestamps back to [`get_chain`](Self::get_chain) unchanged
     /// to avoid roundtrip precision loss through `NaiveDate`.
     async fn get_expirations(&self, symbol: &str) -> anyhow::Result<Vec<i64>>;
     async fn get_chain(

@@ -47,6 +47,9 @@ pub enum Action {
     OrdersFilterChar(char),
     OrdersFilterBackspace,
     OrdersFilterClear,
+    /// Orders filter: field ↔ table (`tui-interact` Tab / Shift+Tab).
+    OrdersFilterFocusNext,
+    OrdersFilterFocusPrev,
     LoansScrollUp,
     LoansScrollDown,
     LoansScrollPageUp,
@@ -57,6 +60,9 @@ pub enum Action {
     LoansImportPathBackspace,
     LoansImportPathEnter,
     LoansImportPathEscape,
+    /// Loans import path: path field ↔ list (`tui-interact` Tab / Shift+Tab).
+    LoanImportFocusNext,
+    LoanImportFocusPrev,
     DiscountBankScrollUp,
     DiscountBankScrollDown,
     DiscountBankScrollPageUp,
@@ -99,6 +105,10 @@ pub enum Action {
     ChartSearchEscape,
     ChartSearchFirst,
     ChartSearchLast,
+    /// Charts search: next focus region (query ↔ results). Used with `tui-interact` (Tab).
+    ChartSearchFocusNext,
+    /// Charts search: previous focus region. Used with `tui-interact` (Shift+Tab).
+    ChartSearchFocusPrev,
     ChartPillLeft,
     ChartPillRight,
     ChartPillUp,
@@ -135,6 +145,9 @@ pub enum Action {
     CommandPaletteNext,
     CommandPaletteBackspace,
     CommandPaletteChar(char),
+    /// Palette: search ↔ list (`tui-interact` Tab / Shift+Tab).
+    CommandPaletteFocusNext,
+    CommandPaletteFocusPrev,
     CloseDetail,
     MouseScrollUp,
     MouseScrollDown,
@@ -180,12 +193,7 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
 
     // Handle command palette input first
     if app.command_palette.visible {
-        return handle_command_palette_input(
-            &app.command_palette,
-            key.code,
-            app.app_mode,
-            app.active_tab,
-        );
+        return handle_command_palette_input(app, key.code);
     }
 
     let input_mode = app.input_mode();
@@ -233,12 +241,18 @@ fn handle_macos_cmd_key(key: KeyCode) -> Option<Action> {
     }
 }
 
-fn handle_command_palette_input(
-    palette: &crate::discoverability::CommandPalette,
-    key: KeyCode,
-    mode: crate::mode::AppMode,
-    tab: crate::app::Tab,
-) -> Option<Action> {
+fn handle_command_palette_input(app: &App, key: KeyCode) -> Option<Action> {
+    let palette = &app.command_palette;
+    let mode = app.app_mode;
+    let tab = app.active_tab;
+
+    #[cfg(feature = "tui-interact")]
+    match key {
+        KeyCode::Tab => return Some(Action::CommandPaletteFocusNext),
+        KeyCode::BackTab => return Some(Action::CommandPaletteFocusPrev),
+        _ => {}
+    }
+
     match key {
         KeyCode::Esc => Some(Action::CommandPalette),
         KeyCode::Enter => {
@@ -251,8 +265,20 @@ fn handle_command_palette_input(
         }
         KeyCode::Up => Some(Action::CommandPalettePrev),
         KeyCode::Down => Some(Action::CommandPaletteNext),
-        KeyCode::Backspace => Some(Action::CommandPaletteBackspace),
-        KeyCode::Char(c) => Some(Action::CommandPaletteChar(c)),
+        KeyCode::Backspace => {
+            #[cfg(feature = "tui-interact")]
+            if !app.command_palette_interact.allows_field_edit() {
+                return Some(Action::NoOp);
+            }
+            Some(Action::CommandPaletteBackspace)
+        }
+        KeyCode::Char(c) => {
+            #[cfg(feature = "tui-interact")]
+            if !app.command_palette_interact.allows_field_edit() {
+                return Some(Action::NoOp);
+            }
+            Some(Action::CommandPaletteChar(c))
+        }
         _ => Some(Action::NoOp),
     }
 }
@@ -266,6 +292,8 @@ fn command_palette_input_action(action: &Action) -> bool {
             | Action::CommandPaletteNext
             | Action::CommandPaletteBackspace
             | Action::CommandPaletteChar(_)
+            | Action::CommandPaletteFocusNext
+            | Action::CommandPaletteFocusPrev
             | Action::NoOp
     )
 }
@@ -274,6 +302,8 @@ fn command_palette_input_action(action: &Action) -> bool {
 pub fn apply_action(app: &mut App, action: Action) {
     if app.command_palette.visible && !command_palette_input_action(&action) {
         app.command_palette.hide();
+        #[cfg(feature = "tui-interact")]
+        app.command_palette_interact.on_close();
     }
     if apply_settings_action(app, action) {
         return;

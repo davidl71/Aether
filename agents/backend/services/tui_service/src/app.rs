@@ -501,7 +501,7 @@ pub struct App {
     pub alpaca_live_status: ConnectionStatus,
     /// Alpaca health monitor for tracking API connectivity.
     pub alpaca_health: crate::alpaca_health::AlpacaHealthMonitor,
-    /// When true, main area shows Dashboard (left) and Positions (right) side-by-side; toggled with [p] or from config.
+    /// When true, main area shows Dashboard (left) and Positions (right) side-by-side; toggled with `p` or from config.
     pub split_pane: bool,
     /// Positions tab: selected display row (combo or flat).
     pub positions_table: ScrollableTableState,
@@ -529,6 +529,18 @@ pub struct App {
     pub chart_search_last_search_ms: u64,
     /// Charts search: debounce interval (ms).
     pub chart_search_debounce_ms: u64,
+    /// Chart search overlay: Tab order between query and results (`tui-interact` feature only).
+    #[cfg(feature = "tui-interact")]
+    pub chart_search_interact: crate::chart_search_interact::ChartSearchInteractState,
+    /// Orders filter: filter line vs orders table (`tui-interact` only).
+    #[cfg(feature = "tui-interact")]
+    pub orders_filter_interact: crate::field_list_focus::FieldListFocus,
+    /// Command palette: search vs command list (`tui-interact` only).
+    #[cfg(feature = "tui-interact")]
+    pub command_palette_interact: crate::field_list_focus::FieldListFocus,
+    /// Loans bulk-import path vs loans list (`tui-interact` only).
+    #[cfg(feature = "tui-interact")]
+    pub loan_import_interact: crate::field_list_focus::FieldListFocus,
     /// Charts pill navigation: which row is active (0 = expiry, 1 = strike width).
     pub chart_pill_row: usize,
     /// Charts pill navigation: selected expiry index.
@@ -727,6 +739,14 @@ impl App {
             chart_search_results: Vec::new(),
             chart_search_last_search_ms: 0,
             chart_search_debounce_ms: 300,
+            #[cfg(feature = "tui-interact")]
+            chart_search_interact: crate::chart_search_interact::ChartSearchInteractState::new(),
+            #[cfg(feature = "tui-interact")]
+            orders_filter_interact: crate::field_list_focus::FieldListFocus::new(),
+            #[cfg(feature = "tui-interact")]
+            command_palette_interact: crate::field_list_focus::FieldListFocus::new(),
+            #[cfg(feature = "tui-interact")]
+            loan_import_interact: crate::field_list_focus::FieldListFocus::new(),
             chart_pill_row: 0,
             chart_expiry_index: 0,
             chart_strike_index: 2,

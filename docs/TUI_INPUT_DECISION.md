@@ -86,4 +86,5 @@ Start where users feel editing pain and where behavior is isolated, then expand:
 - `tui-input` docs: `https://docs.rs/tui-input/`
 - `tui-input` repo: `https://github.com/sayanarijit/tui-input`
 - Aether research: `docs/research/ratatui-interact-evaluation.md`
+- **Field vs list sub-focus** (optional `tui-interact` feature, `FocusManager`): `docs/TUI_RATATUI_INTERACT.md` — orthogonal to `tui-input`; covers Tab order between a buffer and an adjacent list in overlays.
 

@@ -18,7 +18,7 @@ use crate::app::{App, Tab};
 use crate::input::Action;
 use crate::mode::AppMode;
 
-/// A command that can be run from the command palette (invokes a typed [`Action`](crate::input::Action)).
+/// A command that can be run from the command palette (invokes a typed [`crate::input::Action`]).
 #[derive(Debug, Clone)]
 pub struct Command {
     /// Unique identifier

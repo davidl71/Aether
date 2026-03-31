@@ -2,7 +2,7 @@
 //!
 //! Provides Israeli stock quotes and data via the TASE Data Hub API.
 //!
-//! **API:** https://datahubapi.tase.co.il
+//! **API:** <https://datahubapi.tase.co.il>
 //!
 //! **Rate Limits:** 10 requests per 2 seconds (rate + burst)
 //!

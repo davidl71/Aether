@@ -68,6 +68,10 @@ mod alpaca_health;
 mod app;
 mod app_config;
 mod chart_search_history;
+#[cfg(feature = "tui-interact")]
+mod field_list_focus;
+#[cfg(feature = "tui-interact")]
+mod chart_search_interact;
 mod circuit_breaker;
 mod config;
 mod config_watcher;
@@ -89,6 +93,8 @@ mod option_symbol;
 mod pane;
 mod portfolio_summary;
 mod scrollable_table;
+#[cfg(feature = "tui-interact")]
+mod tui_interact;
 mod ui;
 mod workspace;
 

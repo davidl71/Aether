@@ -1,14 +1,14 @@
 //! Broker abstraction — trait + domain types for engine switching.
 //!
-//! The [`BrokerEngine`](traits::BrokerEngine) trait abstracts active read-only broker operations,
+//! The [`crate::traits::BrokerEngine`] trait abstracts active read-only broker operations,
 //! enabling the backend to switch between implementations (IBKR, mock) without
-//! code changes. Domain types are broker-agnostic and live in [`domain`](domain).
+//! code changes. Domain types are broker-agnostic and live in [`crate::domain`].
 //!
 //! # Crate structure
 //!
-//! - [`traits`](traits) — [`BrokerEngine`] async trait definition
-//! - [`domain`](domain) — domain types, events, config, helpers
-//! - [`error`](error) — [`BrokerError`] enum
+//! - [`crate::traits`] — `BrokerEngine` async trait definition
+//! - [`crate::domain`] — domain types, events, config, helpers
+//! - [`crate::error`] — `BrokerError` enum
 
 pub mod domain;
 pub mod error;

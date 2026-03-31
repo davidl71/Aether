@@ -261,7 +261,7 @@ async fn fetch_curve_from_url(url: &str) -> Option<HashMap<String, Vec<serde_jso
 
 /// Run the yield curve writer: pre-populate once immediately, then every `interval_secs` write `yield_curve.{symbol}`.
 /// Returns a sender to trigger one immediate write cycle (e.g. for `api.yield_curve.refresh`).
-/// Source: `config_source` (from [yield_curve] source) or env `YIELD_CURVE_SOURCE`; "tws" => TWS, else URL/Yahoo/synthetic.
+/// Source: `config_source` (from the `yield_curve` config table) or env `YIELD_CURVE_SOURCE`; "tws" => TWS, else URL/Yahoo/synthetic.
 pub fn spawn(
     nats_client: Arc<NatsClient>,
     symbols: Vec<String>,

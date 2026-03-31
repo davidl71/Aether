@@ -1,3 +1,17 @@
+//! HTTP-oriented API types, protobuf conversion, and snapshot read models for the Aether backend.
+//!
+//! # Module map (selected)
+//!
+//! - [`state`] — Snapshot and runtime DTOs; aligns with the `common` crate for shared wire types.
+//! - [`finance_rates`] — SOFR, Treasuries, box-spread and financing benchmark read model.
+//! - [`credentials`] — Re-exports the [`credential_store`] crate for env/keyring/file resolution.
+//! - [`commands`] and [`command_proto`] — Control-plane events and proto mapping.
+//! - [`loans`], [`snapshot_proto`], [`yield_curve_proto`], [`discount_bank`] — Domain DTOs and conversions.
+//!
+//! # Repository documentation
+//!
+//! Workspace and crate ownership: `AGENTS.md` (repo root). REST/snapshot index: `docs/API_DOCUMENTATION_INDEX.md`.
+
 pub mod alpaca_positions;
 pub mod client_portal_options;
 pub mod combo_strategy;
