@@ -5,6 +5,8 @@ Reads .cursor/plans/parallel-execution-waves.json and uses exarp-go task_workflo
 to get Todo/In Progress tasks; intersects with wave IDs.
 Usage:
   python3 scripts/parallel_wave_remaining.py <wave_index> [batch_size]
+  python3 scripts/parallel_wave_remaining.py <wave_index> [batch_size] --tag tui
+  python3 scripts/parallel_wave_remaining.py <wave_index> [batch_size] --tag cli --strict-tag
   wave_index: 0, 1, or 2 (matches parallel-execution-waves.json "waves" keys)
   batch_size: default 15
 Example:
@@ -19,6 +21,7 @@ import os
 import re
 import subprocess
 import sys
+from argparse import ArgumentParser
 
 
 def repo_root() -> str:
@@ -78,13 +81,13 @@ def parse_exarp_tool_stdout(stdout: str) -> dict | list | None:
     return out
 
 
-def get_non_done_ids(root: str) -> set[str]:
-    """Call exarp-go task_workflow list for Todo and In Progress; return union of task IDs."""
+def get_non_done_tasks(root: str) -> dict[str, set[str]]:
+    """Return map task_id -> normalized tag set for (Todo ∪ In Progress)."""
     inv = resolve_exarp_invocation(root)
     if not inv:
-        return set()
+        return {}
     argv0, env = inv
-    ids: set[str] = set()
+    tasks_by_id: dict[str, set[str]] = {}
     for status in ("Todo", "In Progress"):
         try:
             cmd = argv0 + [
@@ -113,23 +116,34 @@ def get_non_done_ids(root: str) -> set[str]:
             parsed = parse_exarp_tool_stdout(out.stdout)
             if parsed is None:
                 continue
+            items = None
             if isinstance(parsed, list):
-                for t in parsed:
-                    if isinstance(t, dict) and "id" in t:
-                        ids.add(str(t["id"]).strip())
+                items = parsed
             elif isinstance(parsed, dict):
-                tasks = parsed.get("tasks", parsed.get("items", []))
-                for t in tasks if isinstance(tasks, list) else []:
-                    if isinstance(t, dict) and "id" in t:
-                        ids.add(str(t["id"]).strip())
-                # Fallback: any key that looks like T-*
-                for v in parsed.values():
-                    if isinstance(v, str) and re.match(r"^T-\d+$", v.strip()):
-                        ids.add(v.strip())
+                items = parsed.get("tasks", parsed.get("items", []))
+                if not isinstance(items, list):
+                    items = []
+
+            for t in items:
+                if not isinstance(t, dict):
+                    continue
+                tid = t.get("id")
+                if not tid:
+                    continue
+                tid = str(tid).strip()
+                raw_tags = t.get("tags") or []
+                if isinstance(raw_tags, str):
+                    tag_list = [x.strip() for x in raw_tags.split(",") if x.strip()]
+                elif isinstance(raw_tags, list):
+                    tag_list = [str(x).strip() for x in raw_tags if str(x).strip()]
+                else:
+                    tag_list = []
+                tasks_by_id[tid] = {x.lower() for x in tag_list if x}
         except (json.JSONDecodeError, subprocess.TimeoutExpired, FileNotFoundError):
             continue
-    # Also scrape T-* from stdout if JSON didn't work
-    if not ids:
+
+    # Last-resort: scrape T-* from stdout if JSON parsing didn't yield any IDs.
+    if not tasks_by_id:
         try:
             cmd = argv0 + [
                 "-tool",
@@ -147,33 +161,43 @@ def get_non_done_ids(root: str) -> set[str]:
             )
             for line in (out.stdout or "").splitlines():
                 for m in re.finditer(r"T-\d+", line):
-                    ids.add(m.group(0))
+                    tasks_by_id.setdefault(m.group(0), set())
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
-    return ids
+
+    return tasks_by_id
+
+
+def parse_args(argv: list[str]) -> tuple[int, int, list[str], bool]:
+    parser = ArgumentParser(add_help=True)
+    parser.add_argument("wave_index", type=int, help="0, 1, or 2")
+    parser.add_argument("batch_size", nargs="?", type=int, default=15)
+    parser.add_argument(
+        "--tag",
+        dest="tags",
+        action="append",
+        default=[],
+        help="Prefer batching tasks that include this tag (repeatable). Example: --tag tui",
+    )
+    parser.add_argument(
+        "--strict-tag",
+        action="store_true",
+        help="If set, only include tasks that match --tag in the batch (may yield smaller batch).",
+    )
+    ns = parser.parse_args(argv)
+    tags = [t.strip().lower() for t in (ns.tags or []) if t and t.strip()]
+    return ns.wave_index, ns.batch_size, tags, bool(ns.strict_tag)
 
 
 def main() -> int:
     root = repo_root()
-    if len(sys.argv) < 2:
-        print("Usage: parallel_wave_remaining.py <wave_index> [batch_size]", file=sys.stderr)
-        print("  wave_index: 0, 1, or 2", file=sys.stderr)
-        print("  batch_size: default 15", file=sys.stderr)
-        return 1
     try:
-        wave_index = int(sys.argv[1])
-    except ValueError:
-        print("wave_index must be 0, 1, or 2", file=sys.stderr)
+        wave_index, batch_size, prefer_tags, strict_tag = parse_args(sys.argv[1:])
+    except SystemExit:
         return 1
     if wave_index not in (0, 1, 2):
         print("wave_index must be 0, 1, or 2", file=sys.stderr)
         return 1
-    batch_size = 15
-    if len(sys.argv) > 2:
-        try:
-            batch_size = int(sys.argv[2])
-        except ValueError:
-            pass
     wave_key = str(wave_index)
     waves = load_waves(root)
     if wave_key not in waves:
@@ -184,17 +208,35 @@ def main() -> int:
         return 1
     wave_list = waves[wave_key]
     wave_ids = set(wave_list)
-    non_done = get_non_done_ids(root)
-    remaining = [x for x in wave_list if x in non_done]
-    if not non_done and wave_ids:
+    non_done_tasks = get_non_done_tasks(root)
+    remaining = [x for x in wave_list if x in non_done_tasks]
+    if not non_done_tasks and wave_ids:
         print("Could not get Todo/In Progress from exarp-go. Wave IDs for manual intersect:", file=sys.stderr)
         print(" ".join(waves[wave_key]), file=sys.stderr)
         print("Run: exarp-go task list --status Todo (or use MCP task_workflow list) and intersect.", file=sys.stderr)
     print(f"# Wave {wave_index} remaining: {len(remaining)}")
     for tid in remaining:
         print(tid)
-    batch = remaining[:batch_size]
-    print(f"\n# Next batch (first {len(batch)}):")
+
+    batch: list[str] = []
+    if prefer_tags:
+        tagged = [
+            tid
+            for tid in remaining
+            if any(tag in non_done_tasks.get(tid, set()) for tag in prefer_tags)
+        ]
+        if strict_tag:
+            batch = tagged[:batch_size]
+        else:
+            untagged = [tid for tid in remaining if tid not in set(tagged)]
+            batch = (tagged + untagged)[:batch_size]
+    else:
+        batch = remaining[:batch_size]
+
+    suffix = ""
+    if prefer_tags:
+        suffix = f" (prefer tags: {', '.join(prefer_tags)}{'; strict' if strict_tag else ''})"
+    print(f"\n# Next batch (first {len(batch)}){suffix}:")
     for tid in batch:
         print(tid)
     return 0

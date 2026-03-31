@@ -19,6 +19,9 @@ Execute tasks from the parallel-execution plan in waves. Progress is Todo2-only:
 2. **Get non-Done tasks** — Remaining = wave IDs ∩ (Todo + In Progress from Todo2).
    - **Option A (MCP/CLI):** `task_workflow` with `action=list`, `status_filter=Todo`, then again `status_filter=In Progress`. Run through the repo wrapper (`./scripts/run_exarp_go.sh -tool task_workflow -args '<json>'` or the equivalent MCP call) so the CLI sees this project’s root. Union the returned task IDs, then intersect with the wave’s IDs.
    - **Option B (script):** From repo root: `python3 scripts/parallel_wave_remaining.py <wave_index> [batch_size]` (wave_index: 0, 1, or 2; batch_size default 15). Prints remaining and next batch.
+     - To reduce context switching, you can prefer batching tasks by component tags (repeatable): `--tag tui`, `--tag cli`, `--tag backend`, etc.
+     - Example: `python3 scripts/parallel_wave_remaining.py 0 12 --tag cli`
+     - If you want a batch that contains *only* matching tasks (may be smaller than batch_size): add `--strict-tag`.
 3. If remaining is empty for current wave, advance to next wave (1, then 2) and repeat.
 
 ## Run the next batch
