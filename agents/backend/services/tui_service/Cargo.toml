@@ -42,7 +42,7 @@ log = "0.4"
 tui-tree-widget = "0.24"
 
 # Protobuf types (for timestamp conversion)
-prost-types = "0.13"
+prost-types = "0.14"
 
 # Async utilities
 futures = { workspace = true }
