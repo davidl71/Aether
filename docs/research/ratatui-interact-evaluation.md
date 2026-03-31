@@ -1,7 +1,7 @@
 # ratatui-interact Evaluation for Aether TUI
 
 **Date**: March 2026  
-**Status**: Evaluation in Progress  
+**Status**: Complete (research + recommendation)  
 **Tasks**: T-1774479830564215000 (original), **T-1774862718741621000** (research + recommendation; implementation out of scope per task)
 
 ---
@@ -347,5 +347,9 @@ fn handle_key(app: &mut App, key: KeyEvent) -> Option<Action> {
 
 ## Links
 
-- ratatui-interact: https://github.com/Brainwires/ratatui-interact
+- ratatui-interact (repo): https://github.com/Brainwires/ratatui-interact
+- ratatui-interact (crates.io): https://crates.io/crates/ratatui-interact
+- ratatui (repo): https://github.com/ratatui/ratatui
+- tui-tree-widget (crates.io): https://crates.io/crates/tui-tree-widget
+- tui-input (crates.io): https://crates.io/crates/tui-input
 - Current TUI audit: docs/TUI_AUDIT_2026_03_24.md

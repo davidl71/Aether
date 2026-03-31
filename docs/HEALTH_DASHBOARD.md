@@ -50,7 +50,10 @@ distinct signals instead of collapsing them into one label.
 - `system.health` should represent long-lived service/process liveness and coarse degraded/error state.
   It should not be overloaded with provider selection, mock/demo mode, or snapshot-derived metrics that
   already belong to the snapshot/read-model path.
-- NATS transport health belongs in the aggregate health DTO, not in the TUI or snapshot read model.
-  The TUI should render both service health and transport health, but not derive them itself.
+- NATS transport health should be **produced** by Rust services and **rendered** by clients, not derived in
+  the TUI. Today it is surfaced in two distinct places:
+  - the health aggregate (`GET /api/health-aggregated`) as `transport` for the backend’s `system.health`
+    subscription
+  - the snapshot payload (`SystemSnapshot.nats_transport`) as publisher-side telemetry when present
 - Freshness is a separate concern from status. The TUI should read service severity from the health
   payload and stale age from the aggregate annotations instead of inferring one from the other.

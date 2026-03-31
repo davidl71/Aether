@@ -15,6 +15,9 @@
 
 Helper: `topics::snapshot::backend(id)`, `topics::snapshot::all()`.
 
+Note: `SystemSnapshot` may include optional `nats_transport` telemetry (publisher-side) when the backend
+populates it; transport health for the `system.health` subscription is exposed via the health aggregate.
+
 ---
 
 ## Backend RPC subjects (`api.*`)
