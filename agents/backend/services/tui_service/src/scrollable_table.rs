@@ -4,6 +4,34 @@
 //! [`ScrollableTableState::scroll`] field is the first visible row when implementing a viewport.
 //! Alerts use [`ScrollableTableState::shift_scroll`] on `scroll` only (paragraph-style list).
 
+/// Clamp a possibly-out-of-range selected index to a list length.
+///
+/// Returns 0 when `len == 0`, otherwise `min(index, len - 1)`.
+pub fn clamp_index(index: usize, len: usize) -> usize {
+    if len == 0 {
+        0
+    } else {
+        index.min(len - 1)
+    }
+}
+
+/// Compute a viewport start offset that keeps `cursor` roughly centered.
+///
+/// `cursor` should already be clamped to `len`.
+pub fn centered_viewport_start(cursor: usize, len: usize, visible_height: usize) -> usize {
+    if len == 0 {
+        return 0;
+    }
+    let visible = visible_height.max(1).min(len);
+    if len <= visible {
+        0
+    } else {
+        cursor
+            .saturating_sub(visible / 2)
+            .min(len.saturating_sub(visible))
+    }
+}
+
 /// Selection index and optional viewport offset for tabular / list panes.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ScrollableTableState {

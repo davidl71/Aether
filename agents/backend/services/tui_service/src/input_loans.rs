@@ -1,3 +1,8 @@
+//! Loans tab input: list navigation plus loan entry/import overlays.
+//!
+//! Keeps the loans form + import-path state transitions isolated from the rest of the
+//! input router.
+
 use std::path::PathBuf;
 
 use crossterm::event::KeyCode;

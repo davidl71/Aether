@@ -68,6 +68,12 @@ pub fn pane_spec(tab: Tab) -> PaneSpec {
             title: "Bank",
             hint_mode: PaneHintMode::None,
         },
+        Tab::Ledger => PaneSpec {
+            tab,
+            label: "Ledg",
+            title: "Ledger",
+            hint_mode: PaneHintMode::None,
+        },
         Tab::Scenarios => PaneSpec {
             tab,
             label: "Scen",

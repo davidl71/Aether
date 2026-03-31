@@ -1,5 +1,16 @@
-use crate::app::{App, CommandStatusView, DetailPopupContent, Tab};
+//! View-level actions that mutate scroll/selection or open overlays.
+//!
+//! This is the shared implementation for actions that apply across multiple tabs
+//! (Orders, Alerts, Dashboard, Scenarios, etc.) once the input router has decided
+//! an [`Action`].
+
+use crate::app::{App, DetailPopupContent, Tab};
 use crate::input::Action;
+
+fn clamp_filtered_orders_selection(app: &mut App) {
+    let len = app.filtered_orders_len();
+    app.orders_table.clamp_to_len(len);
+}
 
 pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
     match action {
@@ -32,31 +43,28 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
         }
         Action::OrdersFilterFocus => {
             app.order_filter_active = true;
-            app.set_command_status(CommandStatusView::success(
+            app.command_success(
                 "orders_filter",
                 "Filter mode active: type symbol, status, or side; Esc to exit.",
-            ));
+            );
         }
         Action::OrdersFilterChar(c) => {
             app.order_filter_active = true;
             app.order_filter.push(c);
-            app.orders_table.clamp_to_len(app.filtered_orders_len());
+            clamp_filtered_orders_selection(app);
         }
         Action::OrdersFilterBackspace => {
             app.order_filter.pop();
-            app.orders_table.clamp_to_len(app.filtered_orders_len());
+            clamp_filtered_orders_selection(app);
         }
         Action::OrdersFilterClear => {
             app.order_filter.clear();
             app.order_filter_active = false;
-            app.orders_table.clamp_to_len(app.filtered_orders_len());
-            app.set_command_status(CommandStatusView::success(
-                "orders_filter",
-                "Filter cleared.",
-            ));
+            clamp_filtered_orders_selection(app);
+            app.command_success("orders_filter", "Filter cleared.");
         }
         Action::OrdersCancel => {
-            app.set_command_status(CommandStatusView::disabled("cancel_all"));
+            app.command_disabled("cancel_all");
         }
         Action::AlertsScrollUp => {
             let len = crate::ui::alerts::alert_lines(app).len();
@@ -132,7 +140,7 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
             app.scenarios_dte_half_width = (app.scenarios_dte_half_width + 1).min(60);
         }
         Action::ScenariosExecute => {
-            app.set_command_status(CommandStatusView::disabled("scenario_run"));
+            app.command_disabled("scenario_run");
         }
         Action::ScenariosCycleStrikeWidth => {
             app.scenarios_strike_width_filter = match app.scenarios_strike_width_filter {
@@ -141,6 +149,39 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
                 Some(50) => Some(100),
                 Some(_) => None,
             };
+        }
+        Action::LedgerScrollUp => {
+            app.ledger_table.move_up();
+        }
+        Action::LedgerScrollDown => {
+            let len = app
+                .ledger_journal
+                .as_ref()
+                .and_then(|r| r.as_ref().ok())
+                .map(|j| j.entries.len())
+                .unwrap_or(0);
+            app.ledger_table.move_down(len);
+        }
+        Action::LedgerScrollPageUp => {
+            let len = app
+                .ledger_journal
+                .as_ref()
+                .and_then(|r| r.as_ref().ok())
+                .map(|j| j.entries.len())
+                .unwrap_or(0);
+            app.ledger_table.shift_selected(-10, len);
+        }
+        Action::LedgerScrollPageDown => {
+            let len = app
+                .ledger_journal
+                .as_ref()
+                .and_then(|r| r.as_ref().ok())
+                .map(|j| j.entries.len())
+                .unwrap_or(0);
+            app.ledger_table.shift_selected(10, len);
+        }
+        Action::LedgerRefresh => {
+            app.request_ledger_fetch();
         }
         Action::ChartSearchFocus => {
             app.chart_search_visible = true;

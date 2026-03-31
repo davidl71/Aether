@@ -13,9 +13,6 @@ use tracing::{debug, info, warn};
 
 use crate::shared_state::SharedSnapshot;
 
-/// Prefix for market-data tick subjects; batching applies only to subjects matching this.
-const MARKET_DATA_TICK_PREFIX: &str = "market-data.tick";
-
 #[derive(Clone)]
 struct CollectionConfig {
     nats_url: String,
@@ -62,9 +59,11 @@ pub fn spawn_collection_aggregator(snapshot: SharedSnapshot, nats_url: Option<St
                                 let runtime = runtime.clone();
                                 let subject = subject.clone();
                                 let snapshot = snapshot.clone();
+                                let market_data_tick_prefix =
+                                    nats_adapter::topics::market_data::tick_prefix();
                                 let use_batch = tick_batch_ms > 0
-                                    && (subject.starts_with(MARKET_DATA_TICK_PREFIX)
-                                        || subject == MARKET_DATA_TICK_PREFIX);
+                                    && (subject.starts_with(market_data_tick_prefix)
+                                        || subject == market_data_tick_prefix);
                                 tasks.push(tokio::spawn(async move {
                                     match client.subscribe(subject.clone()).await {
                                         Ok(mut subscriber) => {

@@ -127,20 +127,36 @@ impl DirtyFlags {
 macro_rules! mark_dirty_for_action {
     ($flags:expr, TabNext | TabPrev | JumpToTab(_)) => {
         $flags.mark_tabs();
-        $flags.mark_content();
+        $flags.mark_content()
     };
     ($flags:expr, PositionsScrollUp | PositionsScrollDown | PositionsScrollPageUp | PositionsScrollPageDown) => {
-        $flags.mark_content();
+        $flags.mark_content()
     };
     ($flags:expr, OrdersScrollUp | OrdersScrollDown | OrdersScrollPageUp | OrdersScrollPageDown) => {
+        $flags.mark_content()
+    };
+    ($flags:expr, YieldSymbolPrev | YieldSymbolNext | YieldCurveScrollUp | YieldCurveScrollDown | YieldRefresh) => {
+        $flags.mark_content()
+    };
+    ($flags:expr, LoansScrollUp | LoansScrollDown | LoansScrollPageUp | LoansScrollPageDown | DiscountBankScrollUp | DiscountBankScrollDown | DiscountBankScrollPageUp | DiscountBankScrollPageDown | LedgerScrollUp | LedgerScrollDown | LedgerScrollPageUp | LedgerScrollPageDown | LedgerRefresh | AlertsScrollUp | AlertsScrollDown | AlertsScrollPageUp | AlertsScrollPageDown | DashboardScrollUp | DashboardScrollDown | ScenariosScrollUp | ScenariosScrollDown | ScenariosScrollPageUp | ScenariosScrollPageDown) => {
+        $flags.mark_content()
+    };
+    ($flags:expr, MouseScrollUp | MouseScrollDown | MouseScrollUpIn(_) | MouseScrollDownIn(_)) => {
+        $flags.mark_content()
+    };
+    ($flags:expr, PositionsToggleCombo | PositionsCycleSort | OrdersFilterFocus | OrdersFilterChar(_) | OrdersFilterBackspace | OrdersFilterClear) => {
         $flags.mark_content();
+        $flags.mark_hint_bar()
+    };
+    ($flags:expr, ToggleLogPanel | ToggleTreePanel) => {
+        $flags.mark_overlay()
     };
     ($flags:expr, ShowHelp | DetailPopup | CommandPalette) => {
-        $flags.mark_overlay();
+        $flags.mark_overlay()
     };
     ($flags:expr, $_:expr) => {
         // Default: mark everything dirty for unknown actions
-        $flags.mark_all();
+        $flags.mark_all()
     };
 }
 

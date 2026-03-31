@@ -15,7 +15,7 @@
 
 use bytes::Bytes;
 use chrono::Utc;
-use market_data::yield_curve::YahooYieldCurveSource;
+use market_data::yield_curve::{PolygonYieldCurveSource, YahooYieldCurveSource};
 use nats_adapter::async_nats::Client;
 use nats_adapter::NatsClient;
 use serde::Deserialize;
@@ -274,15 +274,13 @@ pub fn spawn(
     }
     let (tx, mut rx) = tokio::sync::mpsc::channel::<()>(4);
     let interval = Duration::from_secs(interval_secs);
-    let source_tws = config_source
-        .as_deref()
-        .map(|s| s.trim().to_lowercase() == "tws")
-        .or_else(|| {
-            std::env::var(SOURCE_ENV)
-                .ok()
-                .map(|s| s.trim().to_lowercase() == "tws")
-        })
-        .unwrap_or(false);
+    let source = config_source
+        .or_else(|| std::env::var(SOURCE_ENV).ok())
+        .unwrap_or_default()
+        .trim()
+        .to_lowercase();
+    let source_tws = source == "tws";
+    let source_polygon = source == "polygon";
     let source_url = if source_tws {
         None
     } else {
@@ -317,6 +315,8 @@ pub fn spawn(
         };
         let source_desc = if source_tws {
             "tws"
+        } else if source_polygon {
+            "polygon"
         } else {
             source_url.as_deref().unwrap_or("synthetic")
         };
@@ -347,6 +347,7 @@ pub fn spawn(
             symbols: &[String],
             source_url: Option<&str>,
             source_tws: bool,
+            source_polygon: bool,
         ) {
             if source_tws {
                 for symbol in symbols {
@@ -366,6 +367,63 @@ pub fn spawn(
                         Err(e) => {
                             warn!(%symbol, error = %e, "yield curve writer: TWS fetch failed")
                         }
+                    }
+                }
+                return;
+            }
+            if source_polygon {
+                let polygon = match PolygonYieldCurveSource::from_env() {
+                    Ok(p) => p,
+                    Err(e) => {
+                        debug!(error = %e, "yield curve writer: Polygon source unavailable, using synthetic");
+                        let live_bench = live_synthetic_benchmark_rate().await;
+                        for sym in symbols {
+                            let key = format!("{}.{}", KEY_PREFIX, sym);
+                            let payload = serde_json::to_vec(&synthetic_opportunities(sym, live_bench))
+                                .unwrap_or_default();
+                            if let Err(e) = kv.put(key.as_str(), Bytes::from(payload)).await {
+                                warn!(%key, error = %e, "yield curve writer: put failed");
+                            }
+                        }
+                        return;
+                    }
+                };
+
+                for sym in symbols {
+                    match polygon.fetch_yield_curve(sym).await {
+                        Ok(curve) if !curve.points.is_empty() => {
+                            let opps: Vec<Value> = curve
+                                .points
+                                .iter()
+                                .map(|p| {
+                                    json!({
+                                        "spread": {
+                                            "symbol": curve.symbol,
+                                            "expiry": p.expiry.format("%Y-%m-%d").to_string(),
+                                            "days_to_expiry": p.dte,
+                                            "strike_width": p.strike_width,
+                                            "strike_low": p.strike_low,
+                                            "strike_high": p.strike_high,
+                                            "buy_implied_rate": p.buy_implied_rate,
+                                            "sell_implied_rate": p.sell_implied_rate,
+                                            "net_debit": p.net_debit,
+                                            "net_credit": p.net_credit,
+                                            "liquidity_score": p.liquidity_score,
+                                        },
+                                        "data_source": "polygon"
+                                    })
+                                })
+                                .collect();
+                            let key = format!("{}.{}", KEY_PREFIX, sym);
+                            let payload = serde_json::to_vec(&opps).unwrap_or_default();
+                            if let Err(e) = kv.put(key.as_str(), Bytes::from(payload)).await {
+                                warn!(%key, error = %e, "yield curve writer: put failed");
+                            } else {
+                                debug!(%key, points = opps.len(), "yield curve writer: wrote (Polygon JSON)");
+                            }
+                        }
+                        Ok(_) => debug!(symbol = %sym, "yield curve writer: Polygon returned empty, using synthetic"),
+                        Err(e) => debug!(symbol = %sym, error = %e, "yield curve writer: Polygon failed, using synthetic"),
                     }
                 }
                 return;
@@ -452,17 +510,38 @@ pub fn spawn(
         }
 
         // Pre-populate immediately so the Yield tab has data without waiting for first interval.
-        write_cycle(&kv, &symbols, source_url.as_deref(), source_tws).await;
+        write_cycle(
+            &kv,
+            &symbols,
+            source_url.as_deref(),
+            source_tws,
+            source_polygon,
+        )
+        .await;
 
         let mut interval_tick = tokio::time::interval(interval);
         interval_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         loop {
             tokio::select! {
                 _ = interval_tick.tick() => {
-                    write_cycle(&kv, &symbols, source_url.as_deref(), source_tws).await;
+                    write_cycle(
+                        &kv,
+                        &symbols,
+                        source_url.as_deref(),
+                        source_tws,
+                        source_polygon,
+                    )
+                    .await;
                 }
                 _ = rx.recv() => {
-                    write_cycle(&kv, &symbols, source_url.as_deref(), source_tws).await;
+                    write_cycle(
+                        &kv,
+                        &symbols,
+                        source_url.as_deref(),
+                        source_tws,
+                        source_polygon,
+                    )
+                    .await;
                 }
             }
         }

@@ -167,6 +167,7 @@ impl App {
     /// Pull latest snapshot and config updates, process queued events.
     /// Returns true if the UI state changed and needs redraw.
     pub fn tick(&mut self) {
+        self.tick_spinner_frame();
         if self.toast_manager.cleanup_expired() {
             self.mark_regions(|d| d.mark_overlay());
         }
@@ -309,7 +310,24 @@ impl App {
                 message,
                 timestamp,
             } => {
+                let level_for_toast = level.clone();
                 self.apply_alert(level, message, timestamp);
+                // Make warnings/errors visible immediately without forcing the user into Alerts/Logs.
+                // ToastManager dedupes identical messages, so repeated failures refresh TTL instead of spamming.
+                if matches!(
+                    level_for_toast,
+                    api::AlertLevel::Warning | api::AlertLevel::Error
+                ) {
+                    let (lvl, label) = match level_for_toast {
+                        api::AlertLevel::Error => (ToastLevel::Error, "Alert"),
+                        _ => (ToastLevel::Warning, "Alert"),
+                    };
+                    if let Some(snap) = self.snapshot() {
+                        if let Some(last) = snap.inner.alerts.last() {
+                            self.push_toast(format!("{label}: {}", last.message), lvl);
+                        }
+                    }
+                }
             }
             AppEvent::YieldCurveKvUpdate {
                 symbol,

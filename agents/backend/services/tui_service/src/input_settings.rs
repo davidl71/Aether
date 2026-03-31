@@ -1,8 +1,13 @@
+//! Settings tab input: navigation, edit/add flows, and credential entry helpers.
+//!
+//! This module translates key presses into [`Action`]s and applies settings-specific
+//! mutations that don't belong in `app.rs`.
+
 use crossterm::event::KeyCode;
 
 use api::credentials;
 
-use crate::app::{App, CommandStatusView};
+use crate::app::App;
 use crate::input::Action;
 use crate::ui::settings::{
     alpaca_credential_key_for_row, credential_key_for_sources_row, ALPACA_CREDENTIAL_ROW_COUNT,
@@ -150,10 +155,7 @@ pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
                 return true;
             }
             app.settings_add_symbol_input = Some(String::new());
-            app.set_command_status(CommandStatusView::success(
-                "settings",
-                "Add symbol mode active.",
-            ));
+            app.command_success("settings", "Add symbol mode active.");
         }
         Action::SettingsSectionPrev => {
             app.settings_section = app.settings_section.prev();
@@ -179,10 +181,7 @@ pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
                 let existing = credentials::get_credential(ck).unwrap_or_default();
                 app.settings_credential_edit_key = Some(ck);
                 app.settings_credential_buffer = Some(existing);
-                app.set_command_status(CommandStatusView::success(
-                    "settings",
-                    "Credential edit (Enter save, Esc cancel).",
-                ));
+                app.command_success("settings", "Credential edit (Enter save, Esc cancel).");
             }
             return true;
         }

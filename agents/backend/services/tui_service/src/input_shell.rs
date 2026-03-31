@@ -1,6 +1,11 @@
+//! Global keybindings and non-tab-specific actions (quit/help/palette/overlays).
+//!
+//! Think of this as the "shell" layer: bindings that are meaningful regardless of
+//! which tab is active, plus a few global no-op/disabled actions in exploration mode.
+
 use crossterm::event::KeyCode;
 
-use crate::app::{App, CommandStatusView, InputMode, Tab};
+use crate::app::{App, InputMode, Tab};
 use crate::input::Action;
 
 pub(crate) fn global_key_action(input_mode: InputMode, key: KeyCode) -> Option<Action> {
@@ -20,10 +25,10 @@ pub(crate) fn global_key_action(input_mode: InputMode, key: KeyCode) -> Option<A
 
 pub(crate) fn shell_key_action(app: &App, key: KeyCode) -> Option<Action> {
     match key {
-        KeyCode::Tab if workspace_focus_target(app, true).is_some() => {
+        KeyCode::Tab if app.workspace_focus_target(true).is_some() => {
             Some(Action::WorkspaceFocusNext)
         }
-        KeyCode::BackTab if workspace_focus_target(app, false).is_some() => {
+        KeyCode::BackTab if app.workspace_focus_target(false).is_some() => {
             Some(Action::WorkspaceFocusPrev)
         }
         KeyCode::Tab => Some(Action::TabNext),
@@ -98,7 +103,7 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
                 6 => Tab::Yield,
                 7 => Tab::Loans,
                 8 => Tab::DiscountBank,
-                9 => Tab::Scenarios,
+                9 => Tab::Ledger,
                 0 => Tab::Settings,
                 _ => app.active_tab,
             };
@@ -111,7 +116,7 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
             );
         }
         Action::CommandPalette => {
-            app.command_palette.toggle();
+            app.command_palette.toggle(app.app_mode, app.active_tab);
         }
         Action::CommandPalettePrev => {
             app.command_palette.select_prev();
@@ -120,22 +125,23 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
             app.command_palette.select_next();
         }
         Action::CommandPaletteBackspace => {
-            app.command_palette.backspace();
+            app.command_palette.backspace(app.app_mode, app.active_tab);
         }
         Action::CommandPaletteChar(c) => {
-            app.command_palette.push_char(c);
+            app.command_palette
+                .push_char(c, app.app_mode, app.active_tab);
         }
         Action::StrategyStart => {
-            app.set_command_status(CommandStatusView::disabled("start"));
+            app.command_disabled("start");
         }
         Action::StrategyStop => {
-            app.set_command_status(CommandStatusView::disabled("stop"));
+            app.command_disabled("stop");
         }
         Action::StrategyCancelAll => {
-            app.set_command_status(CommandStatusView::disabled("cancel_all"));
+            app.command_disabled("cancel_all");
         }
         Action::ForceSnapshot => {
-            app.set_command_status(CommandStatusView::disabled("publish_snapshot"));
+            app.command_disabled("publish_snapshot");
         }
         Action::FmpDetail => {
             let symbol = if app.active_tab == Tab::Dashboard {
@@ -175,12 +181,12 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
             app.positions_table.reset();
         }
         Action::WorkspaceFocusPrev => {
-            if let Some(target) = workspace_focus_target(app, false) {
+            if let Some(target) = app.workspace_focus_target(false) {
                 set_active_tab(app, target);
             }
         }
         Action::WorkspaceFocusNext => {
-            if let Some(target) = workspace_focus_target(app, true) {
+            if let Some(target) = app.workspace_focus_target(true) {
                 set_active_tab(app, target);
             }
         }
@@ -189,21 +195,15 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
     true
 }
 
-fn workspace_focus_target(app: &App, forward: bool) -> Option<Tab> {
-    let tabs = app.visible_workspace_spec()?.tabs;
-    let index = tabs.iter().position(|tab| *tab == app.active_tab)?;
-    let next = if forward {
-        (index + 1) % tabs.len()
-    } else {
-        (index + tabs.len() - 1) % tabs.len()
-    };
-    tabs.get(next).copied()
-}
-
 fn set_active_tab(app: &mut App, tab: Tab) {
     app.active_tab = tab;
     if app.active_tab != Tab::Loans {
         app.loan_import_path = None;
+    }
+    // Like the Loans import overlay, the Orders filter "typing mode" should not
+    // stay active when the user navigates away from the Orders tab.
+    if app.active_tab != Tab::Orders {
+        app.order_filter_active = false;
     }
     if app.active_tab == Tab::Yield {
         app.sync_yield_curve_from_cache();
@@ -211,5 +211,7 @@ fn set_active_tab(app: &mut App, tab: Tab) {
         app.request_loans_fetch_if_uncached();
     } else if app.active_tab == Tab::DiscountBank {
         app.request_discount_bank_fetch();
+    } else if app.active_tab == Tab::Ledger {
+        app.request_ledger_fetch();
     }
 }

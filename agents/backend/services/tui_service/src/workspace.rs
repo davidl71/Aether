@@ -20,6 +20,19 @@ pub struct WorkspaceSpec {
     pub hint_label: &'static str,
 }
 
+impl WorkspaceSpec {
+    pub fn focus_target(self, active_tab: Tab, forward: bool) -> Option<Tab> {
+        let tabs = self.tabs;
+        let index = tabs.iter().position(|tab| *tab == active_tab)?;
+        let next = if forward {
+            (index + 1) % tabs.len()
+        } else {
+            (index + tabs.len() - 1) % tabs.len()
+        };
+        tabs.get(next).copied()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SettingsSection {
     Health,

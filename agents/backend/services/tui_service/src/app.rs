@@ -1,4 +1,9 @@
 //! Application state and event dispatch.
+//!
+//! High-level code map:
+//! - `app.rs`: state, derived UI helpers, and `handle_key`/`handle_action` entry points
+//! - `input*.rs`: key routing → [`crate::input::Action`] and per-surface state transitions
+//! - `ui/mod.rs`: ratatui layout and per-tab render delegation (reads `App`)
 
 use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -6,6 +11,7 @@ use std::time::Instant;
 
 use api::discount_bank::{DiscountBankBalanceDto, DiscountBankTransactionsListDto};
 use api::finance_rates::{BenchmarksResponse, CurveResponse, RatePointResponse};
+use api::ledger_journal::LedgerJournalListDto;
 use api::loans::{LoanRecord, LoansBulkImportResponse};
 use api::{
     Alert, BackendHealthState, CommandReply, CommandStatus, NatsTransportHealthState,
@@ -78,6 +84,7 @@ pub enum Tab {
     Yield,
     Loans,
     DiscountBank,
+    Ledger,
     Scenarios,
     Logs,
     Settings,
@@ -133,6 +140,7 @@ pub enum InputMode {
     Normal,
     Help,
     DetailPopup,
+    CommandPalette,
     SettingsEditConfig,
     SettingsAddSymbol,
     SettingsCredentialEntry,
@@ -402,6 +410,7 @@ impl Tab {
         Tab::Yield,
         Tab::Loans,
         Tab::DiscountBank,
+        Tab::Ledger,
         Tab::Scenarios,
         Tab::Settings,
     ];
@@ -584,6 +593,8 @@ pub struct App {
     pub market_open: Option<bool>,
     /// Tick counter for periodic market-hours check (resets at MARKET_CHECK_INTERVAL_TICKS).
     market_open_tick: u32,
+    /// Spinner frame index for animated status indicators (loading badges, reconnecting states).
+    pub spinner_frame: usize,
     /// Cached loans list (`api.loans.list`). Refreshed after NATS outcomes (fetch/create/import);
     /// tab navigation uses [`Self::request_loans_fetch_if_uncached`] to avoid redundant fetches.
     pub loans_list: Option<Result<Vec<LoanRecord>, String>>,
@@ -613,8 +624,18 @@ pub struct App {
     pub discount_bank_table: ScrollableTableState,
     /// Sender to trigger Discount Bank fetch; None when not wired.
     pub discount_bank_fetch_tx: Option<mpsc::UnboundedSender<()>>,
+    /// Cached ledger journal entries (`api.ledger.journal`).
+    pub ledger_journal: Option<Result<LedgerJournalListDto, String>>,
+    /// True while a ledger fetch is in flight.
+    pub ledger_fetch_pending: bool,
+    /// Ledger tab: selected row.
+    pub ledger_table: ScrollableTableState,
+    /// Sender to trigger ledger fetch; None when not wired.
+    pub ledger_fetch_tx: Option<mpsc::UnboundedSender<()>>,
     /// Sender to trigger FMP quote+fundamentals fetch (symbol string); None when not wired.
     pub fmp_fetch_tx: Option<mpsc::UnboundedSender<String>>,
+    /// True while an FMP fetch is in flight (prevents repeated requests on slow surfaces).
+    pub fmp_fetch_pending: bool,
     /// Sender to trigger greeks fetch for an option position; None when not wired.
     pub greeks_fetch_tx: Option<mpsc::UnboundedSender<GreeksFetchRequest>>,
     /// Latest metadata from the live market-data tick stream (source, priority, age).
@@ -654,6 +675,7 @@ impl App {
         fmp_fetch_tx: Option<mpsc::UnboundedSender<String>>,
         greeks_fetch_tx: Option<mpsc::UnboundedSender<GreeksFetchRequest>>,
         discount_bank_fetch_tx: Option<mpsc::UnboundedSender<()>>,
+        ledger_fetch_tx: Option<mpsc::UnboundedSender<()>>,
     ) -> Self {
         let config_warning = validate_config_hint(&config);
         let split_pane = config.split_pane;
@@ -735,6 +757,7 @@ impl App {
             yield_refresh_tx,
             market_open: None,
             market_open_tick: 0,
+            spinner_frame: 0,
             loans_list: None,
             loans_fetch_pending: false,
             loans_bulk_import_inflight: false,
@@ -749,7 +772,12 @@ impl App {
             discount_bank_fetch_pending: false,
             discount_bank_table: ScrollableTableState::default(),
             discount_bank_fetch_tx,
+            ledger_journal: None,
+            ledger_fetch_pending: false,
+            ledger_table: ScrollableTableState::default(),
+            ledger_fetch_tx,
             fmp_fetch_tx,
+            fmp_fetch_pending: false,
             greeks_fetch_tx,
             live_market_data_source: None,
             market_data_sources: HashMap::new(),
@@ -766,6 +794,25 @@ impl App {
         }
     }
 
+    /// Set ledger journal data from NATS fetch.
+    pub fn set_ledger_journal(&mut self, journal: Result<LedgerJournalListDto, String>) {
+        self.ledger_fetch_pending = false;
+        self.ledger_journal = Some(journal);
+        self.mark_regions(|d| d.mark_content());
+    }
+
+    /// Request a ledger journal fetch (no-op if already in flight or tx not wired).
+    pub fn request_ledger_fetch(&mut self) {
+        if self.ledger_fetch_pending {
+            return;
+        }
+        if let Some(ref tx) = self.ledger_fetch_tx {
+            if tx.send(()).is_ok() {
+                self.ledger_fetch_pending = true;
+            }
+        }
+    }
+
     pub fn mark_dirty(&mut self) {
         self.needs_redraw = true;
         self.dirty_flags.mark_all();
@@ -775,6 +822,27 @@ impl App {
     pub fn mark_regions(&mut self, update: impl FnOnce(&mut crate::dirty_flags::DirtyFlags)) {
         self.needs_redraw = true;
         update(&mut self.dirty_flags);
+    }
+
+    fn tick_spinner_frame(&mut self) {
+        let animating = self.yield_refresh_pending
+            || self.loans_fetch_pending
+            || matches!(
+                self.nats_status.state,
+                crate::events::ConnectionState::Starting | crate::events::ConnectionState::Retrying
+            );
+        if !animating {
+            if self.spinner_frame != 0 {
+                self.spinner_frame = 0;
+            }
+            return;
+        }
+
+        self.spinner_frame = self.spinner_frame.wrapping_add(1);
+        self.mark_regions(|d| {
+            d.mark_hint_bar();
+            d.mark_status_bar();
+        });
     }
 
     /// Returns a reference to the current snapshot (for rendering).
@@ -813,6 +881,11 @@ impl App {
         self.visible_workspace().spec()
     }
 
+    pub fn workspace_focus_target(&self, forward: bool) -> Option<Tab> {
+        let spec = self.visible_workspace_spec()?;
+        spec.focus_target(self.active_tab, forward)
+    }
+
     pub fn secondary_focus(&self) -> SecondaryFocus {
         match self.active_tab {
             Tab::Settings => match self.settings_section {
@@ -843,6 +916,8 @@ impl App {
             InputMode::Help
         } else if self.detail_popup.is_some() {
             InputMode::DetailPopup
+        } else if self.command_palette.visible {
+            InputMode::CommandPalette
         } else if self.settings_credential_buffer.is_some() {
             InputMode::SettingsCredentialEntry
         } else if self.settings_add_symbol_input.is_some() {
@@ -868,6 +943,18 @@ impl App {
         }
     }
 
+    /// Recompute `config` from the last disk/env base config plus in-TUI overrides.
+    ///
+    /// This keeps override application centralized, since `config_rx` is private and
+    /// several input actions need to tweak operator-facing knobs (e.g. sort modes)
+    /// without duplicating merge logic.
+    pub fn reapply_config_overrides(&mut self) {
+        let base = self.config_rx.borrow().clone();
+        self.config = merge_config_overrides(base, &self.config_overrides);
+        self.config_warning = validate_config_hint(&self.config);
+        self.split_pane = self.config.split_pane;
+    }
+
     /// Map focus/input surface to high-level [`AppMode`] (single place for routing and tests).
     pub fn app_mode_for_input_mode(input_mode: InputMode) -> AppMode {
         match input_mode {
@@ -877,7 +964,8 @@ impl App {
             | InputMode::LoanForm
             | InputMode::LoanImportPath
             | InputMode::ChartSearch
-            | InputMode::OrdersFilter => AppMode::Edit,
+            | InputMode::OrdersFilter
+            | InputMode::CommandPalette => AppMode::Edit,
             InputMode::Help
             | InputMode::DetailPopup
             | InputMode::LogPanel
@@ -1057,6 +1145,7 @@ impl App {
 
     /// Apply incoming FMP data result.
     pub fn set_fmp_data(&mut self, result: Result<FmpDetail, String>) {
+        self.fmp_fetch_pending = false;
         match result {
             Ok(data) => {
                 self.detail_popup = Some(DetailPopupContent::FmpSymbol(data));
@@ -1065,7 +1154,10 @@ impl App {
                 self.push_toast(format!("FMP: {}", e), ToastLevel::Error);
             }
         }
-        self.mark_regions(|d| d.mark_overlay());
+        self.mark_regions(|d| {
+            d.mark_overlay();
+            d.mark_status_bar();
+        });
     }
 
     /// Apply incoming greeks result — updates the open Position popup if present.
@@ -1078,8 +1170,14 @@ impl App {
 
     /// Trigger FMP fetch for a symbol.
     pub fn fetch_fmp(&mut self, symbol: String) {
+        if self.fmp_fetch_pending {
+            return;
+        }
         if let Some(ref tx) = self.fmp_fetch_tx {
-            let _ = tx.send(symbol);
+            if tx.send(symbol).is_ok() {
+                self.fmp_fetch_pending = true;
+                self.mark_regions(|d| d.mark_status_bar());
+            }
         }
     }
 
@@ -1139,6 +1237,16 @@ impl App {
         });
     }
 
+    /// Convenience: set a successful operator status message (and toast).
+    pub fn command_success(&mut self, action: impl Into<String>, message: impl Into<String>) {
+        self.set_command_status(CommandStatusView::success(action, message));
+    }
+
+    /// Convenience: set a disabled operator status for exploration mode.
+    pub fn command_disabled(&mut self, action: impl Into<String>) {
+        self.set_command_status(CommandStatusView::disabled(action));
+    }
+
     /// Push a transient toast notification. Toasts expire after TOAST_TTL_SECS seconds.
     pub fn push_toast(&mut self, msg: impl Into<String>, level: ToastLevel) {
         self.toast_manager.push(msg, level);
@@ -1182,6 +1290,11 @@ impl App {
         config_key_value_at(&self.config, index)
     }
 
+    /// Base config as received from the config watcher (before overrides).
+    pub fn base_config(&self) -> TuiConfig {
+        self.config_rx.borrow().clone()
+    }
+
     pub fn config_key_count(&self) -> usize {
         (0usize..)
             .take_while(|index| self.config_key_value_at(*index).is_some())
@@ -1210,15 +1323,15 @@ impl App {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {
-        self.mark_dirty();
-
         match self.input_mode() {
             InputMode::Help => {
                 self.show_help = false;
+                self.mark_regions(|d| d.mark_overlay());
                 return;
             }
             InputMode::DetailPopup => {
                 self.detail_popup = None;
+                self.mark_regions(|d| d.mark_overlay());
                 return;
             }
             InputMode::SettingsCredentialEntry => {
@@ -1270,6 +1383,7 @@ impl App {
                         _ => {}
                     }
                 }
+                self.mark_regions(|d| d.mark_content());
                 return;
             }
             InputMode::SettingsEditConfig | InputMode::SettingsAddSymbol => {
@@ -1328,18 +1442,24 @@ impl App {
                         _ => {}
                     }
                 }
+                self.mark_regions(|d| d.mark_content());
                 return;
             }
             _ => {}
         }
 
         if let Some(action) = crate::input::key_to_action(self, key) {
+            self.mark_regions(|d| {
+                crate::mark_dirty_for_action!(d, action);
+            });
             crate::input::apply_action(self, action);
         }
     }
 
     pub fn handle_action(&mut self, action: crate::input::Action) {
-        self.mark_dirty();
+        self.mark_regions(|d| {
+            crate::mark_dirty_for_action!(d, action);
+        });
         crate::input::apply_action(self, action);
     }
 }

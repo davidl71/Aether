@@ -36,6 +36,7 @@ pub enum Action {
     PositionsScrollPageUp,
     PositionsScrollPageDown,
     PositionsToggleCombo,
+    PositionsCycleSort,
     PositionsDetail,
     OrdersScrollUp,
     OrdersScrollDown,
@@ -61,6 +62,11 @@ pub enum Action {
     DiscountBankScrollPageUp,
     DiscountBankScrollPageDown,
     DiscountBankRefresh,
+    LedgerScrollUp,
+    LedgerScrollDown,
+    LedgerScrollPageUp,
+    LedgerScrollPageDown,
+    LedgerRefresh,
     LoansInputChar(char),
     LoansInputBackspace,
     LoansInputEscape,
@@ -132,6 +138,8 @@ pub enum Action {
     CloseDetail,
     MouseScrollUp,
     MouseScrollDown,
+    MouseScrollUpIn(crate::app::Tab),
+    MouseScrollDownIn(crate::app::Tab),
     StrategyStart,
     StrategyStop,
     StrategyCancelAll,
@@ -172,7 +180,12 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
 
     // Handle command palette input first
     if app.command_palette.visible {
-        return handle_command_palette_input(&app.command_palette, key.code);
+        return handle_command_palette_input(
+            &app.command_palette,
+            key.code,
+            app.app_mode,
+            app.active_tab,
+        );
     }
 
     let input_mode = app.input_mode();
@@ -223,12 +236,14 @@ fn handle_macos_cmd_key(key: KeyCode) -> Option<Action> {
 fn handle_command_palette_input(
     palette: &crate::discoverability::CommandPalette,
     key: KeyCode,
+    mode: crate::mode::AppMode,
+    tab: crate::app::Tab,
 ) -> Option<Action> {
     match key {
         KeyCode::Esc => Some(Action::CommandPalette),
         KeyCode::Enter => {
             // Confirm: run the selected palette action
-            if let Some(cmd) = palette.selected_command() {
+            if let Some(cmd) = palette.selected_command_if_available(mode, tab) {
                 Some(cmd.action)
             } else {
                 Some(Action::NoOp)
@@ -320,66 +335,31 @@ pub fn apply_action(app: &mut App, action: Action) {
             app.positions_combo_view = !app.positions_combo_view;
             app.positions_table.reset();
         }
-        Action::MouseScrollUp => match app.active_tab {
-            crate::app::Tab::Positions => {
-                let len = app
-                    .snapshot()
-                    .as_ref()
-                    .map(|s| {
-                        crate::ui::positions_display_info(
-                            &s.dto().positions,
-                            app.positions_combo_view,
-                            &app.positions_expanded_combos,
-                        )
-                        .0
-                    })
-                    .unwrap_or(0);
-                app.positions_table.shift_selected(-3, len);
+        Action::PositionsCycleSort => {
+            let next = app.config.positions_sort.next();
+            app.config_overrides.insert(
+                "TUI_POSITIONS_SORT".to_string(),
+                next.as_setting_value().to_string(),
+            );
+            app.reapply_config_overrides();
+
+            if let Some(snap) = app.snapshot().as_ref().cloned() {
+                app.set_snapshot(Some(snap));
             }
-            crate::app::Tab::Orders => {
-                app.orders_table
-                    .shift_selected(-3, app.filtered_orders_len());
-            }
-            crate::app::Tab::Dashboard => {
-                let len = app
-                    .snapshot()
-                    .as_ref()
-                    .map(|s| s.inner.symbols.len())
-                    .unwrap_or(0);
-                app.dashboard_table.shift_selected(-3, len);
-            }
-            _ => {}
-        },
-        Action::MouseScrollDown => match app.active_tab {
-            crate::app::Tab::Positions => {
-                let len = app
-                    .snapshot()
-                    .as_ref()
-                    .map(|s| {
-                        crate::ui::positions_display_info(
-                            &s.dto().positions,
-                            app.positions_combo_view,
-                            &app.positions_expanded_combos,
-                        )
-                        .0
-                    })
-                    .unwrap_or(0);
-                app.positions_table.shift_selected(3, len);
-            }
-            crate::app::Tab::Orders => {
-                let len = app.filtered_orders_len();
-                app.orders_table.shift_selected(3, len);
-            }
-            crate::app::Tab::Dashboard => {
-                let len = app
-                    .snapshot()
-                    .as_ref()
-                    .map(|s| s.inner.symbols.len())
-                    .unwrap_or(0);
-                app.dashboard_table.shift_selected(3, len);
-            }
-            _ => {}
-        },
+            app.positions_table.reset();
+        }
+        Action::MouseScrollUp => {
+            apply_mouse_scroll(app, -3, app.active_tab);
+        }
+        Action::MouseScrollDown => {
+            apply_mouse_scroll(app, 3, app.active_tab);
+        }
+        Action::MouseScrollUpIn(tab) => {
+            apply_mouse_scroll(app, -3, tab);
+        }
+        Action::MouseScrollDownIn(tab) => {
+            apply_mouse_scroll(app, 3, tab);
+        }
         Action::PositionsScrollUp => {
             app.positions_table.move_up();
         }
@@ -491,6 +471,45 @@ pub fn apply_action(app: &mut App, action: Action) {
         | Action::SettingsSectionPrev
         | Action::SettingsSectionNext
         | Action::NoOp => {}
+        _ => {}
+    }
+}
+
+fn apply_mouse_scroll(app: &mut App, delta: isize, tab: crate::app::Tab) {
+    let delta = delta as isize;
+    match tab {
+        crate::app::Tab::Positions => {
+            let len = app
+                .snapshot()
+                .as_ref()
+                .map(|s| {
+                    crate::ui::positions_display_info(
+                        &s.dto().positions,
+                        app.positions_combo_view,
+                        &app.positions_expanded_combos,
+                    )
+                    .0
+                })
+                .unwrap_or(0);
+            app.positions_table.shift_selected(delta, len);
+        }
+        crate::app::Tab::Orders => {
+            let len = app.filtered_orders_len();
+            app.orders_table.shift_selected(delta, len);
+        }
+        crate::app::Tab::Dashboard => {
+            let len = app
+                .snapshot()
+                .as_ref()
+                .map(|s| s.inner.symbols.len())
+                .unwrap_or_else(|| app.watchlist().len());
+            app.dashboard_table.shift_selected(delta, len);
+        }
+        crate::app::Tab::Yield => {
+            if let Some(ref curve) = app.yield_curve {
+                app.yield_curve_table.shift_selected(delta, curve.point_count);
+            }
+        }
         _ => {}
     }
 }

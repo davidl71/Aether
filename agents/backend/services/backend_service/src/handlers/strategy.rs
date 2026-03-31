@@ -19,7 +19,6 @@ use crate::shared_state::SharedSnapshot;
 /// Spawn Strategy control NATS API handlers.
 pub async fn spawn(
     nc: Client,
-    _strategy_controller: api::StrategyController,
     state: SharedSnapshot,
     _broker_engine: Option<Arc<dyn BrokerEngine>>,
 ) {

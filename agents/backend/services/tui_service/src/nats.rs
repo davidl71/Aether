@@ -26,8 +26,8 @@
 //!    disconnect, idle timeout). Detail shows "NATS subscription ended".
 
 use api::{
-    backend_health_from_message, command_reply_from_system_command_event, BackendHealthState,
-    CommandReply, NatsTransportHealthState,
+    backend_health_from_message, command_reply_from_system_command_event, AlertLevel,
+    BackendHealthState, CommandReply, NatsTransportHealthState,
 };
 use chrono::Utc;
 use futures::StreamExt;
@@ -121,7 +121,7 @@ pub async fn run(
                         warn!(error = %e, "Health subscriber ended");
                     }
                 });
-                if let Err(e) = subscribe_loop(&client, &subject, &tx).await {
+                if let Err(e) = subscribe_loop(&client, &subject, &tx, &event_tx).await {
                     cb.record_failure();
                     let delay = cb.backoff();
                     warn!(
@@ -187,6 +187,7 @@ async fn subscribe_loop(
     client: &NatsClient,
     subject: &str,
     tx: &watch::Sender<Option<TuiSnapshot>>,
+    event_tx: &mpsc::UnboundedSender<AppEvent>,
 ) -> anyhow::Result<()> {
     let mut sub = client.client().subscribe(subject.to_string()).await?;
     info!(subject = %subject, "Subscribed to snapshot subject");
@@ -201,6 +202,11 @@ async fn subscribe_loop(
             }
             Err(e) => {
                 warn!(error = %e, "Failed to decode NATS snapshot payload");
+                let _ = event_tx.send(AppEvent::AlertReceived {
+                    level: AlertLevel::Error,
+                    message: format!("NATS snapshot decode failed: {e}"),
+                    timestamp: Utc::now(),
+                });
             }
         }
     }

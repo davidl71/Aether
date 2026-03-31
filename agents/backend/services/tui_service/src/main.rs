@@ -41,12 +41,13 @@ use std::{
 
 use api::discount_bank::{DiscountBankBalanceDto, DiscountBankTransactionsListDto};
 use api::finance_rates::{BenchmarksResponse, CurveResponse};
+use api::ledger_journal::LedgerJournalListDto;
 use api::loans::{
     parse_loans_import_file_json, LoanRecord, LoansBulkImportRequest, LoansBulkImportResponse,
 };
 use color_eyre::eyre::Context;
 use crossterm::{
-    event::{EventStream, KeyEventKind, MouseEvent, MouseEventKind},
+    event::{EventStream, KeyEventKind},
     execute,
     terminal::{
         disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen,
@@ -218,6 +219,9 @@ async fn main() -> color_eyre::Result<()> {
         Result<DiscountBankBalanceDto, String>,
         Result<DiscountBankTransactionsListDto, String>,
     )>();
+    let (ledger_fetch_tx, ledger_fetch_rx) = mpsc::unbounded_channel::<()>();
+    let (ledger_result_tx, ledger_result_rx) =
+        mpsc::unbounded_channel::<Result<LedgerJournalListDto, String>>();
     let health_publish_interval_secs: u64 = std::env::var("HEALTH_PUBLISH_INTERVAL_SECS")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -262,15 +266,18 @@ async fn main() -> color_eyre::Result<()> {
     let nats_url_tick = config.nats_url.clone();
     let tick_event_tx = event_tx.clone();
     tokio::spawn(async move {
-        match nats_adapter::NatsClient::connect(&nats_url_tick).await {
-            Ok(client) => {
-                if let Err(e) = nats::run_tick_subscriber(client, tick_event_tx).await {
-                    tracing::warn!(error = %e, "Tick subscriber ended");
+        loop {
+            match nats_adapter::NatsClient::connect(&nats_url_tick).await {
+                Ok(client) => {
+                    if let Err(e) = nats::run_tick_subscriber(client, tick_event_tx.clone()).await {
+                        tracing::warn!(error = %e, "Tick subscriber ended, reconnecting");
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "Failed to connect tick subscriber to NATS");
                 }
             }
-            Err(e) => {
-                tracing::warn!(error = %e, "Failed to connect tick subscriber to NATS");
-            }
+            tokio::time::sleep(Duration::from_secs(5)).await;
         }
     });
 
@@ -278,15 +285,20 @@ async fn main() -> color_eyre::Result<()> {
     let nats_url_candle = config.nats_url.clone();
     let candle_event_tx = event_tx.clone();
     tokio::spawn(async move {
-        match nats_adapter::NatsClient::connect(&nats_url_candle).await {
-            Ok(client) => {
-                if let Err(e) = nats::run_candle_subscriber(client, candle_event_tx).await {
-                    tracing::warn!(error = %e, "Candle subscriber ended");
+        loop {
+            match nats_adapter::NatsClient::connect(&nats_url_candle).await {
+                Ok(client) => {
+                    if let Err(e) =
+                        nats::run_candle_subscriber(client, candle_event_tx.clone()).await
+                    {
+                        tracing::warn!(error = %e, "Candle subscriber ended, reconnecting");
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "Failed to connect candle subscriber to NATS");
                 }
             }
-            Err(e) => {
-                tracing::warn!(error = %e, "Failed to connect candle subscriber to NATS");
-            }
+            tokio::time::sleep(Duration::from_secs(5)).await;
         }
     });
 
@@ -295,39 +307,53 @@ async fn main() -> color_eyre::Result<()> {
         let nats_url_strategy_sig = config.nats_url.clone();
         let strategy_sig_tx = event_tx.clone();
         tokio::spawn(async move {
-            match nats_adapter::NatsClient::connect(&nats_url_strategy_sig).await {
-                Ok(client) => {
-                    if let Err(e) =
-                        nats::run_strategy_signal_subscriber(client, strategy_sig_tx).await
-                    {
-                        tracing::warn!(error = %e, "Strategy signal subscriber ended");
+            loop {
+                match nats_adapter::NatsClient::connect(&nats_url_strategy_sig).await {
+                    Ok(client) => {
+                        if let Err(e) =
+                            nats::run_strategy_signal_subscriber(client, strategy_sig_tx.clone())
+                                .await
+                        {
+                            tracing::warn!(
+                                error = %e,
+                                "Strategy signal subscriber ended, reconnecting"
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            error = %e,
+                            "Failed to connect strategy.signal subscriber to NATS"
+                        );
                     }
                 }
-                Err(e) => {
-                    tracing::warn!(
-                        error = %e,
-                        "Failed to connect strategy.signal subscriber to NATS"
-                    );
-                }
+                tokio::time::sleep(Duration::from_secs(5)).await;
             }
         });
         let nats_url_strategy_dec = config.nats_url.clone();
         let strategy_dec_tx = event_tx.clone();
         tokio::spawn(async move {
-            match nats_adapter::NatsClient::connect(&nats_url_strategy_dec).await {
-                Ok(client) => {
-                    if let Err(e) =
-                        nats::run_strategy_decision_subscriber(client, strategy_dec_tx).await
-                    {
-                        tracing::warn!(error = %e, "Strategy decision subscriber ended");
+            loop {
+                match nats_adapter::NatsClient::connect(&nats_url_strategy_dec).await {
+                    Ok(client) => {
+                        if let Err(e) =
+                            nats::run_strategy_decision_subscriber(client, strategy_dec_tx.clone())
+                                .await
+                        {
+                            tracing::warn!(
+                                error = %e,
+                                "Strategy decision subscriber ended, reconnecting"
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            error = %e,
+                            "Failed to connect strategy.decision subscriber to NATS"
+                        );
                     }
                 }
-                Err(e) => {
-                    tracing::warn!(
-                        error = %e,
-                        "Failed to connect strategy.decision subscriber to NATS"
-                    );
-                }
+                tokio::time::sleep(Duration::from_secs(5)).await;
             }
         });
     }
@@ -335,30 +361,39 @@ async fn main() -> color_eyre::Result<()> {
     let nats_url_alerts = config.nats_url.clone();
     let alert_event_tx = event_tx.clone();
     tokio::spawn(async move {
-        match nats_adapter::NatsClient::connect(&nats_url_alerts).await {
-            Ok(client) => {
-                if let Err(e) = nats::run_alert_subscriber(client, alert_event_tx).await {
-                    tracing::warn!(error = %e, "Alert subscriber ended");
+        loop {
+            match nats_adapter::NatsClient::connect(&nats_url_alerts).await {
+                Ok(client) => {
+                    if let Err(e) = nats::run_alert_subscriber(client, alert_event_tx.clone()).await
+                    {
+                        tracing::warn!(error = %e, "Alert subscriber ended, reconnecting");
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "Failed to connect alert subscriber to NATS");
                 }
             }
-            Err(e) => {
-                tracing::warn!(error = %e, "Failed to connect alert subscriber to NATS");
-            }
+            tokio::time::sleep(Duration::from_secs(5)).await;
         }
     });
 
     let nats_url_commands = config.nats_url.clone();
     let command_event_tx = event_tx.clone();
     tokio::spawn(async move {
-        match nats_adapter::NatsClient::connect(&nats_url_commands).await {
-            Ok(client) => {
-                if let Err(e) = nats::run_command_subscriber(client, command_event_tx).await {
-                    tracing::warn!(error = %e, "Command-event subscriber ended");
+        loop {
+            match nats_adapter::NatsClient::connect(&nats_url_commands).await {
+                Ok(client) => {
+                    if let Err(e) =
+                        nats::run_command_subscriber(client, command_event_tx.clone()).await
+                    {
+                        tracing::warn!(error = %e, "Command-event subscriber ended, reconnecting");
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "Failed to connect command-event subscriber to NATS");
                 }
             }
-            Err(e) => {
-                tracing::warn!(error = %e, "Failed to connect command-event subscriber to NATS");
-            }
+            tokio::time::sleep(Duration::from_secs(5)).await;
         }
     });
 
@@ -454,6 +489,12 @@ async fn main() -> color_eyre::Result<()> {
         .await;
     });
 
+    // Spawn ledger journal fetcher: requests api.ledger.journal, forwards result.
+    let nats_url_ledger = config.nats_url.clone();
+    tokio::spawn(async move {
+        run_ledger_fetcher(nats_url_ledger, ledger_fetch_rx, ledger_result_tx).await;
+    });
+
     let alpaca_health_monitor = crate::alpaca_health::AlpacaHealthMonitor::new();
     tokio::spawn(async move {
         alpaca_health_monitor.spawn_health_checks(event_tx.clone());
@@ -486,6 +527,7 @@ async fn main() -> color_eyre::Result<()> {
         Some(fmp_fetch_tx),
         Some(greeks_fetch_tx),
         Some(discount_bank_fetch_tx),
+        Some(ledger_fetch_tx),
     );
 
     let result = run_loop(
@@ -496,6 +538,7 @@ async fn main() -> color_eyre::Result<()> {
         fmp_result_rx,
         greeks_result_rx,
         discount_bank_result_rx,
+        ledger_result_rx,
     )
     .await;
 
@@ -585,6 +628,28 @@ async fn run_discount_bank_fetcher(
             Err(e) => Err(e.to_string()),
         };
         let _ = result_tx.send((balance_res, txns_res));
+    }
+}
+
+/// Fetches ledger journal rows via NATS, sends result to TUI.
+async fn run_ledger_fetcher(
+    nats_url: String,
+    mut rx: mpsc::UnboundedReceiver<()>,
+    result_tx: mpsc::UnboundedSender<Result<LedgerJournalListDto, String>>,
+) {
+    while rx.recv().await.is_some() {
+        let res = match NatsClient::connect(&nats_url).await {
+            Ok(nc) => request_json_with_retry::<_, Result<LedgerJournalListDto, String>>(
+                &nc,
+                topics::api::ledger::JOURNAL,
+                &json!({ "limit": 500 }),
+            )
+            .await
+            .map_err(|e| e.to_string())
+            .and_then(|r| r),
+            Err(e) => Err(format!("Failed to connect to NATS for ledger fetch: {e}")),
+        };
+        let _ = result_tx.send(res);
     }
 }
 
@@ -814,6 +879,7 @@ async fn run_loop(
         Result<DiscountBankBalanceDto, String>,
         Result<DiscountBankTransactionsListDto, String>,
     )>,
+    mut ledger_result_rx: mpsc::UnboundedReceiver<Result<LedgerJournalListDto, String>>,
 ) -> color_eyre::Result<()> {
     let mut event_stream = EventStream::new();
     let mut tick_interval = tokio::time::interval(Duration::from_millis(app.config.tick_ms));
@@ -881,6 +947,11 @@ async fn run_loop(
             // Discount Bank fetch result (balance + transactions)
             Some((balance, txns)) = discount_bank_result_rx.recv() => {
                 app.set_discount_bank_data(balance, txns);
+            }
+
+            // Ledger journal fetch result
+            Some(journal) = ledger_result_rx.recv() => {
+                app.set_ledger_journal(journal);
             }
         }
 

@@ -16,8 +16,8 @@ use market_data::{
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use risk::{RiskCheck, RiskDecision, RiskEngine, RiskLimit, RiskViolation};
 use runtime_state::{
-    apply_market_event, apply_risk_status, legacy_apply_strategy_execution,
-    LegacyRuntimeExecutionState, RuntimeMarketState, RuntimeProducerDecision,
+    apply_market_event, apply_risk_status, legacy_project_strategy_decision,
+    LegacyRuntimeProjectionState, RuntimeMarketState, RuntimeProducerDecision,
 };
 use serde::Deserialize;
 use strategy::model::TradeSide;
@@ -43,6 +43,7 @@ mod rest_snapshot;
 mod runtime_state;
 mod shared_state;
 mod snapshot_publisher;
+mod supervisor;
 mod swiftness;
 mod yield_curve_writer;
 
@@ -392,7 +393,6 @@ async fn main() -> anyhow::Result<()> {
                 client.clone(),
                 loan_repo.map(Arc::new),
                 fmp_client,
-                controller.clone(),
                 state.clone(),
                 None,
                 broker_engine.clone(),
@@ -865,7 +865,7 @@ fn spawn_strategy_fanout(
             let (producer_decision, request) = {
                 let snapshot = state.read().await;
                 let market_state = RuntimeMarketState::from_snapshot(&snapshot);
-                let execution_state = LegacyRuntimeExecutionState::from_snapshot(&snapshot);
+                let projection_state = LegacyRuntimeProjectionState::from_snapshot(&snapshot);
                 let mark = market_state.mark_for_symbol(&symbol).unwrap_or(0.0);
                 let mark = if mark <= 0.0 { 1.0 } else { mark };
                 let strategy_decision = StrategyDecisionModel {
@@ -878,7 +878,7 @@ fn spawn_strategy_fanout(
                     mark,
                     Utc::now(),
                 );
-                let request = execution_state.risk_limit_for_decision(&producer_decision);
+                let request = projection_state.risk_limit_for_decision(&producer_decision);
                 (producer_decision, request)
             };
 
@@ -900,7 +900,7 @@ fn spawn_strategy_fanout(
                 apply_risk_status(&mut snapshot, &outcome);
                 if outcome.allowed {
                     let _ =
-                        legacy_apply_strategy_execution(&mut snapshot, decision_snapshot.clone());
+                        legacy_project_strategy_decision(&mut snapshot, decision_snapshot.clone());
                 } else {
                     let alert = Alert::error(
                         outcome

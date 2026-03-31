@@ -1,4 +1,7 @@
 //! Ratatui rendering: frame layout, tab bar, and per-tab view delegation.
+//!
+//! Rendering should treat [`crate::app::App`] as the source of truth and avoid
+//! mutating state here except via explicit callbacks (e.g. the command palette).
 
 pub(crate) mod alerts;
 mod candlestick;
@@ -311,6 +314,21 @@ fn render_tab_panel(f: &mut Frame, app: &App, area: Rect, tab: Tab) {
         Tab::Yield => yield_curve::render_yield_curve_panel(f, app, area),
         Tab::Loans => loans::render_loans(f, app, area),
         Tab::DiscountBank => discount_bank::render_discount_bank(f, app, area),
+        Tab::Ledger => {
+            let widget = Paragraph::new(vec![
+                Line::from(Span::styled(
+                    "Ledger journal",
+                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                )),
+                Line::from(""),
+                Line::from(Span::styled(
+                    "Not implemented yet.",
+                    Style::default().fg(Color::DarkGray),
+                )),
+            ])
+            .block(Block::default().title(" Ledger ").borders(Borders::ALL));
+            f.render_widget(widget, area);
+        }
         Tab::Scenarios => scenarios::render_scenarios(f, app, area),
         Tab::Settings => settings::render_settings(f, app, area),
     }
@@ -360,6 +378,11 @@ fn render_split_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceS
 }
 
 fn workspace_banner(spec: WorkspaceSpec, focus_label: &str) -> Paragraph<'static> {
+    let extra_hint = match spec.kind {
+        VisibleWorkspace::Market => "  |  Scroll: pane under cursor",
+        _ => "",
+    };
+
     Paragraph::new(Line::from(vec![
         Span::styled(
             format!(" {} ", spec.title),
@@ -374,7 +397,10 @@ fn workspace_banner(spec: WorkspaceSpec, focus_label: &str) -> Paragraph<'static
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw("  |  Tab/Shift-Tab cycles panes"),
+        Span::raw(format!(
+            "  |  Tab/Shift-Tab cycles panes{}",
+            extra_hint
+        )),
     ]))
 }
 
@@ -703,7 +729,7 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         Line::from(vec![
             Span::styled(" 1–9,0 ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(
-                "1 Dash  2 Pos  3 Charts  4 Orders  5 Alerts  6 Yield  7 Loans  8 Disc  9 Scen  0 Settings",
+                "1 Dash  2 Pos  3 Charts  4 Orders  5 Alerts  6 Yield  7 Loans  8 Disc  9 Ledger  0 Settings",
             ),
         ]),
         Line::from(vec![
@@ -742,7 +768,9 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::styled(" Enter ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("Dash→Charts / Pos detail  "),
             Span::styled(" c ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("Positions combo / space"),
+            Span::raw("Positions combo / space  "),
+            Span::styled(" r ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("Positions sort cycle"),
         ]),
         Line::from(vec![
             Span::styled(" Orders ", Style::default().add_modifier(Modifier::BOLD)),
@@ -1152,6 +1180,23 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         spans.push(Span::styled(n.to_string(), alert_style));
     }
 
+    let ctx = crate::discoverability::context_hints_for(app.app_mode, app.active_tab);
+    let skip_global = if matches!(app.app_mode, AppMode::Navigation) {
+        3
+    } else {
+        0
+    };
+    for (key, desc) in ctx.into_iter().skip(skip_global).take(4) {
+        spans.push(Span::raw("  "));
+        spans.push(Span::styled(
+            key,
+            Style::default().add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::raw(":"));
+        spans.push(Span::styled(desc, Style::default().fg(Color::DarkGray)));
+    }
+
+    // Status cues (toast + command status) belong at the tail so narrow terminals keep them visible.
     if let Some(toast) = app.toast_manager.latest_active_toast() {
         let color = toast.level.color();
         spans.push(Span::raw("  | "));
@@ -1194,22 +1239,6 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         }
     }
 
-    let ctx = crate::discoverability::context_hints_for(app.app_mode, app.active_tab);
-    let skip_global = if matches!(app.app_mode, AppMode::Navigation) {
-        3
-    } else {
-        0
-    };
-    for (key, desc) in ctx.into_iter().skip(skip_global).take(4) {
-        spans.push(Span::raw("  "));
-        spans.push(Span::styled(
-            key,
-            Style::default().add_modifier(Modifier::BOLD),
-        ));
-        spans.push(Span::raw(":"));
-        spans.push(Span::styled(desc, Style::default().fg(Color::DarkGray)));
-    }
-
     let line = Line::from(spans);
     f.render_widget(Paragraph::new(line), area);
 }
@@ -1239,10 +1268,11 @@ fn settings_mode_indicator(app: &App) -> Option<(String, Color)> {
 }
 
 fn append_async_status_spans<'a>(spans: &mut Vec<Span<'a>>, app: &App) {
+    let spinner = crate::ui::feedback::StatusIndicator::spinner(app.spinner_frame);
     if app.yield_refresh_pending {
         spans.push(Span::raw("  | "));
         spans.push(Span::styled(
-            "~ Yield:loading",
+            format!("{spinner} Yield:loading"),
             Style::default()
                 .fg(Color::Blue)
                 .add_modifier(Modifier::BOLD),
@@ -1258,7 +1288,7 @@ fn append_async_status_spans<'a>(spans: &mut Vec<Span<'a>>, app: &App) {
     if app.loans_fetch_pending {
         spans.push(Span::raw("  | "));
         spans.push(Span::styled(
-            "~ Loans:loading",
+            format!("{spinner} Loans:loading"),
             Style::default()
                 .fg(Color::Blue)
                 .add_modifier(Modifier::BOLD),
@@ -1268,6 +1298,16 @@ fn append_async_status_spans<'a>(spans: &mut Vec<Span<'a>>, app: &App) {
         spans.push(Span::styled(
             format!("Loans:{}", truncate_detail(err, 24)),
             Style::default().fg(Color::Red),
+        ));
+    }
+
+    if app.fmp_fetch_pending {
+        spans.push(Span::raw("  | "));
+        spans.push(Span::styled(
+            "~ FMP:loading",
+            Style::default()
+                .fg(Color::Blue)
+                .add_modifier(Modifier::BOLD),
         ));
     }
 

@@ -10,6 +10,7 @@ use ratatui::{
 };
 
 use crate::app::{App, LoanEntryState, LoanType as AppLoanType};
+use crate::scrollable_table::{centered_viewport_start, clamp_index};
 
 fn status_label(s: &LoanStatus) -> &'static str {
     match s {
@@ -132,15 +133,21 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
         .collect();
     let len = all_rows.len();
     let visible_height = (inner.height as usize).saturating_sub(2).max(1);
-    let scroll = if len <= 1 {
-        0
-    } else {
-        app.loans_table.selected().min(len.saturating_sub(1))
-    };
+    let cursor = clamp_index(app.loans_table.selected(), len);
+    let scroll = centered_viewport_start(cursor, len, visible_height);
     let window: Vec<Row> = all_rows
         .into_iter()
         .skip(scroll)
         .take(visible_height)
+        .enumerate()
+        .map(|(i, row)| {
+            let is_selected = i + scroll == cursor;
+            if is_selected {
+                row.style(Style::default().fg(Color::Black).bg(Color::Yellow))
+            } else {
+                row
+            }
+        })
         .collect();
     let table = Table::new(
         window,

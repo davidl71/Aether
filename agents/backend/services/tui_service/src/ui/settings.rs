@@ -57,7 +57,21 @@ pub(crate) fn render_settings_sections(f: &mut Frame, app: &App, layout: Setting
 }
 
 pub(crate) fn settings_layout(area: Rect) -> SettingsLayout {
-    let wide_layout = area.width >= 120 && area.height >= 18;
+    settings_layout_with_min_width(area, 110)
+}
+
+/// Like `settings_layout`, but tuned for narrower panes (e.g. the Operations workspace
+/// settings column) so we still get the 2-column layout in typical terminals.
+pub(crate) fn settings_layout_embedded(area: Rect) -> SettingsLayout {
+    settings_layout_with_min_width(area, 92)
+}
+
+fn settings_layout_with_min_width(area: Rect, wide_min_width: u16) -> SettingsLayout {
+    // "Wide" layout is used both for the full Settings tab and for embedded
+    // Settings panes (e.g. Operations workspace right column). Keep the
+    // threshold low enough that the embedded pane can still use the 2-column
+    // layout in a reasonably wide terminal.
+    let wide_layout = area.width >= wide_min_width && area.height >= 18;
     if wide_layout {
         let rows = Layout::default()
             .direction(Direction::Vertical)
@@ -88,24 +102,48 @@ pub(crate) fn settings_layout(area: Rect) -> SettingsLayout {
             hint: rows[2],
         }
     } else {
-        let chunks = Layout::default()
+        // Responsive stacked layout: keep a dedicated hint row, then allocate
+        // a compact but non-zero health header. Short terminals should still
+        // show all panels without forcing the main sections to collapse to 0.
+        let hint_h = 1u16;
+        let mut health_h = 9u16;
+        if area.height < 18 {
+            health_h = 7;
+        }
+        if area.height < 14 {
+            health_h = 5;
+        }
+        if area.height < 11 {
+            health_h = 3;
+        }
+        // Ensure we always leave at least 1 row for the mid stack when possible.
+        let max_health = area.height.saturating_sub(hint_h).saturating_sub(1);
+        health_h = health_h.min(max_health.max(1));
+
+        let outer = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(9),
-                Constraint::Min(3),
-                Constraint::Min(5),
-                Constraint::Min(4),
-                Constraint::Min(5),
-                Constraint::Length(1),
+                Constraint::Length(health_h),
+                Constraint::Min(0),
+                Constraint::Length(hint_h),
             ])
             .split(area);
+        let mid = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Ratio(1, 4),
+                Constraint::Ratio(1, 4),
+                Constraint::Ratio(1, 4),
+                Constraint::Ratio(1, 4),
+            ])
+            .split(outer[1]);
         SettingsLayout {
-            health: chunks[0],
-            config: chunks[1],
-            symbols: chunks[2],
-            sources: chunks[3],
-            alpaca: chunks[4],
-            hint: chunks[5],
+            health: outer[0],
+            config: mid[0],
+            symbols: mid[1],
+            sources: mid[2],
+            alpaca: mid[3],
+            hint: outer[2],
         }
     }
 }

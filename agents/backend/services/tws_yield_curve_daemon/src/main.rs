@@ -8,6 +8,7 @@ use api::yield_curve_proto::{encode_yield_curve_to_bytes, yield_curve_from_oppor
 use bytes::Bytes;
 use nats_adapter::async_nats::Client;
 use nats_adapter::NatsClient;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -102,6 +103,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         for symbol in symbols {
             match tws_yield_curve::fetch_yield_curve_from_tws(symbol).await {
                 Ok(opportunities) if !opportunities.is_empty() => {
+                    let mut opportunities = opportunities;
+                    for opp in opportunities.iter_mut() {
+                        if opp.get("data_source").is_none() {
+                            opp["data_source"] = Value::String("tws".to_string());
+                        }
+                    }
                     let key = format!("{}.{}", KEY_PREFIX, symbol);
                     let strike_width = opportunities
                         .first()

@@ -11,6 +11,48 @@ const DEFAULT_BACKEND_ID: &str = "ib";
 const DEFAULT_REST_URL: &str = "http://localhost:9090";
 const DEFAULT_WATCHLIST: &str = "SPX,XSP,NDX";
 const DEFAULT_SNAPSHOT_TTL_SECS: u64 = 30;
+const DEFAULT_TUI_THEME: &str = "default";
+
+/// Overall color theme (operator preference).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum TuiTheme {
+    /// Default palette (current styling).
+    #[default]
+    Default,
+    /// Higher-contrast palette for bright terminals / accessibility.
+    HighContrast,
+}
+
+impl TuiTheme {
+    pub fn parse_env(s: &str) -> Option<Self> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "" | "default" | "normal" => Some(Self::Default),
+            "high_contrast" | "high-contrast" | "contrast" | "hc" => Some(Self::HighContrast),
+            _ => None,
+        }
+    }
+
+    pub const fn next(self) -> Self {
+        match self {
+            Self::Default => Self::HighContrast,
+            Self::HighContrast => Self::Default,
+        }
+    }
+
+    pub const fn as_setting_value(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::HighContrast => "high_contrast",
+        }
+    }
+
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::HighContrast => "high contrast",
+        }
+    }
+}
 
 /// How the Positions tab orders rows (operator preference).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -34,11 +76,27 @@ impl PositionsSortMode {
         }
     }
 
+    pub const fn next(self) -> Self {
+        match self {
+            Self::AsReceived => Self::Symbol,
+            Self::Symbol => Self::UnrealizedPnlDesc,
+            Self::UnrealizedPnlDesc => Self::AsReceived,
+        }
+    }
+
     pub fn as_setting_value(self) -> &'static str {
         match self {
             Self::AsReceived => "as_received",
             Self::Symbol => "symbol",
             Self::UnrealizedPnlDesc => "pnl",
+        }
+    }
+
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::AsReceived => "as received",
+            Self::Symbol => "symbol",
+            Self::UnrealizedPnlDesc => "pnl desc",
         }
     }
 }
@@ -88,6 +146,8 @@ pub struct TuiConfig {
     pub yield_kv_bucket: String,
     /// Positions table sort (env: TUI_POSITIONS_SORT: as_received | symbol | pnl)
     pub positions_sort: PositionsSortMode,
+    /// Theme (env: TUI_THEME: default | high_contrast)
+    pub theme: TuiTheme,
 }
 
 impl Default for TuiConfig {
@@ -105,6 +165,7 @@ impl Default for TuiConfig {
             benchmarks_refresh_secs: 3600,
             yield_kv_bucket: "LIVE_STATE".into(),
             positions_sort: PositionsSortMode::default(),
+            theme: TuiTheme::parse_env(DEFAULT_TUI_THEME).unwrap_or_default(),
         }
     }
 }
@@ -202,6 +263,12 @@ impl TuiConfig {
                 _ => {}
             }
         }
+
+        if let Some(theme) = shared.tui.theme.as_deref() {
+            if let Some(parsed) = TuiTheme::parse_env(theme) {
+                self.theme = parsed;
+            }
+        }
     }
 
     fn apply_env_overrides(&mut self) {
@@ -281,6 +348,12 @@ impl TuiConfig {
                 self.positions_sort = mode;
             }
         }
+
+        if let Ok(value) = std::env::var("TUI_THEME") {
+            if let Some(theme) = TuiTheme::parse_env(&value) {
+                self.theme = theme;
+            }
+        }
     }
 
     #[cfg(test)]
@@ -304,7 +377,8 @@ pub fn config_key_scope(key: &str) -> SettingScope {
         | "SPLIT_PANE"
         | "BENCHMARKS_REFRESH_SECS"
         | "NATS_KV_BUCKET"
-        | "TUI_POSITIONS_SORT" => SettingScope::Editable,
+        | "TUI_POSITIONS_SORT"
+        | "TUI_THEME" => SettingScope::Editable,
         // Legacy REST compatibility knobs are still parsed from file/env, but
         // they are not operator-editable from the active NATS-first Settings UI.
         "REST_URL" | "REST_POLL_MS" | "REST_FALLBACK" => SettingScope::EnvOnly,
@@ -354,6 +428,8 @@ struct SharedTuiConfig {
     api_base_url: Option<String>,
     #[serde(default, alias = "restFallback")]
     rest_fallback: Option<bool>,
+    #[serde(default)]
+    theme: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default)]

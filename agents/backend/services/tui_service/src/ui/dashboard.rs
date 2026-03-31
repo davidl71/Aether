@@ -54,8 +54,15 @@ pub fn render_dashboard_market_view(f: &mut Frame, app: &App, area: Rect) {
     let table_area = horz[0];
     let trend_area = horz[1];
 
-    let header = Row::new(["Symbol", "Last", "Bid", "Ask", "Spread", "Move%"])
-        .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
+    let header = Row::new([
+        Cell::from("Symbol"),
+        Cell::from(Line::from("Last").right_aligned()),
+        Cell::from(Line::from("Bid").right_aligned()),
+        Cell::from(Line::from("Ask").right_aligned()),
+        Cell::from(Line::from("Spread").right_aligned()),
+        Cell::from(Line::from("Move%").right_aligned()),
+    ])
+    .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
     let rows: Vec<Row> = if let Some(ref snap) = app.snapshot() {
         let watchlist_upper: HashSet<_> =
@@ -82,11 +89,11 @@ pub fn render_dashboard_market_view(f: &mut Frame, app: &App, area: Rect) {
                 };
                 Row::new([
                     Cell::from(s.symbol.clone()),
-                    Cell::from(format!("{:.2}", s.last)),
-                    Cell::from(format!("{:.2}", s.bid)),
-                    Cell::from(format!("{:.2}", s.ask)),
-                    Cell::from(format!("{:.2}", s.spread)),
-                    Cell::from(format!("{:.2}", s.roi)),
+                    Cell::from(Line::from(format!("{:.2}", s.last)).right_aligned()),
+                    Cell::from(Line::from(format!("{:.2}", s.bid)).right_aligned()),
+                    Cell::from(Line::from(format!("{:.2}", s.ask)).right_aligned()),
+                    Cell::from(Line::from(format!("{:.2}", s.spread)).right_aligned()),
+                    Cell::from(Line::from(format!("{:.2}", s.roi)).right_aligned()),
                 ])
                 .style(style)
             })

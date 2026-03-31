@@ -14,6 +14,7 @@ use ratatui::{
 };
 
 use crate::app::App;
+use crate::scrollable_table::{centered_viewport_start, clamp_index};
 
 /// Return type for `positions_display_info`: (row_count, position_index_per_row, combo_key_per_row)
 type DisplayInfo = (
@@ -328,21 +329,28 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
 
     let block = Block::default()
         .title({
+            let sort_label = app.config.positions_sort.label();
             if selected_label.is_empty() {
                 if app.positions_combo_view {
-                    " Positions  [↑↓] navigate  [c] combo view  [Enter] detail ".to_string()
+                    format!(
+                        " Positions  Sort: {}  [r] cycle sort  [↑↓] navigate  [c] combo view  [Enter] detail ",
+                        sort_label
+                    )
                 } else {
-                    " Positions  [↑↓] navigate  [Enter] detail ".to_string()
+                    format!(
+                        " Positions  Sort: {}  [r] cycle sort  [↑↓] navigate  [Enter] detail ",
+                        sort_label
+                    )
                 }
             } else if app.positions_combo_view {
                 format!(
-                    " Positions  Sel: {}  [↑↓] navigate  [c] combo  [Enter] detail ",
-                    selected_label
+                    " Positions  Sel: {}  Sort: {}  [r] cycle sort  [↑↓] navigate  [c] combo  [Enter] detail ",
+                    selected_label, sort_label
                 )
             } else {
                 format!(
-                    " Positions  Sel: {}  [↑↓] navigate  [Enter] detail ",
-                    selected_label
+                    " Positions  Sel: {}  Sort: {}  [r] cycle sort  [↑↓] navigate  [Enter] detail ",
+                    selected_label, sort_label
                 )
             }
         })
@@ -353,18 +361,8 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
 
     let len = rows.len();
     let visible_height = inner.height.saturating_sub(1).max(1) as usize;
-    let cursor = if len == 0 {
-        0
-    } else {
-        app.positions_table.selected().min(len - 1)
-    };
-    let viewport = if len <= visible_height {
-        0
-    } else {
-        cursor
-            .saturating_sub(visible_height / 2)
-            .min(len - visible_height)
-    };
+    let cursor = clamp_index(app.positions_table.selected(), len);
+    let viewport = centered_viewport_start(cursor, len, visible_height);
     let window: Vec<Row> = rows
         .into_iter()
         .skip(viewport)

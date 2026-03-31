@@ -20,6 +20,11 @@ pub mod domain {
 pub mod market_data {
     use super::domain;
 
+    /// Prefix for tick subjects (used by collectors): `market-data.tick`
+    pub fn tick_prefix() -> &'static str {
+        "market-data.tick"
+    }
+
     /// Real-time tick updates: `market-data.tick.{symbol}`
     pub fn tick(symbol: &str) -> String {
         format!("{}.tick.{}", domain::MARKET_DATA, symbol)
@@ -339,6 +344,11 @@ pub mod api {
     /// `api.ib.*`
     pub mod ib {
         pub const POSITIONS: &str = "api.ib.positions";
+    }
+
+    /// `api.ledger.*`
+    pub mod ledger {
+        pub const JOURNAL: &str = "api.ledger.journal";
     }
 }
 

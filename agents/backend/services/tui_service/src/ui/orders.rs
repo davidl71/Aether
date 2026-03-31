@@ -9,6 +9,7 @@ use ratatui::{
 };
 
 use crate::app::App;
+use crate::scrollable_table::{centered_viewport_start, clamp_index};
 
 #[allow(unused_imports)]
 pub use render_orders_panel as render_orders;
@@ -149,18 +150,8 @@ pub fn render_orders_table(f: &mut Frame, app: &App, area: Rect) {
 
     let len = all_rows.len();
     let visible_height = inner.height.saturating_sub(1).max(1) as usize;
-    let cursor = if len == 0 {
-        0
-    } else {
-        app.orders_table.selected().min(len - 1)
-    };
-    let viewport = if len <= visible_height {
-        0
-    } else {
-        cursor
-            .saturating_sub(visible_height / 2)
-            .min(len - visible_height)
-    };
+    let cursor = clamp_index(app.orders_table.selected(), len);
+    let viewport = centered_viewport_start(cursor, len, visible_height);
     let window: Vec<Row> = all_rows
         .into_iter()
         .skip(viewport)

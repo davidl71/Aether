@@ -8,12 +8,14 @@
 //! - finance_rates: Yield curves and rate calculations (api.finance_rates.*)
 //! - calculate: Quantitative calculations (api.calculate.*)
 //! - admin: Administrative operations (api.admin.*, api.snapshot.*, api.ib.*)
+//! - ledger: Ledger journal (api.ledger.*)
 
 pub mod admin;
 pub mod calculate;
 pub mod discount_bank;
 pub mod finance_rates;
 pub mod fmp;
+pub mod ledger;
 pub mod loans;
 pub mod strategy;
 

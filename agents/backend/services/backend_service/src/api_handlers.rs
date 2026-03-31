@@ -28,7 +28,6 @@ pub fn spawn(
     nats_client: Arc<NatsClient>,
     loan_repo: Option<Arc<api::LoanRepository>>,
     fmp_client: Option<Arc<FmpClient>>,
-    strategy_controller: api::StrategyController,
     state: SharedSnapshot,
     yield_curve_refresh_tx: Option<tokio::sync::mpsc::Sender<()>>,
     broker_engine: Option<Arc<dyn BrokerEngine>>,
@@ -50,6 +49,12 @@ pub fn spawn(
         handlers::discount_bank::spawn(nc_discount).await;
     });
 
+    // Ledger handlers
+    let nc_ledger = nc.clone();
+    tokio::spawn(async move {
+        handlers::ledger::spawn(nc_ledger).await;
+    });
+
     // Loans handlers
     let nc_loans = nc.clone();
     tokio::spawn(async move {
@@ -64,13 +69,7 @@ pub fn spawn(
     let nc_strategy = nats_client.client().clone();
     let state_strategy = state.clone();
     tokio::spawn(async move {
-        handlers::strategy::spawn(
-            nc_strategy,
-            strategy_controller,
-            state_strategy,
-            broker_engine,
-        )
-        .await;
+        handlers::strategy::spawn(nc_strategy, state_strategy, broker_engine).await;
     });
 
     // Finance Rates handlers
@@ -91,11 +90,11 @@ pub fn spawn(
         tokio::spawn(async move {
             handlers::fmp::spawn(nc_fmp, fmp).await;
         });
-        info!("NATS API handlers spawned (discount_bank, loans, fmp, finance_rates, calculate, strategy, admin)");
+        info!("NATS API handlers spawned (discount_bank, ledger, loans, fmp, finance_rates, calculate, strategy, admin)");
     } else {
         tokio::spawn(async move {
             handlers::fmp::spawn_unconfigured(nc_fmp).await;
         });
-        info!("NATS API handlers spawned (discount_bank, loans, fmp_unconfigured, finance_rates, calculate, strategy, admin)");
+        info!("NATS API handlers spawned (discount_bank, ledger, loans, fmp_unconfigured, finance_rates, calculate, strategy, admin)");
     }
 }

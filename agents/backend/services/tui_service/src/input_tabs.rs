@@ -1,3 +1,7 @@
+//! Per-tab key maps (Yield/Charts/Settings/… → [`Action`]).
+//!
+//! Keeps tab-specific bindings out of `input.rs` so the top-level router can stay simple.
+
 use crossterm::event::KeyCode;
 
 use crate::app::{App, InputMode, Tab};
@@ -17,6 +21,7 @@ pub(crate) fn tab_key_action(app: &App, key: KeyCode, input_mode: InputMode) -> 
         Tab::Orders => orders_key_action(key, input_mode),
         Tab::Loans => loans_key_action(key, input_mode),
         Tab::DiscountBank => discount_bank_key_action(key),
+        Tab::Ledger => ledger_key_action(key),
         Tab::Alerts => alerts_key_action(key),
         Tab::Dashboard => dashboard_key_action(key),
         Tab::Scenarios => scenarios_key_action(key),
@@ -81,6 +86,7 @@ fn positions_key_action(key: KeyCode) -> Option<Action> {
         KeyCode::Char('c') | KeyCode::Char('C') | KeyCode::Char(' ') => {
             Some(Action::PositionsToggleCombo)
         }
+        KeyCode::Char('r') | KeyCode::Char('R') => Some(Action::PositionsCycleSort),
         KeyCode::Up => Some(Action::PositionsScrollUp),
         KeyCode::Down => Some(Action::PositionsScrollDown),
         KeyCode::PageUp => Some(Action::PositionsScrollPageUp),
@@ -135,6 +141,17 @@ fn discount_bank_key_action(key: KeyCode) -> Option<Action> {
         KeyCode::PageUp => Some(Action::DiscountBankScrollPageUp),
         KeyCode::PageDown => Some(Action::DiscountBankScrollPageDown),
         KeyCode::Char('r') | KeyCode::Char('R') => Some(Action::DiscountBankRefresh),
+        _ => None,
+    }
+}
+
+fn ledger_key_action(key: KeyCode) -> Option<Action> {
+    match key {
+        KeyCode::Up => Some(Action::LedgerScrollUp),
+        KeyCode::Down => Some(Action::LedgerScrollDown),
+        KeyCode::PageUp => Some(Action::LedgerScrollPageUp),
+        KeyCode::PageDown => Some(Action::LedgerScrollPageDown),
+        KeyCode::Char('r') | KeyCode::Char('R') => Some(Action::LedgerRefresh),
         _ => None,
     }
 }

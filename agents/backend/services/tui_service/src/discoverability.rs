@@ -107,11 +107,11 @@ impl CommandPalette {
     }
 
     /// Show the command palette
-    pub fn show(&mut self) {
+    pub fn show(&mut self, mode: AppMode, tab: Tab) {
         self.visible = true;
         self.search.clear();
         self.selected = 0;
-        self.update_filtered();
+        self.update_filtered(mode, tab);
     }
 
     /// Hide the command palette
@@ -120,25 +120,25 @@ impl CommandPalette {
     }
 
     /// Toggle visibility
-    pub fn toggle(&mut self) {
+    pub fn toggle(&mut self, mode: AppMode, tab: Tab) {
         if self.visible {
             self.hide();
         } else {
-            self.show();
+            self.show(mode, tab);
         }
     }
 
     /// Add a character to the search
-    pub fn push_char(&mut self, c: char) {
+    pub fn push_char(&mut self, c: char, mode: AppMode, tab: Tab) {
         self.search.push(c);
-        self.update_filtered();
+        self.update_filtered(mode, tab);
         self.selected = 0;
     }
 
     /// Remove last character from search
-    pub fn backspace(&mut self) {
+    pub fn backspace(&mut self, mode: AppMode, tab: Tab) {
         self.search.pop();
-        self.update_filtered();
+        self.update_filtered(mode, tab);
         self.selected = self.selected.min(self.filtered.len().saturating_sub(1));
     }
 
@@ -161,14 +161,26 @@ impl CommandPalette {
             .and_then(|&idx| self.commands.get(idx))
     }
 
+    pub fn selected_command_if_available(&self, mode: AppMode, tab: Tab) -> Option<&Command> {
+        self.selected_command().filter(|cmd| {
+            cmd.available_in.contains(&mode) && (cmd.tabs.is_empty() || cmd.tabs.contains(&tab))
+        })
+    }
+
     /// Update filtered list based on search
-    fn update_filtered(&mut self) {
+    fn update_filtered(&mut self, mode: AppMode, tab: Tab) {
         let search_lower = self.search.to_lowercase();
         self.filtered = self
             .commands
             .iter()
             .enumerate()
             .filter(|(_, cmd)| {
+                if !cmd.available_in.contains(&mode) {
+                    return false;
+                }
+                if !cmd.tabs.is_empty() && !cmd.tabs.contains(&tab) {
+                    return false;
+                }
                 let matches_search = search_lower.is_empty()
                     || cmd.name.to_lowercase().contains(&search_lower)
                     || cmd.description.to_lowercase().contains(&search_lower)
@@ -205,6 +217,21 @@ fn build_command_registry() -> Vec<Command> {
         Command::new("command_palette", "Command Palette", Action::CommandPalette)
             .description("Search and run commands")
             .keys(vec![":".into(), "⌘⇧P".into()]),
+        Command::new("mode_cycle", "Cycle Mode", Action::ModeCycle)
+            .description("Cycle NAV / EDIT / VIEW")
+            .keys(vec!["m".into()]),
+        Command::new("refresh", "Refresh", Action::ForceSnapshot)
+            .description("Refresh snapshot (or fetch FMP on Dashboard / Positions)")
+            .keys(vec!["f".into(), "⌘r".into()]),
+        Command::new("split_pane", "Toggle Split Pane", Action::SplitPaneToggle)
+            .description("Toggle split pane view")
+            .keys(vec!["p".into(), "⌘p".into()]),
+        Command::new("log_panel", "Toggle Log Panel", Action::ToggleLogPanel)
+            .description("Toggle log panel overlay")
+            .keys(vec!["`".into(), "~".into()]),
+        Command::new("tree_panel", "Toggle Tree Panel", Action::ToggleTreePanel)
+            .description("Toggle tree panel overlay (spike)")
+            .keys(vec!["g".into()]),
         Command::new("tab_next", "Next Tab", Action::TabNext)
             .description("Switch to next tab")
             .keys(vec!["Tab".into()]),
@@ -246,24 +273,12 @@ fn build_command_registry() -> Vec<Command> {
         )
         .description("Jump to Discount Bank tab")
         .keys(vec!["8".into(), "⌘8".into()]),
-        Command::new("jump_scenarios", "Jump to Scenarios", Action::JumpToTab(9))
-            .description("Jump to Scenarios tab")
+        Command::new("jump_ledger", "Jump to Ledger", Action::JumpToTab(9))
+            .description("Jump to Ledger journal tab")
             .keys(vec!["9".into(), "⌘9".into()]),
         Command::new("jump_settings", "Jump to Settings", Action::JumpToTab(0))
             .description("Jump to Settings tab")
             .keys(vec!["0".into(), "⌘0".into()]),
-        Command::new("split_pane", "Toggle Split Pane", Action::SplitPaneToggle)
-            .description("Toggle split pane view")
-            .keys(vec!["p".into(), "⌘p".into()]),
-        Command::new("log_panel", "Toggle Log Panel", Action::ToggleLogPanel)
-            .description("Toggle log panel overlay")
-            .keys(vec!["`".into(), "~".into()]),
-        Command::new("tree_panel", "Toggle Tree Panel", Action::ToggleTreePanel)
-            .description("Toggle tree panel overlay (spike)")
-            .keys(vec!["g".into()]),
-        Command::new("mode_cycle", "Cycle Mode", Action::ModeCycle)
-            .description("Cycle through application modes")
-            .keys(vec!["m".into()]),
         Command::new(
             "workspace_focus_next",
             "Next pane (composed workspace)",
@@ -392,6 +407,8 @@ pub(crate) fn context_hints_for(mode: AppMode, tab: Tab) -> Vec<(String, String)
                 }
                 Tab::Positions => {
                     hints.push(("↑↓".into(), "scroll".into()));
+                    hints.push(("r".into(), "sort".into()));
+                    hints.push(("c/Space".into(), "combo".into()));
                     hints.push(("Enter".into(), "detail".into()));
                 }
                 Tab::Orders => {
@@ -419,6 +436,10 @@ pub(crate) fn context_hints_for(mode: AppMode, tab: Tab) -> Vec<(String, String)
                 Tab::DiscountBank => {
                     hints.push(("r".into(), "refresh".into()));
                     hints.push(("↑↓".into(), "scroll".into()));
+                }
+                Tab::Ledger => {
+                    hints.push(("↑↓".into(), "scroll".into()));
+                    hints.push(("r".into(), "refresh".into()));
                 }
                 Tab::Scenarios => {
                     hints.push(("[ ]".into(), "DTE".into()));
@@ -489,26 +510,43 @@ mod tests {
     #[test]
     fn test_command_palette_filter() {
         let mut palette = CommandPalette::new();
-        palette.show();
+        palette.show(AppMode::Navigation, Tab::Dashboard);
 
         // Should show all commands initially
         assert!(!palette.filtered.is_empty());
 
         // Filter for "quit"
-        palette.push_char('q');
-        palette.push_char('u');
-        palette.push_char('i');
+        palette.push_char('q', AppMode::Navigation, Tab::Dashboard);
+        palette.push_char('u', AppMode::Navigation, Tab::Dashboard);
+        palette.push_char('i', AppMode::Navigation, Tab::Dashboard);
 
         // Should find quit command
         assert!(palette.filtered.len() <= 5);
 
         // Clear filter
-        palette.backspace();
-        palette.backspace();
-        palette.backspace();
+        palette.backspace(AppMode::Navigation, Tab::Dashboard);
+        palette.backspace(AppMode::Navigation, Tab::Dashboard);
+        palette.backspace(AppMode::Navigation, Tab::Dashboard);
 
         // Should show all commands again
         assert!(!palette.filtered.is_empty());
+    }
+
+    #[test]
+    fn command_registry_includes_core_keymap_entries() {
+        let commands = build_command_registry();
+        let ids: Vec<&str> = commands.iter().map(|c| c.id.as_str()).collect();
+        assert!(ids.contains(&"help"));
+        assert!(ids.contains(&"command_palette"));
+        assert!(ids.contains(&"mode_cycle"));
+        assert!(ids.contains(&"refresh"));
+        assert!(ids.contains(&"split_pane"));
+        assert!(ids.contains(&"log_panel"));
+        assert!(ids.contains(&"tree_panel"));
+
+        let help = commands.iter().find(|c| c.id == "help").unwrap();
+        assert!(help.keys.iter().any(|k| k == "?"));
+        assert!(help.keys.iter().any(|k| k == "⌘/"));
     }
 
     #[test]

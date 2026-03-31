@@ -39,13 +39,14 @@ fn make_app() -> (
         event_rx,
         config_rx,
         health_rx,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
+        None, // yield_refresh_tx
+        None, // loans_fetch_tx
+        None, // loan_create_tx
+        None, // loan_bulk_import_tx
+        None, // fmp_fetch_tx
+        None, // greeks_fetch_tx
+        None, // discount_bank_fetch_tx
+        None, // ledger_fetch_tx
     );
     (app, snap_tx, event_tx)
 }
@@ -76,6 +77,13 @@ fn input_mode_reports_chart_search_when_active() {
 }
 
 #[test]
+fn input_mode_reports_command_palette_when_visible() {
+    let (mut app, _, _) = make_app();
+    app.command_palette.show(app.app_mode, app.active_tab);
+    assert_eq!(app.input_mode(), InputMode::CommandPalette);
+}
+
+#[test]
 fn app_mode_tracks_input_mode_chart_search_and_normal() {
     assert_eq!(
         App::app_mode_for_input_mode(InputMode::Normal),
@@ -83,6 +91,10 @@ fn app_mode_tracks_input_mode_chart_search_and_normal() {
     );
     assert_eq!(
         App::app_mode_for_input_mode(InputMode::ChartSearch),
+        AppMode::Edit
+    );
+    assert_eq!(
+        App::app_mode_for_input_mode(InputMode::CommandPalette),
         AppMode::Edit
     );
     assert_eq!(App::app_mode_for_input_mode(InputMode::Help), AppMode::View);
@@ -117,6 +129,21 @@ fn charts_tab_k_prefers_pill_navigation_over_strategy_cancel() {
     assert_eq!(
         crate::input::key_to_action(&app_charts, press(KeyCode::Char('k'))),
         Some(crate::input::Action::ChartPillUp)
+    );
+}
+
+#[test]
+fn positions_tab_r_cycles_sort_mode() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Positions;
+    let press = |code: KeyCode| KeyEvent {
+        kind: KeyEventKind::Press,
+        ..KeyEvent::from(code)
+    };
+
+    assert_eq!(
+        crate::input::key_to_action(&app, press(KeyCode::Char('r'))),
+        Some(crate::input::Action::PositionsCycleSort)
     );
 }
 
@@ -189,6 +216,7 @@ fn config_hot_reload_updates_app_config() {
         event_rx,
         config_rx,
         health_rx,
+        None,
         None,
         None,
         None,
@@ -653,6 +681,7 @@ fn wide_terminal_renders_market_workspace() {
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Market Workspace"));
     assert!(content.contains("Dash + Pos + Orders + Yield visible"));
+    assert!(content.contains("Scroll: pane under cursor"));
 }
 
 #[test]
@@ -722,6 +751,160 @@ fn operations_workspace_banner_shows_nested_settings_focus() {
 }
 
 #[test]
+fn workspace_focus_target_returns_none_when_no_workspace_is_visible() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Alerts;
+    app.set_last_main_area_size(120, 24);
+
+    assert_eq!(
+        app.visible_workspace(),
+        crate::workspace::VisibleWorkspace::None
+    );
+    assert_eq!(app.workspace_focus_target(true), None);
+    assert_eq!(app.workspace_focus_target(false), None);
+}
+
+#[test]
+fn workspace_focus_target_cycles_market_workspace_tabs() {
+    let (mut app, _, _) = make_app();
+    app.set_last_main_area_size(190, 32);
+    app.active_tab = Tab::Dashboard;
+
+    assert_eq!(
+        app.visible_workspace(),
+        crate::workspace::VisibleWorkspace::Market
+    );
+    assert_eq!(app.workspace_focus_target(true), Some(Tab::Positions));
+    assert_eq!(app.workspace_focus_target(false), Some(Tab::Yield));
+
+    app.active_tab = Tab::Yield;
+    assert_eq!(app.workspace_focus_target(true), Some(Tab::Dashboard));
+    assert_eq!(app.workspace_focus_target(false), Some(Tab::Orders));
+}
+
+#[test]
+fn market_workspace_mouse_scroll_targets_pane_under_cursor() {
+    use crossterm::event::{MouseEvent, MouseEventKind};
+    use api::{CandleSnapshot, SymbolSnapshot};
+
+    let (mut app, _, _) = make_app();
+    app.set_last_main_area_size(190, 32);
+
+    // Focus Yield, but scroll the Dashboard pane via mouse wheel location.
+    app.active_tab = Tab::Yield;
+
+    // Seed a snapshot with multiple dashboard rows so selection can advance.
+    let mut sys = SystemSnapshot::default();
+    let now = Utc::now();
+    sys.symbols = vec![
+        SymbolSnapshot {
+            symbol: "AAA".into(),
+            last: 1.0,
+            bid: 1.0,
+            ask: 1.0,
+            spread: 0.0,
+            roi: 0.0,
+            maker_count: 0,
+            taker_count: 0,
+            volume: 0,
+            candle: CandleSnapshot {
+                open: 1.0,
+                high: 1.0,
+                low: 1.0,
+                close: 1.0,
+                volume: 0,
+                entry: 1.0,
+                updated: now,
+            },
+        },
+        SymbolSnapshot {
+            symbol: "BBB".into(),
+            last: 2.0,
+            bid: 2.0,
+            ask: 2.0,
+            spread: 0.0,
+            roi: 0.0,
+            maker_count: 0,
+            taker_count: 0,
+            volume: 0,
+            candle: CandleSnapshot {
+                open: 2.0,
+                high: 2.0,
+                low: 2.0,
+                close: 2.0,
+                volume: 0,
+                entry: 2.0,
+                updated: now,
+            },
+        },
+        SymbolSnapshot {
+            symbol: "CCC".into(),
+            last: 3.0,
+            bid: 3.0,
+            ask: 3.0,
+            spread: 0.0,
+            roi: 0.0,
+            maker_count: 0,
+            taker_count: 0,
+            volume: 0,
+            candle: CandleSnapshot {
+                open: 3.0,
+                high: 3.0,
+                low: 3.0,
+                close: 3.0,
+                volume: 0,
+                entry: 3.0,
+                updated: now,
+            },
+        },
+    ];
+    let mut snap = TuiSnapshot::new(sys, SnapshotSource::Nats);
+    snap.refresh_display_dto();
+    app.set_snapshot(Some(snap));
+
+    let size = ratatui::layout::Rect::new(0, 0, 190, 32);
+    let mouse = MouseEvent {
+        kind: MouseEventKind::ScrollDown,
+        column: 5,
+        row: 6,
+        modifiers: crossterm::event::KeyModifiers::empty(),
+    };
+
+    let action = crate::mouse::handle_mouse_event(&app, mouse, size).expect("expected action");
+    assert!(
+        matches!(action, crate::input::Action::MouseScrollDownIn(Tab::Dashboard)),
+        "expected mouse scroll to route to Dashboard pane, got {action:?}"
+    );
+
+    let before = app.dashboard_table.selected();
+    app.handle_action(action);
+    let after = app.dashboard_table.selected();
+    assert!(
+        after > before,
+        "expected dashboard selection to advance (before={before}, after={after})"
+    );
+    assert_eq!(
+        app.active_tab,
+        Tab::Yield,
+        "mouse wheel should not steal focus from the active tab"
+    );
+}
+
+#[test]
+fn workspace_focus_target_cycles_credit_workspace_tabs() {
+    let (mut app, _, _) = make_app();
+    app.set_last_main_area_size(190, 32);
+    app.active_tab = Tab::Loans;
+
+    assert_eq!(
+        app.visible_workspace(),
+        crate::workspace::VisibleWorkspace::Credit
+    );
+    assert_eq!(app.workspace_focus_target(true), Some(Tab::DiscountBank));
+    assert_eq!(app.workspace_focus_target(false), Some(Tab::DiscountBank));
+}
+
+#[test]
 fn settings_hint_bar_shows_secondary_focus_label() {
     let (mut app, _, _) = make_app();
     app.active_tab = Tab::Settings;
@@ -734,6 +917,26 @@ fn settings_hint_bar_shows_secondary_focus_label() {
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("focus:Transport"));
+}
+
+#[test]
+fn settings_tab_uses_wide_layout_in_medium_terminal() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Settings;
+
+    // Medium terminal: wide enough for the 2-column Settings layout even when
+    // not "ultra wide".
+    let backend = TestBackend::new(110, 24);
+    let mut terminal = Terminal::new(backend).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
+
+    let content = buffer_to_string(&frame.area, &frame.buffer);
+    assert!(
+        content.contains("Config overrides")
+            && content.contains("Data sources")
+            && content.contains("Alpaca credentials"),
+        "expected Settings sections to render in medium terminal"
+    );
 }
 
 #[test]
@@ -780,6 +983,25 @@ fn orders_tab_renders_filter_mode_cues() {
 }
 
 #[test]
+fn orders_filter_typing_mode_deactivates_when_navigating_away() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Orders;
+    app.order_filter_active = true;
+    app.order_filter = "SPY".into();
+
+    // Navigate away while still in OrdersFilter input mode. Plain '1' is treated as filter input,
+    // so use the macOS Cmd+1 shell binding to jump tabs.
+    app.handle_key(KeyEvent::new(
+        KeyCode::Char('1'),
+        crossterm::event::KeyModifiers::SUPER,
+    ));
+
+    assert_eq!(app.active_tab, Tab::Dashboard);
+    assert!(!app.order_filter_active);
+    assert_eq!(app.order_filter, "SPY");
+}
+
+#[test]
 fn settings_tab_renders_config_edit_label_and_prompt() {
     let (mut app, _, _) = make_app();
     app.active_tab = Tab::Settings;
@@ -803,6 +1025,7 @@ fn hint_bar_renders_async_status_cues() {
     app.active_tab = Tab::Yield;
     app.yield_refresh_pending = true;
     app.loans_fetch_pending = true;
+    app.fmp_fetch_pending = true;
 
     let backend = TestBackend::new(240, 12);
     let mut terminal = Terminal::new(backend).unwrap();
@@ -811,6 +1034,7 @@ fn hint_bar_renders_async_status_cues() {
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Yield:loading"));
     assert!(content.contains("Loans:loading"));
+    assert!(content.contains("FMP:loading"));
 }
 
 #[test]
@@ -828,6 +1052,7 @@ fn request_loans_fetch_if_uncached_skips_when_list_already_ok() {
         health_rx,
         None,
         Some(loans_tx),
+        None,
         None,
         None,
         None,
@@ -993,6 +1218,7 @@ fn apply_loan_enter_sends_record_and_clears_form_when_channel_wired() {
         None,
         None,
         Some(loan_tx),
+        None,
         None,
         None,
         None,
