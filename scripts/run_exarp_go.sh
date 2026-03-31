@@ -14,7 +14,10 @@ sanitize_go_env() {
 resolve_exarp_go() {
   local candidate=""
 
-  if command -v exarp-go >/dev/null 2>&1; then
+  # Prefer a project-adjacent exarp-go (keeps hooks stable even if a stale global install exists).
+  # Override by explicitly setting EXARP_GO_ROOT or ensuring exarp-go is on PATH and setting
+  # EXARP_GO_PREFER_PATH=1.
+  if [[ "${EXARP_GO_PREFER_PATH:-0}" == "1" ]] && command -v exarp-go >/dev/null 2>&1; then
     candidate="$(command -v exarp-go)"
   elif [[ -n "${EXARP_GO_ROOT:-}" ]] && [[ -x "${EXARP_GO_ROOT}/bin/exarp-go" ]]; then
     candidate="${EXARP_GO_ROOT}/bin/exarp-go"
@@ -22,6 +25,8 @@ resolve_exarp_go() {
     candidate="${PROJECT_ROOT}/../mcp/exarp-go/bin/exarp-go"
   elif [[ -x "${PROJECT_ROOT}/../../mcp/exarp-go/bin/exarp-go" ]]; then
     candidate="${PROJECT_ROOT}/../../mcp/exarp-go/bin/exarp-go"
+  elif command -v exarp-go >/dev/null 2>&1; then
+    candidate="$(command -v exarp-go)"
   elif [[ -x "${HOME}/go/bin/exarp-go" ]]; then
     candidate="${HOME}/go/bin/exarp-go"
   elif [[ -x "${HOME}/Projects/exarp-go/bin/exarp-go" ]]; then
