@@ -1,0 +1,37 @@
+---
+description: Aether Todo2 + exarp-go quick reference (PROJECT_ROOT, task sync, bulk Review→Done, JSON task_workflow, Cargo.lock, TUI layout helpers)
+alwaysApply: false
+---
+
+# Aether — Todo2 / exarp-go cheatsheet
+
+## Scope
+
+This **repo’s** tasks live in `.todo2/` here. **`PROJECT_ROOT` for exarp-go MCP and `scripts/run_exarp_go.sh` is this project root** (Aether), not the exarp-go source repository.
+
+## Non-negotiables
+
+- **Canonical store:** `.todo2/todo2.db`. Mirror **`state.todo2.json`** via `./scripts/run_exarp_go.sh task sync` after bulk updates or when UI JSON drifts.
+- **CLI:** always pass a subcommand to `run_exarp_go.sh` (no args = stdio MCP).
+- **Bulk Review → Done:**  
+  `./scripts/run_exarp_go.sh task update --status Review --new-status Done`  
+  then `task sync`.
+
+## When MCP/CLI args fail
+
+Use:
+
+`./scripts/run_exarp_go.sh -tool task_workflow -args '{"action":"update",…}'`
+
+for `dependencies`, `add_comment`, etc. Include **`output_format":"json"`** when parsing responses.
+
+## agents/backend Cargo.lock
+
+Batch manifest work → one **`cd agents/backend && cargo check`** (or test) → single lockfile commit; regenerate on conflict, no hand-merge.
+
+## TUI
+
+- Shared workspace banner/layout: `services/tui_service/src/ui/workspace_layout.rs`.
+- Do not add a second **`render_hint_bar`** in charts; use a distinct name (e.g. chart symbol hint) vs `ui/mod.rs` global hint bar.
+
+Full skill: `.cursor/skills/aether-todo2-exarp/SKILL.md`.

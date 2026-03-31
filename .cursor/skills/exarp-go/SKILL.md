@@ -1,15 +1,23 @@
 # exarp-go Project Automation
 
-Complete guide for task management, project health, and automation using **exarp-go** as its **own** project (separate repo from Aether).
+Complete guide for task management, project health, and automation with the **exarp-go binary / MCP server**.
 
-## PROJECT_ROOT (critical)
+## PROJECT_ROOT — which repo? (critical)
 
-exarp-go is a **separate codebase**. **`PROJECT_ROOT` must be the exarp-go repository root** — the directory that contains exarp-go’s `.todo2/`, `Makefile`, `cmd/server`, and `AGENTS.md` for that repo. Paths differ by machine (e.g. a sibling clone `.../mcp/exarp-go`).
+exarp-go is **one tool**; **`PROJECT_ROOT` is whichever project’s `.todo2/` you mean**:
 
-- Use that path for **every exarp-go MCP tool call** that accepts `workingDirectory` / `PROJECT_ROOT`, and when running exarp-go’s **`run-exarp-go.sh`** / binary with env `PROJECT_ROOT`.
-- This skill file may live under Aether (`.cursor/skills/`) for editor discovery; that does **not** change the rule: **tasks, scorecard, docs health, and session state come from exarp-go’s tree**, not from the open app repo, unless you deliberately run a second MCP entry with a different `PROJECT_ROOT`.
+| You are working in… | Set `PROJECT_ROOT` to… | Tasks / docs come from… |
+|---------------------|---------------------------|-------------------------|
+| **This app repo (Aether)** | **Aether repository root** | `.todo2/` under Aether |
+| **exarp-go source repo** | **exarp-go repository root** | `.todo2/` under exarp-go |
 
-If `PROJECT_ROOT` points at another repo (e.g. Aether) by mistake, exarp-go will read **that** project’s `.todo2` and docs — wrong context for exarp-go work.
+- Cursor MCP for **Aether** should point `run_exarp_go.sh` at **Aether** root so Todo2 matches this codebase.
+- When **developing exarp-go itself**, `PROJECT_ROOT` must be the **exarp-go** clone (contains its `Makefile`, `cmd/server`, migrations).
+- This skill file may live under Aether for editor discovery; **always match `PROJECT_ROOT` to the backlog you intend to use.**
+
+**Aether-only quick ref:** `.cursor/skills/aether-todo2-exarp/SKILL.md` (bulk Review→Done, `task sync`, JSON `task_workflow`, Cargo.lock, TUI layout notes).
+
+If `PROJECT_ROOT` is wrong, exarp-go reads the wrong `.todo2/` and wrong `docs/` for health/scorecard.
 
 ## When to Use
 
@@ -236,6 +244,6 @@ When multiple agents may work in parallel:
 
 **MCP not responding**: Verify exarp-go is in PATH or `run_exarp_go.sh` works
 
-**Config not persisting / wrong tasks**: Confirm `PROJECT_ROOT` is the **exarp-go** repo root, not the app repo you have open (see [PROJECT_ROOT (critical)](#project_root-critical))
+**Config not persisting / wrong tasks**: Confirm `PROJECT_ROOT` is the **intended project root** (Aether vs exarp-go clone) for the backlog you are editing (see [PROJECT_ROOT — which repo?](#project_root--which-repo-critical))
 
 **Session handoff missing**: Use `session` tool with `action=handoff` and `sub_action=end`

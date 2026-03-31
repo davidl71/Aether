@@ -8,6 +8,6 @@ alwaysApply: true
 - **Canonical project guidelines:** `AGENTS.md` (all tools). **Quick refs:** `CLAUDE.md` (Claude Code), `CODEX.md` (OpenAI Codex). Prefer updating `AGENTS.md` over duplicating policy in editor configs.
 - **OpenCode:** `opencode.json` (MCP + plugin) loads instruction snippets from `.opencode/rules/*.md` — keep them in sync with `AGENTS.md` and with matching `.cursor/rules/*.mdc` where duplicated (build, stubs, types, compression).
 - **Cursor rules:** This folder (`.cursor/rules/`) adds file-type or topic-specific guidance; reference `AGENTS.md` / `CLAUDE.md` / `CODEX.md` instead of copying long policy.
-- **Skills:** When using Cursor or plugin skills, rely on `AGENTS.md` plus the tool’s quick ref. Project root = workspace root.
+- **Skills:** When using Cursor or plugin skills, rely on `AGENTS.md` plus the tool’s quick ref. Project root = workspace root. **Aether Todo2 + exarp:** `.cursor/skills/aether-todo2-exarp/SKILL.md`.
 - **Subagents:** When launching subagents (e.g. mcp_task explore/shell/code-reviewer, exarp-go, Claude custom agents), include in the prompt: project root path and “Canonical guidelines: `AGENTS.md` in repo root; quick ref: `CLAUDE.md` or `CODEX.md` as appropriate.”
 - **Full setup:** See docs/archive/AI_EDITOR_SETUP.md for OpenCode, Claude Code, Cursor, skills, and subagent setup and command parity.

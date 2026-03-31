@@ -138,6 +138,9 @@ cd agents/backend && cargo build
 # Run backend and TUI (from agents/backend/)
 cargo run -p backend_service   # :8080
 cargo run -p tui_service       # TUI
+# Optional: ratatui-interact field↔list sub-focus (charts search, orders filter, palette, loan import); see docs/TUI_RATATUI_INTERACT.md
+# cargo run -p tui_service --features tui-interact
+
 cargo run -p cli               # CLI
 
 # Test and lint (from agents/backend/)
@@ -338,6 +341,11 @@ For tool-specific commands you can also use `scripts/run_exarp_go_tool.sh -tool
 <name> -args '<json>'` to keep the wrapper’s sanitization logic. This keeps task
 updates, docs health, scorecard, and other automation aligned with the repo
 context referenced by the agents and skills that follow.
+
+**Cheatsheet (Aether Todo2 + exarp):** `.cursor/skills/aether-todo2-exarp/SKILL.md` and
+`.cursor/rules/aether-todo2-exarp-cheatsheet.mdc` — bulk `task update --status Review --new-status Done`,
+`task sync`, JSON `task_workflow` for comments/dependencies, `agents/backend` Cargo.lock discipline,
+TUI workspace layout module (`ui/workspace_layout.rs`) vs chart hint naming.
 
 Use **`docs/AI_WORKFLOW.md`** for the preferred prompt structure, backlog
 hygiene, and thread-splitting defaults used in this repo.

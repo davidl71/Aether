@@ -11,6 +11,14 @@ Hooks in this directory run at specific Cursor lifecycle events (e.g. when a new
 
 **Note:** Cursor must be configured to use project hooks (see Cursor docs for session start / context hooks). The script name may need to match Cursor’s expected hook name (e.g. `sessionStart` or `session-prime` depending on Cursor version).
 
+## Todo2 mirror (not a separate hook)
+
+Session prime reads current tasks from exarp-go; it does **not** run `task sync`. After **bulk** task updates outside chat (batch status changes, migrations), run manually from repo root:
+
+`./scripts/run_exarp_go.sh task sync`
+
+so `.todo2/state.todo2.json` stays aligned with `.todo2/todo2.db`. Cheatsheet: `.cursor/skills/aether-todo2-exarp/SKILL.md`.
+
 ## Reference
 
 - exarp-go (same pattern): `.cursor/hooks/session-prime.sh` in the exarp-go repo.

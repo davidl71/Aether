@@ -3,6 +3,7 @@
 See [AGENTS.md](AGENTS.md) for complete project guidelines. For multi-editor setup
 (OpenCode, Cursor, skills, subagents), see [docs/archive/AI_EDITOR_SETUP.md](docs/archive/AI_EDITOR_SETUP.md).
 For exarp-go (session prime, handoff, tasks, scorecard) in Cursor, Claude Code, and OpenCode, see [docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md).
+**This repo’s Todo2 cheatsheet:** [.cursor/skills/aether-todo2-exarp/SKILL.md](.cursor/skills/aether-todo2-exarp/SKILL.md).
 For current product direction and workflow defaults, see
 [docs/DATA_EXPLORATION_MODE.md](docs/DATA_EXPLORATION_MODE.md) and
 [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
@@ -81,7 +82,7 @@ AI-friendly JSON output (for parsing):
 | What | Where |
 |------|-------|
 | Backend service (REST+WS API) | `agents/backend/services/backend_service` |
-| TUI (ratatui) | `agents/backend/services/tui_service` |
+| TUI (ratatui) | `agents/backend/services/tui_service` (optional `cargo run -p tui_service --features tui-interact` for ratatui-interact pilots; see `docs/TUI_RATATUI_INTERACT.md`) |
 | CLI entry point | `agents/backend/bin/cli` |
 | Broker trait + domain | `agents/backend/crates/broker_engine/` |
 | IBKR adapter | `agents/backend/crates/ib_adapter/` |

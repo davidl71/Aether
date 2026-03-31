@@ -37,6 +37,8 @@ workingDirectory="<path to this repo root>"
 
 Use the actual workspace path; do not assume a fixed path across machines.
 
+**Local cheatsheet (bulk task ops, sync, JSON fallbacks):** `.cursor/rules/aether-todo2-exarp-cheatsheet.mdc` and `.cursor/skills/aether-todo2-exarp/SKILL.md`.
+
 ---
 
 ## Available Tools
