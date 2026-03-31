@@ -12,6 +12,8 @@
 | [QUICKSTART_RUST.md](./QUICKSTART_RUST.md) | Rust dev quickstart |
 | [DATA_EXPLORATION_MODE.md](./DATA_EXPLORATION_MODE.md) | Current read-only product direction and architectural boundaries |
 | [AI_WORKFLOW.md](./AI_WORKFLOW.md) | Repo workflow defaults for AI-assisted implementation |
+| [CLOUD_AGENT_BACKLOG_CLERK.md](./CLOUD_AGENT_BACKLOG_CLERK.md) | Cursor Cloud agent prompt: Todo2 hygiene + tag-aware batching |
+| [CLOUD_AGENT_RELEASE_CLERK.md](./CLOUD_AGENT_RELEASE_CLERK.md) | Cursor Cloud agent prompt: PR prep + follow-up verification tasks |
 
 ## Architecture & Design
 
