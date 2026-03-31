@@ -1,8 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use backoff::backoff::Backoff;
-use backoff::exponential::ExponentialBackoffBuilder;
+use common::backoff::ExponentialBackoffBuilder;
 use futures::future::BoxFuture;
 use tracing::{info, warn};
 
@@ -18,7 +17,7 @@ pub type TaskFactory = Arc<dyn Fn() -> BoxFuture<'static, anyhow::Result<()>> + 
 /// This is a small safety net for subscription loops and other "should never die" background tasks.
 pub fn spawn_supervised(name: &'static str, factory: TaskFactory) {
     tokio::spawn(async move {
-        let mut backoff: backoff::ExponentialBackoff = ExponentialBackoffBuilder::new()
+        let mut backoff = ExponentialBackoffBuilder::new()
             .with_initial_interval(Duration::from_secs(2))
             .with_max_interval(MAX_BACKOFF)
             .build();

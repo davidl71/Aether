@@ -20,6 +20,15 @@ pub(crate) fn settings_key_action(app: &App, key: KeyCode) -> Option<Action> {
     match key {
         KeyCode::Left => Some(Action::SettingsSectionPrev),
         KeyCode::Right => Some(Action::SettingsSectionNext),
+        // Prototype "selective focus manager": Tab/Shift+Tab cycle Settings focus *within*
+        // the Settings pane, but only when Tab isn't already used to cycle visible workspaces.
+        //
+        // This keeps the wide Operations workspace behavior unchanged (Tab cycles Alerts/Logs/Settings)
+        // while letting Settings behave like a self-contained focus surface in single-pane layouts.
+        KeyCode::Tab if app.workspace_focus_target(true).is_none() => Some(Action::SettingsSectionNext),
+        KeyCode::BackTab if app.workspace_focus_target(false).is_none() => {
+            Some(Action::SettingsSectionPrev)
+        }
         KeyCode::Up => Some(Action::SettingsScrollUp),
         KeyCode::Down => Some(Action::SettingsScrollDown),
         KeyCode::Char('a') | KeyCode::Char('A')

@@ -19,6 +19,7 @@ tracing-subscriber = { workspace = true }
 
 # Internal crates
 api          = { path = "../../crates/api", features = ["keyring"] }
+common       = { path = "../../crates/common" }
 market_data  = { path = "../../crates/market_data", features = ["keyring"] }
 nats_adapter = { path = "../../crates/nats_adapter" }
 
@@ -26,6 +27,9 @@ nats_adapter = { path = "../../crates/nats_adapter" }
 ratatui   = "0.30"
 # event-stream enables crossterm::EventStream for async tokio::select! event handling
 crossterm = { version = "0.28", features = ["event-stream"] }
+
+# Optional interactive widget library (kept isolated behind the `tui-interact` feature).
+ratatui-interact = { version = "0.5.1", optional = true, default-features = false }
 
 # Panic hooks that restore terminal before printing error reports
 color-eyre = "0.6"
@@ -51,7 +55,10 @@ uuid = { workspace = true }
 
 # JSONC and backoff (see docs/platform/RUST_CRATE_OPPORTUNITIES_AUDIT.md)
 jsonc-parser = { workspace = true }
-backoff = { workspace = true }
+## backoff: replaced by common::backoff (no unmaintained deps)
 
-# Market hours detection for status bar (NYSE proxy for options market)
-trading-calendar = { workspace = true }
+## Market hours detection: implemented locally (no external calendar dep)
+
+[features]
+# Off by default: keeps dependency footprint minimal until a focused prototype needs it.
+tui-interact = ["dep:ratatui-interact"]

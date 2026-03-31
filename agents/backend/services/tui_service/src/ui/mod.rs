@@ -36,6 +36,7 @@ use ratatui::{
 };
 
 use api::CommandStatus;
+use chrono::{TimeDelta, Utc};
 
 use crate::app::{App, DetailPopupContent, InputMode, Tab};
 use crate::events::{ConnectionState, ConnectionStatus, ConnectionTarget};
@@ -250,6 +251,8 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         ConnectionTarget::Nats,
         &app.nats_status,
     ));
+    spans.push(Span::raw(" "));
+    spans.push(render_transport_badge(app));
     if app.nats_status.state != ConnectionState::Connected && !app.nats_status.detail.is_empty() {
         spans.push(Span::raw(" "));
         spans.push(Span::styled(
@@ -261,11 +264,67 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
+fn render_transport_badge(app: &App) -> Span<'static> {
+    // Keep compact: full details are in Settings → Health.
+    const DEFAULT_STALE_AFTER_SECS: i64 = 45;
+    let now = Utc::now();
+    let transport = app
+        .nats_transport
+        .effective_at(now, TimeDelta::seconds(DEFAULT_STALE_AFTER_SECS));
+
+    let (label, color) = match transport.status.as_str() {
+        "ok" => ("T:OK", Color::Green),
+        "degraded" => ("T:WARN", Color::Yellow),
+        "error" | "disabled" => ("T:DOWN", Color::Red),
+        _ => ("T:—", Color::DarkGray),
+    };
+    let stale = transport
+        .extra
+        .get("stale")
+        .map(String::as_str)
+        .is_some_and(|v| v == "true");
+    let suffix = if stale { "*" } else { "" };
+
+    Span::styled(
+        format!("{label}{suffix}"),
+        Style::default().fg(color).add_modifier(Modifier::BOLD),
+    )
+}
+
 fn render_tab_bar(f: &mut Frame, app: &App, area: Rect) {
     let titles: Vec<Line> = Tab::ALL
         .iter()
         .map(|t| Line::from(format!(" {} ", t.label())))
         .collect();
+
+    // Record per-tab clickable regions for mouse hit-testing.
+    //
+    // We intentionally avoid hard-coded x offsets: the tab labels (and terminal width)
+    // should be the only inputs to hit-testing.
+    let mut regions = Vec::with_capacity(Tab::ALL.len());
+    let mut cursor_x = area.x;
+    let click_height = area.height.min(2).max(1);
+    for (tab, title) in Tab::ALL.iter().zip(titles.iter()) {
+        let w = title.width() as u16;
+        if w == 0 {
+            continue;
+        }
+        // Clamp to the available width to avoid overflow on narrow terminals.
+        let remaining = area
+            .x
+            .saturating_add(area.width)
+            .saturating_sub(cursor_x);
+        if remaining == 0 {
+            break;
+        }
+        let width = w.min(remaining);
+        regions.push((
+            *tab,
+            Rect::new(cursor_x, area.y, width, click_height),
+        ));
+        cursor_x = cursor_x.saturating_add(w);
+    }
+    app.set_tab_bar_regions(regions);
 
     let active_idx = Tab::ALL
         .iter()

@@ -673,6 +673,32 @@ fn settings_left_right_escapes_nested_sections() {
 }
 
 #[test]
+fn settings_tab_tab_cycles_settings_section_when_no_workspace_focus_cycle() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Settings;
+    app.set_last_main_area_size(120, 24); // not wide enough for Operations workspace
+
+    app.settings_section = SettingsSection::Health;
+    app.settings_health_focus = SettingsHealthFocus::Transport;
+
+    app.handle_key(KeyEvent::from(KeyCode::Tab));
+    assert_eq!(app.active_tab, Tab::Settings, "Tab should not leave Settings");
+    assert_eq!(
+        app.settings_section,
+        SettingsSection::Config,
+        "Tab should advance Settings focus"
+    );
+
+    app.handle_key(KeyEvent::from(KeyCode::BackTab));
+    assert_eq!(app.active_tab, Tab::Settings, "BackTab should not leave Settings");
+    assert_eq!(
+        app.settings_section,
+        SettingsSection::Health,
+        "BackTab should reverse Settings focus"
+    );
+}
+
+#[test]
 fn settings_up_down_escape_at_list_boundaries() {
     let (mut app, _, _) = make_app();
     app.active_tab = Tab::Settings;
@@ -911,6 +937,43 @@ fn market_workspace_mouse_scroll_targets_pane_under_cursor() {
         app.active_tab,
         Tab::Yield,
         "mouse wheel should not steal focus from the active tab"
+    );
+}
+
+#[test]
+fn mouse_click_on_tab_bar_routes_via_recorded_regions() {
+    use crossterm::event::{MouseEvent, MouseEventKind};
+
+    let (mut app, _, _) = make_app();
+
+    // Render once to populate `tab_bar_regions` via `ui::render_tab_bar`.
+    let backend = TestBackend::new(120, 24);
+    let mut terminal = Terminal::new(backend).unwrap();
+    let _ = terminal.draw(|f| render(f, &mut app)).unwrap();
+
+    let (tab, rect) = app
+        .tab_bar_regions
+        .borrow()
+        .iter()
+        .find(|(t, _)| *t == Tab::Orders)
+        .copied()
+        .expect("expected Orders tab region");
+
+    // Click within the Orders tab region.
+    let mouse = MouseEvent {
+        kind: MouseEventKind::Down(crossterm::event::MouseButton::Left),
+        column: rect.x.saturating_add(1),
+        row: rect.y,
+        modifiers: crossterm::event::KeyModifiers::empty(),
+    };
+
+    let size = ratatui::layout::Rect::new(0, 0, 120, 24);
+    let action = crate::mouse::handle_mouse_event(&app, mouse, size).expect("expected action");
+
+    assert_eq!(
+        action,
+        crate::input::Action::JumpToTab((Tab::ALL.iter().position(|t| t == &tab).unwrap() + 1) as u8),
+        "expected mouse click to map to JumpToTab for the clicked tab"
     );
 }
 

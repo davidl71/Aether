@@ -18,6 +18,7 @@ use api::{
     RuntimeOrderDto, RuntimePositionDto, ScenarioDto,
 };
 use crossterm::event::{KeyCode, KeyEvent};
+use ratatui::layout::Rect;
 use tokio::sync::{mpsc, watch};
 use tui_logger::TuiWidgetState;
 
@@ -447,6 +448,8 @@ pub struct App {
     pub needs_redraw: bool,
     pub dirty_flags: crate::dirty_flags::DirtyFlags,
     pub active_tab: Tab,
+    /// Regions for per-tab labels in the tab bar (mouse hit-testing).
+    pub(crate) tab_bar_regions: RefCell<Vec<(Tab, Rect)>>,
     /// Last rendered main-content area size; input uses this to decide whether wide workspaces
     /// are actually visible before hijacking focus navigation.
     last_main_area_size: Cell<(u16, u16)>,
@@ -612,7 +615,7 @@ pub struct App {
     pub loan_create_tx: Option<mpsc::UnboundedSender<LoanRecord>>,
     /// Buffer for bulk-import file path on Loans tab (`b` / `i`); None when not editing.
     pub loan_import_path: Option<String>,
-    /// Sender to bulk-import loans from a JSON file path (reads file, NATS `api.loans.import_bulk`).
+    /// Sender to bulk-import loans from a JSON/CSV file path (reads file, NATS `api.loans.import_bulk`).
     pub loan_bulk_import_tx: Option<mpsc::UnboundedSender<std::path::PathBuf>>,
     /// Last fetched Discount Bank balance (NATS api.discount_bank.balance).
     pub discount_bank_balance: Option<Result<DiscountBankBalanceDto, String>>,
@@ -684,6 +687,7 @@ impl App {
             needs_redraw: true,
             dirty_flags: crate::dirty_flags::DirtyFlags::new(),
             active_tab: Tab::Dashboard,
+            tab_bar_regions: RefCell::new(Vec::new()),
             last_main_area_size: Cell::new((0, 0)),
             snapshot: std::cell::UnsafeCell::new(None),
             roi_history: HashMap::new(),
@@ -853,6 +857,10 @@ impl App {
 
     pub fn set_last_main_area_size(&self, width: u16, height: u16) {
         self.last_main_area_size.set((width, height));
+    }
+
+    pub(crate) fn set_tab_bar_regions(&self, regions: Vec<(Tab, Rect)>) {
+        *self.tab_bar_regions.borrow_mut() = regions;
     }
 
     pub fn visible_workspace(&self) -> VisibleWorkspace {

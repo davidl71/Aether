@@ -167,7 +167,7 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
 
     // Hint line
     let hint = Line::from(Span::styled(
-        " ↑↓ scroll  n=new  b/i=bulk JSON ",
+        " ↑↓ scroll  n=new  b/i=bulk JSON/CSV ",
         Style::default().fg(Color::DarkGray),
     ));
     let hint_area = Rect::new(inner.x, inner.y + inner.height - 1, inner.width, 1);
@@ -187,7 +187,11 @@ fn render_loan_import_path(f: &mut Frame, area: Rect, path_input: &str) {
     );
     let lines = vec![
         Line::from(Span::styled(
-            "JSON file: { \"loans\": [ ... ] } or legacy { version, last_updated, loans }",
+            "JSON: { \"loans\": [ ... ] } or legacy { version, last_updated, loans }",
+            Style::default().fg(Color::DarkGray),
+        )),
+        Line::from(Span::styled(
+            "CSV: header row with LoanRecord snake_case fields (optional currency)",
             Style::default().fg(Color::DarkGray),
         )),
         Line::from(""),

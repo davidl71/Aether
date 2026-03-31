@@ -14,8 +14,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
-use backoff::backoff::Backoff;
-use backoff::exponential::ExponentialBackoffBuilder;
+use common::backoff::ExponentialBackoffBuilder;
 
 const NATS_URL_ENV: &str = "NATS_URL";
 const NATS_URL_DEFAULT: &str = "nats://localhost:4222";
@@ -143,7 +142,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         had_tws_error
     }
 
-    let backoff: backoff::ExponentialBackoff = ExponentialBackoffBuilder::new()
+    let backoff = ExponentialBackoffBuilder::new()
         .with_initial_interval(Duration::from_secs(2))
         .with_multiplier(2.0)
         .with_max_interval(Duration::from_secs(60))

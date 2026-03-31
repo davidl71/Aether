@@ -4,12 +4,14 @@ edition = "2021"
 version = "0.1.0"
 
 [dependencies]
-backoff = { workspace = true }
 common = { path = "../common" }
 # object-store omitted (unused); ring for TLS (smaller than aws-lc-rs)
-async-nats = { version = "0.46", default-features = false, features = ["server_2_10", "server_2_11", "server_2_12", "service", "jetstream", "nkeys", "crypto", "kv", "websockets", "nuid", "ring"] }
+# Pinned to async-nats v0.47.0 tag to pick up rustls-native-certs 0.8+,
+# which removes the (unmaintained) rustls-pemfile dependency (RUSTSEC-2025-0134).
+async-nats = { git = "https://github.com/nats-io/nats.rs", tag = "async-nats/v0.47.0", default-features = false, features = ["server_2_10", "server_2_11", "server_2_12", "service", "jetstream", "nkeys", "crypto", "kv", "websockets", "nuid", "ring"] }
 bytes = "1.5"
 chrono = { workspace = true }
+backoff = { workspace = true }
 futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

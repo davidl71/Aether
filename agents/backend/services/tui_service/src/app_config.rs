@@ -1,13 +1,61 @@
 use std::collections::HashMap;
 
+use chrono::Datelike;
+
 use crate::config::{PositionsSortMode, TuiConfig, TuiTheme};
 
-/// Returns `Some(true)` when NYSE is currently open, `Some(false)` when closed, `None` on error.
-/// Uses NYSE as proxy for options market hours (CBOE follows NYSE schedule).
+/// Returns `Some(true)` when NYSE is currently open, `Some(false)` when closed.
+///
+/// Notes:
+/// - This is an approximation intended for TUI status display only.
+/// - It ignores US market holidays and any special trading sessions.
+/// - It uses US DST rules to approximate the NY timezone offset.
 pub(crate) fn nyse_is_open() -> Option<bool> {
-    use trading_calendar::{Market, TradingCalendar};
-    let cal = TradingCalendar::new(Market::NYSE).ok()?;
-    cal.is_open_now().ok()
+    use chrono::{Datelike, Timelike, Utc, Weekday};
+
+    // NYSE regular session: 09:30–16:00 America/New_York, Mon–Fri.
+    let now_utc = Utc::now();
+    let ny_offset_hours = ny_utc_offset_hours(now_utc.date_naive())?;
+    let now_ny = now_utc + chrono::Duration::hours(ny_offset_hours.into());
+
+    match now_ny.weekday() {
+        Weekday::Sat | Weekday::Sun => return Some(false),
+        _ => {}
+    }
+
+    let minutes = (now_ny.hour() * 60 + now_ny.minute()) as i32;
+    let open = 9 * 60 + 30;
+    let close = 16 * 60;
+    Some(minutes >= open && minutes < close)
+}
+
+fn ny_utc_offset_hours(date: chrono::NaiveDate) -> Option<i32> {
+    // DST for America/New_York: second Sunday in March → first Sunday in November.
+    // Within that range offset is -4; otherwise -5.
+    let year = date.year();
+    let dst_start = nth_weekday_of_month(year, 3, chrono::Weekday::Sun, 2)?;
+    let dst_end = nth_weekday_of_month(year, 11, chrono::Weekday::Sun, 1)?;
+    if date >= dst_start && date < dst_end {
+        Some(-4)
+    } else {
+        Some(-5)
+    }
+}
+
+fn nth_weekday_of_month(
+    year: i32,
+    month: u32,
+    weekday: chrono::Weekday,
+    n: u32,
+) -> Option<chrono::NaiveDate> {
+    let first = chrono::NaiveDate::from_ymd_opt(year, month, 1)?;
+    let first_wd = first.weekday();
+
+    let first_offset = (7 + weekday.num_days_from_monday() as i32
+        - first_wd.num_days_from_monday() as i32)
+        % 7;
+    let day = 1 + first_offset as u32 + (n - 1) * 7;
+    chrono::NaiveDate::from_ymd_opt(year, month, day)
 }
 
 /// Merge in-TUI config overrides on top of base (file/env) config.

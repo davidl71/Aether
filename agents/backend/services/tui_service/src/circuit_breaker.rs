@@ -10,14 +10,13 @@
 
 use std::time::{Duration, Instant};
 
-use backoff::backoff::Backoff;
-use backoff::exponential::ExponentialBackoffBuilder;
+use common::backoff::{ExponentialBackoff, ExponentialBackoffBuilder};
 
 const FAILURE_THRESHOLD: u32 = 3;
 const OPEN_DURATION: Duration = Duration::from_secs(30);
 const MAX_BACKOFF: Duration = Duration::from_secs(60);
 
-fn make_backoff() -> backoff::ExponentialBackoff {
+fn make_backoff() -> ExponentialBackoff {
     ExponentialBackoffBuilder::new()
         .with_initial_interval(Duration::from_secs(2))
         .with_multiplier(2.0)
@@ -36,7 +35,7 @@ enum State {
 pub struct CircuitBreaker {
     state: State,
     consecutive_failures: u32,
-    backoff: backoff::ExponentialBackoff,
+    backoff: ExponentialBackoff,
 }
 
 impl CircuitBreaker {

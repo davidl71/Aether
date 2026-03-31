@@ -42,9 +42,7 @@ use std::{
 use api::discount_bank::{DiscountBankBalanceDto, DiscountBankTransactionsListDto};
 use api::finance_rates::{BenchmarksResponse, CurveResponse};
 use api::ledger_journal::LedgerJournalListDto;
-use api::loans::{
-    parse_loans_import_file_json, LoanRecord, LoansBulkImportRequest, LoansBulkImportResponse,
-};
+use api::loans::{LoanRecord, LoansBulkImportRequest, LoansBulkImportResponse, ParsedLoansImport};
 use color_eyre::eyre::Context;
 use crossterm::{
     event::{EventStream, KeyEventKind},
@@ -676,7 +674,7 @@ async fn run_loans_fetcher(
 }
 
 /// Creates a new loan via NATS api.loans.create, then refreshes the loans list.
-/// Reads a JSON file (`{ "loans": [...] }` or legacy loan file), posts `api.loans.import_bulk`, refreshes list.
+/// Reads a JSON or CSV file, posts `api.loans.import_bulk`, refreshes list.
 async fn run_loan_bulk_importer(
     nats_url: String,
     mut rx: mpsc::UnboundedReceiver<std::path::PathBuf>,
@@ -693,8 +691,8 @@ async fn run_loan_bulk_importer(
                 continue;
             }
         };
-        let loans = match parse_loans_import_file_json(&text) {
-            Ok(l) => l,
+        let parsed: ParsedLoansImport = match api::loans::parse_loans_import_file(&text) {
+            Ok(v) => v,
             Err(e) => {
                 let _ = result_tx.send(LoansUiOutcome::Plain(Err(format!(
                     "bulk import: parse {}: {e}",
@@ -703,7 +701,7 @@ async fn run_loan_bulk_importer(
                 continue;
             }
         };
-        let req = LoansBulkImportRequest { loans };
+        let req = LoansBulkImportRequest { loans: parsed.loans };
         let res: Result<Result<LoansBulkImportResponse, String>, String> =
             match NatsClient::connect(&nats_url).await {
                 Ok(nc) => request_json_with_retry(&nc, topics::api::loans::IMPORT_BULK, &req)
@@ -726,7 +724,18 @@ async fn run_loan_bulk_importer(
             Err(e) => {
                 let _ = result_tx.send(LoansUiOutcome::Plain(Err(format!("bulk import: {e}"))));
             }
-            Ok(summary) => {
+            Ok(mut summary) => {
+                if !parsed.row_map.is_empty() {
+                    for err in &mut summary.errors {
+                        if err.index < parsed.row_map.len() {
+                            err.index = parsed.row_map[err.index];
+                        }
+                    }
+                }
+                if !parsed.parse_errors.is_empty() {
+                    summary.errors.extend(parsed.parse_errors);
+                }
+
                 if !summary.errors.is_empty() {
                     tracing::warn!(
                         applied = summary.applied,

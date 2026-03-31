@@ -250,6 +250,15 @@ pub struct LoansBulkImportResponse {
     pub errors: Vec<BulkImportRowError>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParsedLoansImport {
+    pub loans: Vec<LoanRecord>,
+    pub parse_errors: Vec<BulkImportRowError>,
+    /// When parsing CSV, maps each parsed loan index → CSV data row number (1-based, excludes header).
+    /// When parsing JSON, this is empty.
+    pub row_map: Vec<usize>,
+}
+
 /// Parse a loan bulk import file.
 ///
 /// Supported shapes:
@@ -266,6 +275,41 @@ pub fn parse_loans_import_file_json(text: &str) -> Result<Vec<LoanRecord>, Strin
     }
 
     parse_loans_import_file_csv(text)
+}
+
+/// Parse a loans bulk import payload and preserve per-row CSV parse errors.
+///
+/// This is intended for UI/CLI pipelines that want to report row-level parse errors
+/// while still applying valid rows via `import_bulk`.
+pub fn parse_loans_import_file(text: &str) -> Result<ParsedLoansImport, String> {
+    if let Ok(req) = serde_json::from_str::<LoansBulkImportRequest>(text) {
+        if req.loans.is_empty() {
+            return Err("JSON contained no loans".into());
+        }
+        return Ok(ParsedLoansImport {
+            loans: req.loans,
+            parse_errors: Vec::new(),
+            row_map: Vec::new(),
+        });
+    }
+
+    if let Ok(file) = serde_json::from_str::<LoanFile>(text) {
+        if file.loans.is_empty() {
+            return Err("JSON contained no loans".into());
+        }
+        return Ok(ParsedLoansImport {
+            loans: file.loans,
+            parse_errors: Vec::new(),
+            row_map: Vec::new(),
+        });
+    }
+
+    let (loans, parse_errors, row_map) = parse_loans_import_file_csv_with_errors(text)?;
+    Ok(ParsedLoansImport {
+        loans,
+        parse_errors,
+        row_map,
+    })
 }
 
 fn parse_loans_import_file_csv(text: &str) -> Result<Vec<LoanRecord>, String> {
@@ -303,6 +347,60 @@ fn parse_loans_import_file_csv(text: &str) -> Result<Vec<LoanRecord>, String> {
     }
 
     Ok(out)
+}
+
+fn parse_loans_import_file_csv_with_errors(
+    text: &str,
+) -> Result<(Vec<LoanRecord>, Vec<BulkImportRowError>, Vec<usize>), String> {
+    let mut reader = csv::ReaderBuilder::new()
+        .trim(Trim::All)
+        .from_reader(text.as_bytes());
+
+    let mut loans = Vec::new();
+    let mut parse_errors = Vec::new();
+    let mut row_map = Vec::new();
+
+    for (row_index, row) in reader.deserialize::<LoansCsvRow>().enumerate() {
+        let csv_row_number = row_index + 1; // 1-based, excludes header
+        match row {
+            Ok(row) => {
+                row_map.push(csv_row_number);
+                loans.push(LoanRecord {
+                    loan_id: row.loan_id,
+                    bank_name: row.bank_name,
+                    account_number: row.account_number,
+                    loan_type: row.loan_type,
+                    principal: row.principal,
+                    original_principal: row.original_principal,
+                    interest_rate: row.interest_rate,
+                    spread: row.spread,
+                    base_cpi: row.base_cpi,
+                    current_cpi: row.current_cpi,
+                    origination_date: row.origination_date,
+                    maturity_date: row.maturity_date,
+                    next_payment_date: row.next_payment_date,
+                    monthly_payment: row.monthly_payment,
+                    payment_frequency_months: row.payment_frequency_months,
+                    status: row.status,
+                    last_update: row.last_update,
+                    currency: row.currency,
+                });
+            }
+            Err(e) => {
+                parse_errors.push(BulkImportRowError {
+                    index: csv_row_number,
+                    loan_id: None,
+                    message: e.to_string(),
+                });
+            }
+        }
+    }
+
+    if loans.is_empty() && parse_errors.is_empty() {
+        return Err("CSV contained no data rows".into());
+    }
+
+    Ok((loans, parse_errors, row_map))
 }
 
 #[derive(Clone)]
@@ -735,8 +833,8 @@ fn loan_from_row(row: &sqlx::sqlite::SqliteRow) -> anyhow::Result<LoanRecord> {
 #[cfg(test)]
 mod tests {
     use super::{
-        loans_response_proto, parse_loans_import_file_json, LoanRecord, LoanRepository, LoanStatus,
-        LoanType,
+        loans_response_proto, parse_loans_import_file, parse_loans_import_file_json, LoanRecord,
+        LoanRepository, LoanStatus, LoanType,
     };
 
     fn sample_loan() -> LoanRecord {
@@ -789,6 +887,24 @@ mod tests {
         assert_eq!(loans[0].loan_type, LoanType::ShirBased);
         assert_eq!(loans[0].status, LoanStatus::Active);
         assert_eq!(loans[0].currency, "ILS");
+    }
+
+    #[test]
+    fn parse_loans_import_csv_collects_row_errors_and_keeps_valid_rows() {
+        let csv = concat!(
+            "loan_id,bank_name,account_number,loan_type,principal,original_principal,interest_rate,spread,base_cpi,current_cpi,origination_date,maturity_date,next_payment_date,monthly_payment,payment_frequency_months,status,last_update,currency\n",
+            "bad-1,Discount,123,SHIR_BASED,NOT_A_NUMBER,1200.0,4.0,0.5,0.0,0.0,2025-01-01T00:00:00Z,2030-01-01T00:00:00Z,2025-02-01T00:00:00Z,100.0,1,ACTIVE,2025-01-15T00:00:00Z,ILS\n",
+            "ok-1,Discount,123,SHIR_BASED,1000.0,1200.0,4.0,0.5,0.0,0.0,2025-01-01T00:00:00Z,2030-01-01T00:00:00Z,2025-02-01T00:00:00Z,100.0,1,ACTIVE,2025-01-15T00:00:00Z,ILS\n"
+        );
+
+        let parsed = parse_loans_import_file(csv).expect("parse with errors");
+        assert_eq!(parsed.loans.len(), 1);
+        assert_eq!(parsed.loans[0].loan_id, "ok-1");
+        assert_eq!(parsed.parse_errors.len(), 1);
+        assert_eq!(parsed.parse_errors[0].index, 1);
+        assert!(!parsed.row_map.is_empty());
+        assert_eq!(parsed.row_map.len(), 1);
+        assert_eq!(parsed.row_map[0], 2);
     }
 
     #[tokio::test]

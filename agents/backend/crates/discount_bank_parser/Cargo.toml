@@ -6,6 +6,7 @@ version = "0.1.0"
 [dependencies]
 anyhow = { workspace = true }
 chrono = { workspace = true }
+csv = "1"
 encoding_rs = "0.8"
 ledger = { path = "../ledger" }
 rust_decimal = { workspace = true }

@@ -58,7 +58,7 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
             };
             let trimmed = buf.trim();
             if trimmed.is_empty() {
-                app.push_toast("Enter a path to a loans JSON file.", ToastLevel::Warning);
+                app.push_toast("Enter a path to a loans JSON or CSV file.", ToastLevel::Warning);
                 app.loan_import_path = Some(buf);
                 return true;
             }
@@ -80,7 +80,7 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
                     app.loans_bulk_import_inflight = true;
                     app.loans_fetch_pending = true;
                     app.push_toast(
-                        "Bulk import started (read JSON → api.loans.import_bulk)…",
+                        "Bulk import started (read JSON/CSV → api.loans.import_bulk)…",
                         ToastLevel::Info,
                     );
                 } else {

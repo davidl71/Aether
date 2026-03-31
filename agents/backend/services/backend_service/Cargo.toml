@@ -12,6 +12,7 @@ loadtest = ["dep:clap", "dep:rlt", "dep:humantime"]
 anyhow = { workspace = true }
 axum = { workspace = true }
 bytes = "1.5"
+common = { path = "../../crates/common" }
 market_data = { path = "../../crates/market_data", features = ["keyring"] }
 strategy = { path = "../../crates/strategy" }
 risk = { path = "../../crates/risk" }
@@ -35,7 +36,6 @@ ibapi = { workspace = true }
 tws_yield_curve = { path = "../../crates/tws_yield_curve" }
 broker_engine = { path = "../../crates/broker_engine" }
 ib_adapter = { path = "../../crates/ib_adapter" }
-backoff = { workspace = true }
 clap = { version = "4", features = ["derive"], optional = true }
 humantime = { version = "2", optional = true }
 rlt = { version = "0.5", optional = true }

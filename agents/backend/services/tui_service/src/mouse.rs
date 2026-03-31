@@ -113,7 +113,7 @@ fn handle_mouse_click(app: &App, x: u16, y: u16, area: Rect) -> Option<Action> {
 
     // Check if click is on tab bar (typically at y=1 or y=2)
     if y <= area.y + 1 {
-        return handle_tab_click(app, x, area);
+        return handle_tab_click(app, x, y);
     }
 
     // Check if click is in main content area
@@ -125,32 +125,16 @@ fn handle_mouse_click(app: &App, x: u16, y: u16, area: Rect) -> Option<Action> {
 }
 
 /// Handle a click on the tab bar.
-fn handle_tab_click(app: &App, x: u16, area: Rect) -> Option<Action> {
-    // Tab bar layout estimation:
-    // Each tab is roughly "[N] Name  " format
-    // Dashboard Positions Charts Orders Alerts Yield Loans Scenarios Settings
-
-    let tabs = vec![
-        ("Dashboard", 0u16, 10u16),
-        ("Positions", 11, 10),
-        ("Charts", 22, 7),
-        ("Orders", 30, 7),
-        ("Alerts", 38, 7),
-        ("Yield", 46, 6),
-        ("Loans", 53, 6),
-        ("Scenarios", 60, 10),
-        ("Settings", 71, 9),
-    ];
-
-    let rel_x = x.saturating_sub(area.x);
-
-    let _app = app;
-    for (idx, (_, start, width)) in tabs.iter().enumerate() {
-        if rel_x >= *start && rel_x < *start + *width {
+fn handle_tab_click(app: &App, x: u16, y: u16) -> Option<Action> {
+    // Route via regions recorded during the most recent render pass.
+    // See `ui::render_tab_bar` for region computation.
+    let p = (x, y);
+    for (tab, rect) in app.tab_bar_regions.borrow().iter() {
+        if contains_point(*rect, p) {
+            let idx = crate::app::Tab::ALL.iter().position(|t| t == tab)?;
             return Some(Action::JumpToTab((idx + 1) as u8));
         }
     }
-
     None
 }
 
