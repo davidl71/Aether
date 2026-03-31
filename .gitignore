@@ -146,6 +146,7 @@ vcpkg/
 *.backup
 *.tmp
 .ram-optimization-env
+.disk-caching-env
 build-ramdisk
 tmp/
 

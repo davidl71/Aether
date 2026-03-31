@@ -9,6 +9,46 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 [ -n "$ROOT" ] || exit 0
 export PROJECT_ROOT="$ROOT"
 RUNNER="$ROOT/scripts/run_exarp_go.sh"
+
+# Disk pressure hook (operator-visible). This is intentionally non-blocking and non-destructive:
+# - Only triggers when disk_pressure.sh detects warn/crit free space (exit 1/2).
+# - Runs prune-rust-target in dry-run mode to show the exact cleanup command.
+# - Disable by setting AETHER_DISK_PRESSURE_HOOK=0 (or 1 to enable explicitly).
+#
+# Note: This does NOT change default build behavior; it just surfaces remediation at the moment
+# the operator is already interacting (commit) and disk pressure can break builds.
+if [ "${AETHER_DISK_PRESSURE_HOOK:-1}" != "0" ] && [ -x "$ROOT/scripts/disk_pressure.sh" ]; then
+  DP_OUT=$(mktemp)
+  if "$ROOT/scripts/disk_pressure.sh" check >"$DP_OUT" 2>&1; then
+    rm -f "$DP_OUT"
+  else
+    DP_RC=$?
+    case "$DP_RC" in
+      1|2)
+        echo "" >&2
+        echo "[aether] Disk pressure detected during pre-commit (non-blocking)." >&2
+        cat "$DP_OUT" >&2 || true
+        rm -f "$DP_OUT"
+        echo "" >&2
+        echo "[aether] Safe cleanup dry-run (no deletion):" >&2
+        "$ROOT/scripts/disk_pressure.sh" prune-rust-target >&2 || true
+        echo "" >&2
+        echo "[aether] To actually reclaim space, run:" >&2
+        echo "  just disk-prune-rust-apply" >&2
+        echo "[aether] To disable this hook, set AETHER_DISK_PRESSURE_HOOK=0" >&2
+        echo "" >&2
+        ;;
+      *)
+        # Unexpected failure; do not block commit, but surface output for diagnosis.
+        echo "" >&2
+        echo "[aether] disk_pressure.sh check failed (rc=$DP_RC); continuing." >&2
+        cat "$DP_OUT" >&2 || true
+        rm -f "$DP_OUT"
+        ;;
+    esac
+  fi
+fi
+
 if [ ! -x "$RUNNER" ]; then
   if command -v exarp-go >/dev/null 2>&1; then
     RUNNER="exarp-go"
