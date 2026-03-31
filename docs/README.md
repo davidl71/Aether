@@ -37,6 +37,7 @@
 | [QUICKSTART_RUST.md](./QUICKSTART_RUST.md) | Rust build/run quickstart |
 | [ADDING_A_BROKER_ADAPTER.md](./ADDING_A_BROKER_ADAPTER.md) | How to implement BrokerEngine trait for new broker |
 | [MARKDOWN_STYLE_GUIDE.md](./MARKDOWN_STYLE_GUIDE.md) | Doc linting rules (gomarklint) |
+| [TUI_PANTRY_WORKFLOW.md](./TUI_PANTRY_WORKFLOW.md) | Storybook-style widget development loop for the Ratatui TUI |
 
 ## Type & Data Reference
 
@@ -69,6 +70,7 @@
 **All historical docs are in `docs/archive/`** (~416 files).
 
 Key archived categories:
+
 - `archive/box-spread/` — Box spread research and implementation docs
 - `archive/planning/` — Historical planning docs  
 - `archive/research/` — Framework evaluations, learnings

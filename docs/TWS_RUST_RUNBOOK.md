@@ -34,6 +34,45 @@
 
 ---
 
+## Disk pressure + shellcheck (operator hygiene)
+
+When builds/tests start failing “mysteriously” (timeouts, linker issues, slow compiles), it’s often simply low free space or an oversized Rust target directory.
+
+### Disk pressure check (human-readable)
+
+From repo root:
+
+```bash
+./scripts/disk_pressure.sh check
+```
+
+### Disk pressure check (JSON)
+
+This is useful for hooks/automation and produces a single JSON object on stdout:
+
+```bash
+./scripts/disk_pressure.sh check --json
+```
+
+Schema is `aether.disk_pressure/v1` (see script header in `scripts/disk_pressure.sh`).
+
+### Safe Rust target prune (dry-run then apply)
+
+```bash
+./scripts/disk_pressure.sh prune-rust-target
+./scripts/disk_pressure.sh prune-rust-target --apply
+```
+
+### Shellcheck (scripts)
+
+From repo root:
+
+```bash
+just lint-shell
+```
+
+---
+
 ## Promoting content from archive
 
 If you need legacy operational detail (screenshots, Gateway-specific steps) that still apply to the Rust stack:
