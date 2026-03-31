@@ -55,6 +55,19 @@ resolve_exarp_go() {
 sanitize_go_env
 EXARP_GO_BIN="$(resolve_exarp_go)"
 
+# Schema migrations ship with exarp-go (sql files under its repo root), not under the
+# consumer project's PROJECT_ROOT. If EXARP_MIGRATIONS_DIR is unset, AutoMigrate would
+# only see <PROJECT_ROOT>/migrations and the SQLite schema can lag the binary (e.g. missing
+# status_enum). Derive migrations from the resolved binary: <repo>/bin/exarp-go -> <repo>/migrations.
+if [[ -z "${EXARP_MIGRATIONS_DIR:-}" ]]; then
+  _exarp_bin_dir="$(cd "$(dirname "${EXARP_GO_BIN}")" && pwd)"
+  if [[ -d "${_exarp_bin_dir}/../migrations" ]]; then
+    EXARP_MIGRATIONS_DIR="$(cd "${_exarp_bin_dir}/../migrations" && pwd)"
+    export EXARP_MIGRATIONS_DIR
+  fi
+  unset _exarp_bin_dir
+fi
+
 # When Cursor (or another host) runs this script as MCP with no args, ensure exarp-go
 # runs with project root as cwd so it finds .todo2/, config, etc. If cwd is already
 # PROJECT_ROOT (e.g. via mcp.json "cwd"), this is a no-op.

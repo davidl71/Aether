@@ -205,6 +205,30 @@ fn app_updates_transport_health_status() {
 }
 
 #[test]
+fn transport_health_updates_do_not_spam_toasts() {
+    let (mut app, _, event_tx) = make_app();
+
+    let before = app.toast_manager.active_count();
+
+    for _ in 0..10 {
+        event_tx
+            .send(AppEvent::TransportHealth(
+                NatsTransportHealthState::connected(
+                    Some("nats://localhost:4222".into()),
+                    Utc::now() - Duration::seconds(2),
+                )
+                .with_subject("system.health")
+                .with_role("health-subscriber"),
+            ))
+            .expect("send transport health");
+    }
+
+    app.tick();
+
+    assert_eq!(app.toast_manager.active_count(), before);
+}
+
+#[test]
 fn config_hot_reload_updates_app_config() {
     let (snap_tx, snap_rx) = watch::channel(None);
     let (_event_tx, event_rx) = mpsc::unbounded_channel();
