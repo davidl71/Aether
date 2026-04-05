@@ -525,6 +525,7 @@ mod tests {
             input_mode,
             active_tab: tab,
             secondary_focus,
+            visible_workspace: crate::workspace::VisibleWorkspace::None,
         }
     }
 

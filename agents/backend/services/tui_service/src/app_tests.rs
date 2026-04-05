@@ -10,7 +10,7 @@ use tokio::sync::{mpsc, watch};
 use std::collections::{HashMap, VecDeque};
 
 use crate::focus_context::FocusContext;
-use crate::workspace::{SettingsHealthFocus, SettingsSection, SecondaryFocus};
+use crate::workspace::{SettingsHealthFocus, SettingsSection, SecondaryFocus, VisibleWorkspace};
 use crate::{
     config::TuiConfig,
     events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget},
@@ -72,6 +72,7 @@ fn focus_context_reflects_tab_and_secondary_focus() {
         fc.secondary_focus,
         SecondaryFocus::SettingsHealth(SettingsHealthFocus::Services)
     );
+    assert_eq!(fc.visible_workspace, VisibleWorkspace::None);
 }
 
 #[test]

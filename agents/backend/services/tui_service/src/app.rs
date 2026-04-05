@@ -932,6 +932,7 @@ impl App {
             input_mode: self.input_mode(),
             active_tab: self.active_tab,
             secondary_focus: self.secondary_focus(),
+            visible_workspace: self.visible_workspace(),
         }
     }
 
