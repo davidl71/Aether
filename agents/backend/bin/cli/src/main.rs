@@ -5,6 +5,7 @@
 //!   cargo run -p cli -- validate
 //!   cargo run -p cli -- run --dry-run
 //!   cargo run -p cli -- snapshot
+//!   cargo run -p cli -- export operator-csv --loans-out loans.csv --discount-transactions-out db.csv
 //!
 //! Output formats:
 //!   --format table (default) - human-readable output
@@ -33,6 +34,47 @@ use std::time::Duration;
 use tracing::{info, warn};
 
 mod config;
+
+// CSV export: stable column documentation (see `aether loans export-csv --help`, etc.).
+const LOANS_CSV_EXPORT_LONG_ABOUT: &str = r#"Fetch loans via NATS `api.loans.list` and write UTF-8 CSV.
+
+CSV columns (header row, stable field order, snake_case):
+  loan_id, bank_name, account_number, loan_type, principal, original_principal,
+  interest_rate, spread, base_cpi, current_cpi, origination_date, maturity_date,
+  next_payment_date, monthly_payment, payment_frequency_months, status, last_update,
+  currency
+
+Enums: loan_type = SHIR | CPI; status = ACTIVE | PAID_OFF | DEFAULTED.
+
+Does not write credentials or API secrets — only operator-visible loan fields."#;
+
+const DISCOUNT_BANK_TXN_CSV_LONG_ABOUT: &str = r#"Fetch Discount Bank transactions via the backend Discount Bank client and write UTF-8 CSV.
+
+CSV columns (header row, stable field order):
+  account_id, institution, account_number, branch_number, section_number, currency,
+  value_date, amount, is_debit, reference
+
+Does not write credentials or API secrets — only operator-visible banking fields."#;
+
+const DISCOUNT_BANK_BALANCE_CSV_LONG_ABOUT: &str = r#"Fetch current Discount Bank balance snapshot and write a single-row UTF-8 CSV.
+
+CSV columns (header row):
+  account_id, institution, account_number, branch_number, section_number, account_currency,
+  balance, balance_currency, balance_date, credit_rate, debit_rate
+
+Does not write credentials or API secrets."#;
+
+const EXPORT_OPERATOR_CSV_LONG_ABOUT: &str = r#"Run the same exports as `loans export-csv` and `discount-bank export-csv` in one process.
+
+Required outputs:
+  --loans-out PATH                  Loans CSV (see `aether loans export-csv --help` for columns)
+  --discount-transactions-out PATH  Discount Bank transaction CSV (see `discount-bank export-csv --help`)
+
+Optional:
+  --discount-limit N                Row cap for transactions (default 500)
+  --discount-balance-out PATH       Single-row balance CSV (see `discount-bank export-balance-csv --help`)
+
+Requires NATS for loans; Discount Bank uses the configured backend client (same as TUI data path)."#;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, ValueEnum)]
 pub enum OutputFormat {
@@ -186,7 +228,8 @@ async fn run_box(symbol: String, dte: f64, width: f64, json: bool) -> Result<()>
 Examples:
   aether --format json loans list
   aether --format json yield-curve --symbol SPX
-  aether validate --format json")]
+  aether validate --format json
+  aether export operator-csv --loans-out loans.csv --discount-transactions-out discount_txn.csv")]
 struct Cli {
     /// Configuration file path (used by validate, run, snapshot). Same discovery as TUI: shared JSON first, then this path. Prefer config/config.json; TOML supported as CLI-only override.
     #[arg(short, long, global = true, default_value = "config/config.json")]
@@ -289,6 +332,11 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Export operator-facing tables (loans + Discount Bank) to CSV in one invocation.
+    Export {
+        #[command(subcommand)]
+        sub: ExportCmd,
+    },
     /// Loans API (list from backend via NATS api.loans.list).
     Loans {
         #[command(subcommand)]
@@ -358,6 +406,7 @@ enum LoansCmd {
         json: bool,
     },
     /// Export loans (from backend via NATS api.loans.list) to a CSV file.
+    #[command(long_about = LOANS_CSV_EXPORT_LONG_ABOUT)]
     ExportCsv {
         /// Output path (use '-' for stdout)
         #[arg(long, default_value = "-")]
@@ -408,6 +457,7 @@ enum DiscountBankCmd {
     },
 
     /// Export latest Discount Bank transactions to a CSV file.
+    #[command(long_about = DISCOUNT_BANK_TXN_CSV_LONG_ABOUT)]
     ExportCsv {
         /// Max number of rows (most recent first)
         #[arg(long, default_value_t = 500)]
@@ -415,6 +465,35 @@ enum DiscountBankCmd {
         /// Output path (use '-' for stdout)
         #[arg(long, default_value = "-")]
         out: PathBuf,
+    },
+
+    /// Export current Discount Bank balance snapshot (one row) to a CSV file.
+    #[command(long_about = DISCOUNT_BANK_BALANCE_CSV_LONG_ABOUT)]
+    ExportBalanceCsv {
+        /// Output path (use '-' for stdout)
+        #[arg(long, default_value = "-")]
+        out: PathBuf,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum ExportCmd {
+    /// Export loans + Discount Bank transactions (and optional balance) for operator workflows.
+    #[command(name = "operator-csv", visible_alias = "operator")]
+    #[command(long_about = EXPORT_OPERATOR_CSV_LONG_ABOUT)]
+    OperatorCsv {
+        /// Loans CSV output path (same schema as `loans export-csv`)
+        #[arg(long)]
+        loans_out: PathBuf,
+        /// Discount Bank transactions CSV path (same schema as `discount-bank export-csv`)
+        #[arg(long)]
+        discount_transactions_out: PathBuf,
+        /// Max Discount Bank transaction rows (most recent first)
+        #[arg(long, default_value_t = 500)]
+        discount_limit: usize,
+        /// Optional single-row Discount Bank balance CSV
+        #[arg(long)]
+        discount_balance_out: Option<PathBuf>,
     },
 }
 
@@ -549,6 +628,19 @@ fn main() -> Result<()> {
             publish_to_nats,
         } => run_yield_curve(&symbol, format, json, refresh, &source, publish_to_nats)?,
         Commands::SnapshotWrite { json } => run_snapshot_write(format, json)?,
+        Commands::Export { sub } => match sub {
+            ExportCmd::OperatorCsv {
+                loans_out,
+                discount_transactions_out,
+                discount_limit,
+                discount_balance_out,
+            } => run_export_operator_csv(
+                &loans_out,
+                &discount_transactions_out,
+                discount_limit,
+                discount_balance_out.as_ref(),
+            )?,
+        },
         Commands::Loans { sub } => match sub {
             LoansCmd::List { json } => run_loans_list(format, json)?,
             LoansCmd::ExportCsv { out } => run_loans_export_csv(&out)?,
@@ -567,6 +659,7 @@ fn main() -> Result<()> {
                 json,
             } => run_discount_bank_import(&path, exchange_rate, format, json)?,
             DiscountBankCmd::ExportCsv { limit, out } => run_discount_bank_export_csv(limit, &out)?,
+            DiscountBankCmd::ExportBalanceCsv { out } => run_discount_bank_balance_export_csv(&out)?,
         },
         Commands::Cred { sub } => run_cred(sub)?,
         Commands::Alpaca { sub } => tokio::runtime::Runtime::new()?.block_on(run_alpaca(sub))?,
@@ -1180,6 +1273,111 @@ mod csv_export_tests {
 
         let _ = std::fs::remove_file(&out);
     }
+
+    #[test]
+    fn loans_export_help_documents_all_csv_columns() {
+        for col in [
+            "loan_id",
+            "bank_name",
+            "account_number",
+            "loan_type",
+            "principal",
+            "original_principal",
+            "interest_rate",
+            "spread",
+            "base_cpi",
+            "current_cpi",
+            "origination_date",
+            "maturity_date",
+            "next_payment_date",
+            "monthly_payment",
+            "payment_frequency_months",
+            "status",
+            "last_update",
+            "currency",
+        ] {
+            assert!(
+                LOANS_CSV_EXPORT_LONG_ABOUT.contains(col),
+                "LOANS_CSV_EXPORT_LONG_ABOUT should mention `{col}`"
+            );
+        }
+    }
+
+    #[test]
+    fn discount_bank_txn_help_documents_all_csv_columns() {
+        for col in [
+            "account_id",
+            "institution",
+            "account_number",
+            "branch_number",
+            "section_number",
+            "currency",
+            "value_date",
+            "amount",
+            "is_debit",
+            "reference",
+        ] {
+            assert!(
+                DISCOUNT_BANK_TXN_CSV_LONG_ABOUT.contains(col),
+                "DISCOUNT_BANK_TXN_CSV_LONG_ABOUT should mention `{col}`"
+            );
+        }
+    }
+
+    #[test]
+    fn discount_bank_balance_csv_row_headers() {
+        #[derive(serde::Serialize)]
+        struct DiscountBankBalanceCsvRow {
+            account_id: String,
+            institution: String,
+            account_number: String,
+            branch_number: String,
+            section_number: String,
+            account_currency: String,
+            balance: f64,
+            balance_currency: String,
+            balance_date: String,
+            credit_rate: f64,
+            debit_rate: f64,
+        }
+
+        let out = std::env::temp_dir().join(format!(
+            "aether_cli_balance_csv_test_{}.csv",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_file(&out);
+
+        write_csv_rows(
+            &out,
+            std::iter::once(DiscountBankBalanceCsvRow {
+                account_id: "a".into(),
+                institution: "b".into(),
+                account_number: "c".into(),
+                branch_number: "d".into(),
+                section_number: "e".into(),
+                account_currency: "ILS".into(),
+                balance: 1.0,
+                balance_currency: "ILS".into(),
+                balance_date: "2026-01-01".into(),
+                credit_rate: 0.1,
+                debit_rate: 0.2,
+            }),
+        )
+        .expect("write balance csv");
+
+        let text = std::fs::read_to_string(&out).expect("read back");
+        let expected = concat!(
+            "account_id,institution,account_number,branch_number,section_number,",
+            "account_currency,balance,balance_currency,balance_date,credit_rate,debit_rate",
+        );
+        assert!(
+            text.starts_with(expected) || text.starts_with(&(expected.to_string() + "
+")),
+            "unexpected balance CSV header: {text:?}"
+        );
+
+        let _ = std::fs::remove_file(&out);
+    }
 }
 
 fn run_loans_import(path: &PathBuf, format: OutputFormat, json: bool) -> Result<()> {
@@ -1723,6 +1921,60 @@ fn run_discount_bank_export_csv(limit: usize, out: &PathBuf) -> Result<()> {
     });
 
     write_csv_rows(out, rows)
+}
+
+fn run_export_operator_csv(
+    loans_out: &PathBuf,
+    discount_tx_out: &PathBuf,
+    discount_limit: usize,
+    discount_balance_out: Option<&PathBuf>,
+) -> Result<()> {
+    run_loans_export_csv(loans_out)?;
+    run_discount_bank_export_csv(discount_limit, discount_tx_out)?;
+    if let Some(path) = discount_balance_out {
+        run_discount_bank_balance_export_csv(path)?;
+    }
+    Ok(())
+}
+
+fn run_discount_bank_balance_export_csv(out: &PathBuf) -> Result<()> {
+    #[derive(serde::Serialize)]
+    struct DiscountBankBalanceCsvRow {
+        account_id: String,
+        institution: String,
+        account_number: String,
+        branch_number: String,
+        section_number: String,
+        account_currency: String,
+        balance: f64,
+        balance_currency: String,
+        balance_date: String,
+        credit_rate: f64,
+        debit_rate: f64,
+    }
+
+    let dto = tokio::runtime::Runtime::new()?.block_on(async {
+        api::discount_bank::get_balance()
+            .await
+            .map_err(|e| anyhow::anyhow!("discount_bank.get_balance: {e}"))
+    })?;
+
+    let acct = &dto.account;
+    let row = DiscountBankBalanceCsvRow {
+        account_id: acct.id.clone(),
+        institution: acct.institution.clone(),
+        account_number: acct.account_number.clone(),
+        branch_number: acct.branch_number.clone(),
+        section_number: acct.section_number.clone(),
+        account_currency: acct.currency.clone(),
+        balance: dto.balance,
+        balance_currency: dto.currency.clone(),
+        balance_date: dto.balance_date.clone(),
+        credit_rate: dto.credit_rate,
+        debit_rate: dto.debit_rate,
+    };
+
+    write_csv_rows(out, std::iter::once(row))
 }
 
 fn run_discount_bank_import(

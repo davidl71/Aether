@@ -1,11 +1,22 @@
 //! Yahoo Finance market data source.
 //!
+//! # Registration
+//!
+//! - **Quotes:** [`crate::create_provider`] with name `"yahoo"` ([`YahooFinanceSourceFactory`] in
+//!   [`crate::provider_registry`]).
+//! - **Options chains:** [`crate::create_options_provider`] with name `"yahoo"` (uses
+//!   [`YahooOptionsSource`]).
+//!
+//! **Credentials:** No API key for Yahoo’s public endpoints; requests are rate-limited.
+//!
 //! Uses the [`yfinance-rs`] crate for fetching:
 //! - Real-time quotes via Yahoo Finance API
 //! - Historical OHLCV data with split/dividend adjustments
 //! - Options chains with expiration dates and contract details
 //!
-//! **API:** No API key required for basic usage. Rate-limited by Yahoo.
+//! # Repository documentation
+//!
+//! Provider factory pattern: `docs/MARKET_DATA_PROVIDER_ARCHITECTURE.md`.
 //!
 //! [`yfinance-rs`]: https://crates.io/crates/yfinance-rs
 

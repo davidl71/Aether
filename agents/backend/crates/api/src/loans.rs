@@ -1,5 +1,13 @@
-//! Loans API: CRUD and aggregation. Exposed via NATS only (subjects `api.loans.*`).
-//! Config was REST-only and is not exposed; see docs/platform/NATS_API.md §3.
+//! Bank loan records, SQLite persistence, bulk import, and protobuf helpers for NATS `api.loans.*`.
+//!
+//! Validation, effective-rate helpers, CSV/JSON import ([`parse_loans_import_file`]), and
+//! [`LoanRepository`] form the loans domain boundary in this crate. There is no REST surface for
+//! loans in the current product shape; see `docs/platform/NATS_API.md` (section 3) for subjects.
+//!
+//! # See also
+//!
+//! The [`crate`] root **Module map** places this module alongside [`crate::state`] (snapshot DTOs)
+//! and [`crate::finance_rates`] (financing benchmarks).
 
 use std::{
     fs,
@@ -17,6 +25,7 @@ use sqlx::{
 };
 use std::str::FromStr;
 
+/// Israeli mortgage-style classification (SHIR-linked vs CPI-linked).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum LoanType {
     #[serde(rename = "SHIR_BASED", alias = "SHIR")]
@@ -25,6 +34,7 @@ pub enum LoanType {
     CpiLinked,
 }
 
+/// Lifecycle status stored with each [`LoanRecord`].
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum LoanStatus {
     #[serde(rename = "ACTIVE")]
@@ -39,6 +49,7 @@ fn default_ils() -> String {
     "ILS".to_string()
 }
 
+/// Single loan row: principal, dates, SHIR/CPI fields, and serde-stable wire shape for import/NATS.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct LoanRecord {
@@ -63,6 +74,7 @@ pub struct LoanRecord {
     pub currency: String,
 }
 
+/// Normalized loan figures for portfolio aggregation (e.g. bank vs pension loan positions).
 #[derive(Debug, Clone, PartialEq)]
 pub struct LoanAggregationInput {
     pub loan_id: Option<String>,
@@ -250,6 +262,7 @@ pub struct LoansBulkImportResponse {
     pub errors: Vec<BulkImportRowError>,
 }
 
+/// Result of [`parse_loans_import_file`]: successful rows plus optional CSV parse errors and row map.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParsedLoansImport {
     pub loans: Vec<LoanRecord>,
@@ -403,6 +416,7 @@ fn parse_loans_import_file_csv_with_errors(
     Ok((loans, parse_errors, row_map))
 }
 
+/// SQLite-backed store for loan CRUD used by NATS handlers (`connect`, `list`, `import_bulk`, etc.).
 #[derive(Clone)]
 pub struct LoanRepository {
     pool: SqlitePool,

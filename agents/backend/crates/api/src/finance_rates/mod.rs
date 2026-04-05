@@ -8,6 +8,11 @@
 //!
 //! Layout: `types` (serde DTOs), `curve` (opportunity aggregation / synthetic curves),
 //! `benchmarks` (HTTP/FRED/FMP), `comparison` (compare + yield-curve orchestration).
+//!
+//! # See also
+//!
+//! The [`crate`] root **Module map** lists this module next to [`crate::state`] (snapshot DTOs)
+//! and [`crate::loans`] (bank loan persistence). Workspace ownership: `AGENTS.md`.
 
 mod benchmarks;
 mod comparison;

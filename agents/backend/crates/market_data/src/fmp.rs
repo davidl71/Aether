@@ -1,16 +1,27 @@
-//! Financial Modeling Prep (FMP) client.
+//! Financial Modeling Prep (FMP) client and polling quote source.
 //!
-//! Provides financial statements and quote data for fundamental analysis
-//! and cross-validation against TWS market data.
+//! # Registration
 //!
-//! FMP is a Tier 2 data source — used for continuous quotes when Yahoo/Polygon unavailable.
-//! With paid tier (5000 calls/day), can poll ~1x per symbol per 17 seconds with 5 symbols.
+//! Continuous quotes: [`crate::create_provider`] with name `"fmp"` ([`FmpMarketDataSourceFactory`]).
+//! The factory builds [`FmpMarketDataSource`], which reads **`FMP_API_KEY`** from the environment
+//! (or an explicit key passed to [`FmpMarketDataSource::new`]).
+//!
+//! # Role
+//!
+//! Provides financial statements and quote data for fundamental analysis and cross-validation
+//! against TWS market data. FMP is a Tier 2 data source — used for continuous quotes when
+//! Yahoo/Polygon are unavailable. With paid tier (5000 calls/day), can poll ~1x per symbol per
+//! 17 seconds with 5 symbols.
 //!
 //! **NATS API:** FMP/chart/Swiftness/frontend are not exposed via NATS (deferred).
 //! See `docs/platform/NATS_API.md` §3.
 //!
 //! **Rate limiting:** Free tier has 250 calls/day, Professional has 5000 calls/day.
 //! Uses 50ms delay between calls and tracks daily usage to avoid hitting limits.
+//!
+//! # Repository documentation
+//!
+//! Provider factory pattern: `docs/MARKET_DATA_PROVIDER_ARCHITECTURE.md`.
 //!
 //! API reference: <https://site.financialmodelingprep.com/developer/docs>
 

@@ -302,8 +302,14 @@ fn market_data_synthetic_curve_can_build_finance_rates_curve() {
     };
     let response = build_curve(request, None).expect("curve");
     assert!(response.point_count > 0);
-    assert!(response.points.iter().all(|p| p.data_source.as_deref() == Some("synthetic")));
-    assert!(response.points.iter().all(|p| p.mid_rate > 0.0 && p.mid_rate < 1.0));
+    assert!(response
+        .points
+        .iter()
+        .all(|p| p.data_source.as_deref() == Some("synthetic")));
+    assert!(response
+        .points
+        .iter()
+        .all(|p| p.mid_rate > 0.0 && p.mid_rate < 1.0));
 }
 
 /// When the only benchmarks are farther than the 20 DTE matching window, box points produce no spreads.

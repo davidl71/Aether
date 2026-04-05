@@ -23,10 +23,10 @@ pub mod credentials {
 }
 pub mod discount_bank;
 pub mod finance_rates;
-pub mod ledger_journal;
-mod ledger_sqlite;
 mod health;
 pub mod ib_positions;
+pub mod ledger_journal;
+mod ledger_sqlite;
 pub mod loans;
 pub mod project_paths;
 pub mod quant;

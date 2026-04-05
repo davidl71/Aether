@@ -1,5 +1,20 @@
-//! Alpaca market data source.
-//! Provides market data and position data from Alpaca API.
+//! Alpaca stock market data (latest quotes) via the official Alpaca API client.
+//!
+//! # Registration
+//!
+//! [`crate::create_provider`] with name `"alpaca"` ([`AlpacaSourceFactory`] in [`crate::provider_registry`]).
+//! The factory requires configured credentials (see below) and a non-empty symbol list.
+//!
+//! # Credentials
+//!
+//! Typical environment variables: **`APCA_API_KEY_ID`**, **`APCA_API_SECRET_KEY`**, and optionally
+//! **`APCA_API_BASE_URL`** (`paper-api.alpaca.markets` vs `api.alpaca.markets` — paper vs live).
+//! Prefer `credential_store::bootstrap_process_env_from_store` at process startup (backend `main`)
+//! so TUI/keyring settings apply; see [`AlpacaSource::from_env`] and [`resolve_alpaca_credentials`].
+//!
+//! # Repository documentation
+//!
+//! Provider factory pattern: `docs/MARKET_DATA_PROVIDER_ARCHITECTURE.md`.
 
 use std::sync::Arc;
 use std::time::Duration;

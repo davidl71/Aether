@@ -1,3 +1,14 @@
+//! Snapshot aggregate and shared wire types for REST, WebSocket, and NATS snapshot paths.
+//!
+//! [`SystemSnapshot`] is the API-facing aggregate (symbols, positions, orders, risk, alerts).
+//! Canonical position/order shapes live in the `common` crate; this module re-exports them for
+//! `api` consumers and defines thin API-only wrappers such as [`Alert`] / [`AlertLevel`].
+//!
+//! # See also
+//!
+//! - [`crate`] root **Module map** for [`crate::finance_rates`], [`crate::loans`], and related surfaces.
+//! - Runtime/tailored DTOs (`RuntimeSnapshotDto`, etc.) are re-exported from the crate root.
+
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
@@ -9,6 +20,7 @@ use crate::NatsTransportHealthState;
 // Api-only types (not shared)
 // ---------------------------------------------------------------------------
 
+/// Severity for [`Alert`] lines embedded in [`SystemSnapshot`].
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum AlertLevel {
@@ -17,6 +29,7 @@ pub enum AlertLevel {
     Error,
 }
 
+/// Operator-facing alert line (level, message, time). Converts to/from `common::snapshot::Alert`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Alert {
     pub level: AlertLevel,
@@ -80,6 +93,7 @@ impl From<Alert> for cmn::Alert {
     }
 }
 
+/// Per-symbol quote and candle summary inside [`SystemSnapshot`].
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SymbolSnapshot {
     pub symbol: String,
@@ -98,6 +112,7 @@ pub struct SymbolSnapshot {
 // System snapshot (api-only aggregate)
 // ---------------------------------------------------------------------------
 
+/// Full backend snapshot: metrics, symbols, positions, orders, decisions, alerts, risk.
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SystemSnapshot {
     pub generated_at: chrono::DateTime<Utc>,

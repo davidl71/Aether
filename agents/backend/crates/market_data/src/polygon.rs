@@ -1,3 +1,19 @@
+//! [Polygon.io](https://polygon.io) REST market data: NBBO quotes and options snapshot chains.
+//!
+//! # Registration
+//!
+//! - **Quotes:** [`crate::create_provider`] with name `"polygon"` ([`PolygonMarketDataSourceFactory`]).
+//! - **Options:** [`crate::create_options_provider`] with name `"polygon"` ([`PolygonOptionsSource::from_env`]).
+//!
+//! # Credentials
+//!
+//! Set **`POLYGON_API_KEY`** in the environment, or use the shared credential path via
+//! [`credential_store::polygon_api_key`] (same rules as the TUI/backend).
+//!
+//! # Repository documentation
+//!
+//! Provider factory pattern: `docs/MARKET_DATA_PROVIDER_ARCHITECTURE.md`.
+
 use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
