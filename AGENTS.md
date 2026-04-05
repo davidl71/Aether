@@ -293,13 +293,13 @@ Follow imperative, 72-character subject lines ("Add TSV formatter for CLI"). In 
 | `.cursor/rules/*.mdc` | Cursor IDE (glob-based rules) |
 | `.cursor/commands.json` | Cursor (slash commands) |
 | `.cursor/mcp.json` | Cursor (MCP servers) |
-
-**Gaps affecting AI tooling:** `docs/API_DOCUMENTATION_INDEX.md` is still cited from AGENTS.md, CLAUDE.md, and other guides but **is not in the repo**—search `docs/` and `agents/backend/` until the file returns or references are fixed. **`.cursor/commands.json`** still runs `python3 python/tools/*.py` for several palette commands; **`python/tools/` is missing** (`python/` is effectively `generated/` only), so those commands fail until scripts exist or paths change.
 | `.windsurfrules` | Windsurf IDE |
 | `.clinerules` | Cline |
 | `.github/copilot-instructions.md` | GitHub Copilot |
 | `.claude/settings.json` | Claude Code permissions |
 | `.claude/agents/` | Custom Claude agents |
+
+**Gaps affecting AI tooling:** `docs/API_DOCUMENTATION_INDEX.md` is still cited from AGENTS.md, CLAUDE.md, and other guides but **is not in the repo**—search `docs/` and `agents/backend/` until the file returns or references are fixed. **`.cursor/commands.json`** still runs `python3 python/tools/*.py` for several palette commands; **`python/tools/` is missing** (`python/` is effectively `generated/` only), so those commands fail until scripts exist or paths change.
 
 **Excluded from AI context:**
 - `docs/archive/` — Historical C++/LEAN/WASM research; git-tracked but not indexed by AI tools. See `docs/ARCHIVE_CPP_KNOWLEDGE_SUMMARY.md` for extracted knowledge relevant to current development.
