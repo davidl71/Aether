@@ -16,6 +16,19 @@
 //! Some dependencies only read `std::env` (e.g. `alpaca_api_client`, parts of `market_data`).
 //! Call [`bootstrap_process_env_from_store`] once from `main` before spawning worker threads.
 //! It never overwrites existing non-empty environment variables.
+//!
+//! # Example (read-through helpers)
+//!
+//! ```no_run
+//! use credential_store::{fmp_api_key, polygon_api_key, CredentialKey, get_credential};
+//!
+//! if let Some(k) = fmp_api_key() {
+//!     println!("FMP key present ({} chars)", k.len());
+//! }
+//! // Or generic lookup:
+//! assert!(get_credential(CredentialKey::PolygonApiKey).is_none()
+//!     || polygon_api_key().is_some());
+//! ```
 
 use std::env;
 use std::fs;

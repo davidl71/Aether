@@ -4,9 +4,22 @@
 //! Consumed by `api`, `risk`, and services; keep changes to pricing and risk numerics covered by tests
 //! in this workspace (`cargo test -p quant`).
 //!
-//! # Repository documentation
+//! # Submodules
 //!
-//! Crate ownership: `AGENTS.md` (repo root).
+//! - [`amortization`] — Loan/bond-style amortization schedules.
+//! - [`bsm`] — Black–Scholes–Merton option pricing.
+//! - [`convexity`] — Bond convexity helpers.
+//! - [`gbm`] — Geometric Brownian motion paths.
+//! - [`margin`] — Margin and haircut-style calculations.
+//! - [`option_chain`] — Option chain utilities.
+//! - [`yield_curve`] — Curve bootstrapping and box-spread-style yield helpers.
+//!
+//! Root types such as [`OptionKind`], [`Greeks`], [`BondGreeks`], and [`Position`] are shared across modules.
+//!
+//! # See also
+//!
+//! - `AGENTS.md` (crate ownership).
+//! - Downstream `risk` crate re-exports a narrow slice via `risk::quant`.
 
 pub mod amortization;
 pub mod bsm;

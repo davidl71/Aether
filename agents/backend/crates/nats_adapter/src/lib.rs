@@ -1,7 +1,17 @@
-//! NATS Adapter for IBKR Box Spread Trading System
+//! NATS messaging: client wrapper, protobuf envelopes, subjects, RPC helpers, and health hooks.
 //!
-//! This crate provides a bridge between Tokio channels and NATS message queue,
-//! enabling event-driven communication across multiple language components.
+//! Use [`topics`] for **canonical subject strings** (avoid scattering literals). Use [`NatsClient`]
+//! and [`ChannelBridge`] to integrate with async services. See repository `docs/NATS_TOPICS_REGISTRY.md`
+//! for an operator-facing subject listing.
+//!
+//! # Example — topic wildcard check
+//!
+//! ```
+//! use nats_adapter::topic_matches;
+//!
+//! assert!(topic_matches("market-data.*.SPY", "market-data.tick.SPY"));
+//! assert!(!topic_matches("api.cmd", "system.heartbeat"));
+//! ```
 
 pub mod bridge;
 pub mod client;

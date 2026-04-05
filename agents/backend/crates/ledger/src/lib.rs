@@ -2,6 +2,25 @@
 //!
 //! A lightweight double-entry accounting system optimized for trading operations.
 //! Provides transaction recording, balance calculation, and Ledger CLI-compatible export.
+//!
+//! # Example — balanced transaction
+//!
+//! ```
+//! use ledger::{AccountPath, Currency, Money, TransactionBuilder};
+//! use rust_decimal::Decimal;
+//!
+//! # fn main() -> Result<(), ledger::LedgerError> {
+//! let cash = AccountPath::from_string("Assets:IBKR:Cash")?;
+//! let equity = AccountPath::from_string("Equity:Opening")?;
+//! let amount = Money::new(Decimal::from(100), Currency::USD);
+//! let tx = TransactionBuilder::new("Seed balance")
+//!     .debit(cash, amount.clone())
+//!     .credit(equity, amount)
+//!     .build()?;
+//! assert_eq!(tx.postings.len(), 2);
+//! # Ok(())
+//! # }
+//! ```
 
 pub mod account;
 pub mod currency;

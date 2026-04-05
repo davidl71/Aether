@@ -8,10 +8,11 @@
 //!
 //! This crate must **not** depend on `api` (workspace rule). Use [`credential_store`] only for shared credential paths.
 //!
-//! # Repository documentation
+//! # See also
 //!
 //! - Provider pattern: `docs/MARKET_DATA_PROVIDER_ARCHITECTURE.md`
 //! - Workspace map: `AGENTS.md`
+//! - NATS subjects for published market data (when wired through services): `docs/NATS_TOPICS_REGISTRY.md` (`nats_adapter::topics::market_data`)
 
 pub mod aggregator;
 pub mod alpaca;
