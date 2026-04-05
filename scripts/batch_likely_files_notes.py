@@ -15,8 +15,7 @@ NOTES: dict[str, str] = {
     # exarp-go SQLite / task_workflow (work lives in exarp-go repo)
     "T-1774888990930703000": "`exarp-go/internal/database/` (lock cleanup), `tasks_lock.go`",
     "T-1774888990962856000": "`exarp-go/internal/database/` (GetTask, FindNextClaimableTask, tags/deps queries)",
-    "T-1774888990980406000": "`exarp-go/internal/database/` (AddComments batch insert)",
-    "T-1774888990994244000": "`exarp-go/internal/database/` (UpdateTask, version), `internal/models/`",
+    # AddComments / UpdateTask(version) / execution_plan MCP / CLI help+errors: see exarp-go backlog (migrated from Aether 2026-04).
     "T-1774888048357799000": "`exarp-go/Makefile`, `exarp-go/internal/database/*_test.go`, benches",
     "T-1774888048738176000": "`exarp-go/internal/database/` (BatchUpdateTaskStatus), `internal/tools/task_workflow*.go`",
     # Disk / ops
