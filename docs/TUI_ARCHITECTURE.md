@@ -1,6 +1,6 @@
 # TUI Architecture
 
-**Last updated:** 2026-03-30
+**Last updated:** 2026-04-05
 **Service:** `agents/backend/services/tui_service`
 **Framework:** ratatui + crossterm + tokio
 
@@ -11,6 +11,8 @@
 The TUI is a full-screen operator console for monitoring and controlling the financing platform. It renders live tabs for Dashboard, Positions, Orders, Alerts, Logs, Settings, and related instruments, and receives real-time data from the Rust backend via NATS JetStream snapshots.
 
 Large-terminal operational workspaces are composed in `ui/mod.rs`. Shared workspace membership, focus cycling, and hint metadata now live in `workspace.rs`, while Settings-specific key handling lives in `input_settings.rs` and the Settings tab is split across `settings_*` section modules so composed layouts do not duplicate shell logic.
+
+**Pane & focus:** See **[`TUI_PANE_MODEL.md`](./TUI_PANE_MODEL.md)** for the workspace / overlay / `InputMode` / `ScrollableTableState` model and the migration plan toward a central input router.
 
 ---
 

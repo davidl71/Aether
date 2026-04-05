@@ -537,7 +537,8 @@ fn apply_mouse_scroll(app: &mut App, delta: isize, tab: crate::app::Tab) {
         }
         crate::app::Tab::Yield => {
             if let Some(ref curve) = app.yield_curve {
-                app.yield_curve_table.shift_selected(delta, curve.point_count);
+                app.yield_curve_table
+                    .shift_selected(delta, curve.point_count);
             }
         }
         _ => {}

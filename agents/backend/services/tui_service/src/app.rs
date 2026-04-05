@@ -926,6 +926,15 @@ impl App {
         }
     }
 
+    /// Snapshot for routing hints / debug (`docs/TUI_PANE_MODEL.md`).
+    pub fn focus_context(&self) -> crate::focus_context::FocusContext {
+        crate::focus_context::FocusContext {
+            input_mode: self.input_mode(),
+            active_tab: self.active_tab,
+            secondary_focus: self.secondary_focus(),
+        }
+    }
+
     pub fn focus_label(&self) -> String {
         self.secondary_focus()
             .title()

@@ -10,14 +10,7 @@ use ratatui::{
 
 use crate::app::App;
 
-fn truncate(s: &str, max: usize) -> String {
-    if s.chars().count() <= max {
-        s.to_string()
-    } else {
-        let t: String = s.chars().take(max.saturating_sub(1)).collect();
-        format!("{}…", t)
-    }
-}
+use super::text_trunc::truncate_chars;
 
 pub(crate) fn render_ledger(f: &mut Frame, app: &App, area: Rect) {
     let block = Block::default()
@@ -89,10 +82,10 @@ pub(crate) fn render_ledger(f: &mut Frame, app: &App, area: Rect) {
                 .map(|e| {
                     let cleared = if e.cleared { "Y" } else { "" };
                     Row::new([
-                        Cell::from(truncate(&e.date, 10)),
+                        Cell::from(truncate_chars(&e.date, 10)),
                         Cell::from(cleared).style(Style::default().fg(Color::Green)),
-                        Cell::from(truncate(&e.description, 44)),
-                        Cell::from(truncate(&e.account_paths, 44)).style(
+                        Cell::from(truncate_chars(&e.description, 44)),
+                        Cell::from(truncate_chars(&e.account_paths, 44)).style(
                             Style::default()
                                 .fg(Color::DarkGray)
                                 .add_modifier(Modifier::ITALIC),

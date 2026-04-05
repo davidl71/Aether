@@ -4,7 +4,9 @@
 //! mutating state here except via explicit callbacks (e.g. the command palette).
 
 pub(crate) mod alerts;
+mod chrome_layout;
 mod candlestick;
+mod text_trunc;
 pub mod charts;
 mod dashboard;
 mod discount_bank;
@@ -27,6 +29,7 @@ use feedback::render_toast_area;
 #[cfg(test)]
 pub(crate) use yield_curve::render_yield_curve as render_yield_curve_tab;
 
+use chrome_layout::split_vertical_chrome;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -59,15 +62,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     let paint_all = !flags.is_dirty();
     let paint_layered = paint_all || flags.overlay || layered_chrome_active(app);
 
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(3), // tab bar
-            Constraint::Min(0),    // main content
-            Constraint::Length(1), // hint bar
-            Constraint::Length(1), // status bar (moved to bottom)
-        ])
-        .split(f.area());
+    let chunks = split_vertical_chrome(f.area());
 
     if paint_all || flags.tabs {
         render_tab_bar(f, app, chunks[0]);
@@ -310,18 +305,12 @@ fn render_tab_bar(f: &mut Frame, app: &App, area: Rect) {
             continue;
         }
         // Clamp to the available width to avoid overflow on narrow terminals.
-        let remaining = area
-            .x
-            .saturating_add(area.width)
-            .saturating_sub(cursor_x);
+        let remaining = area.x.saturating_add(area.width).saturating_sub(cursor_x);
         if remaining == 0 {
             break;
         }
         let width = w.min(remaining);
-        regions.push((
-            *tab,
-            Rect::new(cursor_x, area.y, width, click_height),
-        ));
+        regions.push((*tab, Rect::new(cursor_x, area.y, width, click_height)));
         cursor_x = cursor_x.saturating_add(w);
     }
     app.set_tab_bar_regions(regions);
@@ -377,7 +366,9 @@ fn render_tab_panel(f: &mut Frame, app: &App, area: Rect, tab: Tab) {
             let widget = Paragraph::new(vec![
                 Line::from(Span::styled(
                     "Ledger journal",
-                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
                 )),
                 Line::from(""),
                 Line::from(Span::styled(
@@ -456,10 +447,7 @@ fn workspace_banner(spec: WorkspaceSpec, focus_label: &str) -> Paragraph<'static
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw(format!(
-            "  |  Tab/Shift-Tab cycles panes{}",
-            extra_hint
-        )),
+        Span::raw(format!("  |  Tab/Shift-Tab cycles panes{}", extra_hint)),
     ]))
 }
 
@@ -902,11 +890,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 }
 
 pub(crate) fn truncate_detail(detail: &str, max_len: usize) -> String {
-    if detail.len() <= max_len {
-        detail.to_string()
-    } else {
-        format!("{}…", &detail[..max_len.saturating_sub(1)])
-    }
+    text_trunc::truncate_chars(detail, max_len)
 }
 
 fn render_connection_badge(target: ConnectionTarget, status: &ConnectionStatus) -> Span<'static> {
@@ -1378,11 +1362,7 @@ fn append_async_status_spans<'a>(spans: &mut Vec<Span<'a>>, app: &App) {
 }
 
 fn truncate_command_id(command_id: &str) -> String {
-    if command_id.len() <= 18 {
-        command_id.to_string()
-    } else {
-        format!("{}…", &command_id[..17])
-    }
+    text_trunc::truncate_chars(command_id, 18)
 }
 
 fn command_status_label(status: &CommandStatus) -> &'static str {

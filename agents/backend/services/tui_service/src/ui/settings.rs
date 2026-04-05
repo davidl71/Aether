@@ -232,9 +232,5 @@ pub(super) fn section_block(title: impl Into<String>, active: bool) -> Block<'st
 }
 
 pub(super) fn truncate(s: &str, max: usize) -> String {
-    if s.len() <= max {
-        s.to_string()
-    } else {
-        format!("{}…", &s[..max.saturating_sub(1)])
-    }
+    super::text_trunc::truncate_chars(s, max)
 }

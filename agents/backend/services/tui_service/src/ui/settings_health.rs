@@ -19,6 +19,74 @@ use super::{section_active, section_block, truncate};
 
 const DEFAULT_HEALTH_STALE_AFTER_SECS: i64 = 45;
 
+fn fmt_bytes_u64(bytes: u64) -> String {
+    const KB: u64 = 1024;
+    const MB: u64 = 1024 * 1024;
+    const GB: u64 = 1024 * 1024 * 1024;
+    if bytes >= GB {
+        format!("{:.1}GiB", bytes as f64 / GB as f64)
+    } else if bytes >= MB {
+        format!("{:.1}MiB", bytes as f64 / MB as f64)
+    } else if bytes >= KB {
+        format!("{:.1}KiB", bytes as f64 / KB as f64)
+    } else {
+        format!("{bytes}B")
+    }
+}
+
+/// One or two lines of async-nats counter text (partial fields shown when only some are set).
+fn transport_nats_counter_lines(transport: &NatsTransportHealthState, width: usize) -> Vec<String> {
+    let mut byte_parts: Vec<String> = Vec::new();
+    if let Some(b) = transport.in_bytes {
+        byte_parts.push(format!("in {}", fmt_bytes_u64(b)));
+    }
+    if let Some(b) = transport.out_bytes {
+        byte_parts.push(format!("out {}", fmt_bytes_u64(b)));
+    }
+
+    let mut msg_parts: Vec<String> = Vec::new();
+    match (transport.in_messages, transport.out_messages) {
+        (Some(i), Some(o)) => msg_parts.push(format!("msgs {i}/{o}")),
+        (Some(i), None) => msg_parts.push(format!("msgs_in {i}")),
+        (None, Some(o)) => msg_parts.push(format!("msgs_out {o}")),
+        (None, None) => {}
+    }
+    if let Some(c) = transport.connects {
+        msg_parts.push(format!("connects {c}"));
+    }
+
+    if byte_parts.is_empty() && msg_parts.is_empty() {
+        return vec!["io: —".to_string()];
+    }
+
+    let bytes_seg = byte_parts.join("  ");
+    let msg_seg = msg_parts.join("  ");
+    let combined = match (bytes_seg.is_empty(), msg_seg.is_empty()) {
+        (true, false) => format!("io: {msg_seg}"),
+        (false, true) => format!("io: {bytes_seg}"),
+        (false, false) => format!("io: {bytes_seg}  {msg_seg}"),
+        (true, true) => "io: —".to_string(),
+    };
+
+    let budget = width.max(32);
+    if combined.len() <= budget.saturating_sub(2) || width >= 78 {
+        return vec![combined];
+    }
+
+    let mut out = Vec::new();
+    if !bytes_seg.is_empty() {
+        out.push(format!("io: {bytes_seg}"));
+    }
+    if !msg_seg.is_empty() {
+        out.push(format!("   {msg_seg}"));
+    }
+    if out.is_empty() {
+        vec!["io: —".to_string()]
+    } else {
+        out
+    }
+}
+
 #[derive(Default)]
 struct BackendHealthCounts {
     total: usize,
@@ -97,6 +165,7 @@ pub(crate) fn render_settings_health_section(f: &mut Frame, app: &App, area: Rec
         .as_ref()
         .map(|s| format!("{}s", s.age_secs()))
         .unwrap_or_else(|| "—".to_string());
+    let content_w = area.width.saturating_sub(2) as usize;
     let flow_lines = settings_health_flow_lines(
         app,
         &transport,
@@ -119,12 +188,18 @@ pub(crate) fn render_settings_health_section(f: &mut Frame, app: &App, area: Rec
         yield_age,
         &backend_counts,
         snapshot_age,
+        content_w,
     );
-    let component_lines = settings_component_lines(&transport, &backends, &backend_counts);
     let health_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Min(6), Constraint::Length(4)])
         .split(area);
+    let component_lines = settings_component_lines(
+        &transport,
+        &backends,
+        &backend_counts,
+        health_chunks[1].width.saturating_sub(2) as usize,
+    );
     f.render_widget(
         Paragraph::new(flow_lines).block(backends_block.clone()),
         health_chunks[0],
@@ -266,22 +341,8 @@ fn settings_health_flow_lines(
     yield_age: Option<i64>,
     backend_counts: &BackendHealthCounts,
     snapshot_age: String,
+    content_width: usize,
 ) -> Vec<Line<'static>> {
-    fn fmt_bytes(bytes: u64) -> String {
-        const KB: u64 = 1024;
-        const MB: u64 = 1024 * 1024;
-        const GB: u64 = 1024 * 1024 * 1024;
-        if bytes >= GB {
-            format!("{:.1}GiB", bytes as f64 / GB as f64)
-        } else if bytes >= MB {
-            format!("{:.1}MiB", bytes as f64 / MB as f64)
-        } else if bytes >= KB {
-            format!("{:.1}KiB", bytes as f64 / KB as f64)
-        } else {
-            format!("{bytes}B")
-        }
-    }
-
     let yield_age = yield_age
         .map(|a| a.to_string())
         .unwrap_or_else(|| "—".to_string());
@@ -308,23 +369,7 @@ fn settings_health_flow_lines(
         .last_rtt_ms
         .map(|v| format!("{v}ms"))
         .unwrap_or_else(|| "—".to_string());
-    let transport_stats = match (
-        transport.in_bytes,
-        transport.out_bytes,
-        transport.in_messages,
-        transport.out_messages,
-        transport.connects,
-    ) {
-        (Some(in_b), Some(out_b), Some(in_m), Some(out_m), Some(connects)) => format!(
-            "io: in {} out {}  msgs {}/{}  connects {}",
-            fmt_bytes(in_b),
-            fmt_bytes(out_b),
-            in_m,
-            out_m,
-            connects
-        ),
-        _ => "io: —".to_string(),
-    };
+    let transport_stat_lines = transport_nats_counter_lines(transport, content_width);
     let yw_entry = backends
         .get("tws_yield_curve_daemon")
         .or_else(|| backends.get("yield_curve_writer"));
@@ -334,60 +379,90 @@ fn settings_health_flow_lines(
         None => ("?", Color::DarkGray, "not reporting"),
     };
 
-    vec![
-        Line::from(vec![
-            Span::styled(
-                " Transport ",
-                Style::default()
-                    .fg(
-                        if section_active(app, SettingsSection::Health)
-                            && app.settings_health_focus == SettingsHealthFocus::Transport
-                        {
-                            Color::Yellow
-                        } else {
-                            Color::DarkGray
-                        },
-                    )
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(" "),
-            Span::styled(transport_sym, Style::default().fg(transport_color)),
-            Span::raw(" "),
-            Span::styled(
-                transport.status.clone(),
-                Style::default().fg(transport_color),
-            ),
-            Span::raw("  role: "),
-            Span::styled(transport_role, Style::default().fg(Color::Cyan)),
-            Span::raw("  subject: "),
-            Span::styled(
-                truncate(&transport_subject, 24),
-                Style::default().fg(Color::Cyan),
-            ),
-            Span::raw("  age: "),
-            Span::styled(transport_age, Style::default().fg(Color::Cyan)),
-            Span::raw("  rtt: "),
-            Span::styled(transport_rtt, Style::default().fg(Color::Cyan)),
-            Span::raw("  reconnects: "),
-            Span::styled(
-                transport.reconnect_count.to_string(),
-                Style::default().fg(Color::Cyan),
-            ),
-        ]),
-        Line::from(vec![
+    let (strategy_nats_status_word, strategy_nats_status_color) = if !app
+        .config
+        .strategy_nats_subscribe
+    {
+        ("off", Color::DarkGray)
+    } else {
+        match app.nats_status.state {
+            ConnectionState::Connected => ("ok", Color::Green),
+            ConnectionState::Starting | ConnectionState::Retrying => ("degraded", Color::Yellow),
+        }
+    };
+    let strategy_nats_subj_summary = if app.config.strategy_nats_subscribe {
+        format!(
+            "{} | {}",
+            truncate(&app.config.strategy_nats_signal_subject, 20),
+            truncate(&app.config.strategy_nats_decision_subject, 20),
+        )
+    } else {
+        "—".to_string()
+    };
+
+    let w = content_width.max(48);
+    let mut lines: Vec<Line<'static>> = vec![Line::from(vec![
+        Span::styled(
+            " Transport ",
+            Style::default()
+                .fg(
+                    if section_active(app, SettingsSection::Health)
+                        && app.settings_health_focus == SettingsHealthFocus::Transport
+                    {
+                        Color::Yellow
+                    } else {
+                        Color::DarkGray
+                    },
+                )
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(" "),
+        Span::styled(transport_sym, Style::default().fg(transport_color)),
+        Span::raw(" "),
+        Span::styled(
+            transport.status.clone(),
+            Style::default().fg(transport_color),
+        ),
+        Span::raw("  role: "),
+        Span::styled(
+            truncate(&transport_role, 16),
+            Style::default().fg(Color::Cyan),
+        ),
+        Span::raw("  subj: "),
+        Span::styled(
+            truncate(&transport_subject, 20),
+            Style::default().fg(Color::Cyan),
+        ),
+        Span::raw("  age: "),
+        Span::styled(
+            truncate(&transport_age, 8),
+            Style::default().fg(Color::Cyan),
+        ),
+        Span::raw("  rtt: "),
+        Span::styled(transport_rtt, Style::default().fg(Color::Cyan)),
+        Span::raw("  recon: "),
+        Span::styled(
+            transport.reconnect_count.to_string(),
+            Style::default().fg(Color::Cyan),
+        ),
+    ])];
+    for stat_line in transport_stat_lines {
+        lines.push(Line::from(vec![
             Span::raw("  "),
             Span::styled(
-                truncate(&transport_stats, 72),
+                truncate(&stat_line, w),
                 Style::default().fg(Color::DarkGray),
             ),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
-            Span::styled(
-                truncate(&transport_snapshot_jetstream_kv_summary(transport), 72),
-                Style::default().fg(Color::DarkGray),
-            ),
-        ]),
+        ]));
+    }
+    lines.push(Line::from(vec![
+        Span::raw("  "),
+        Span::styled(
+            truncate(&transport_snapshot_jetstream_kv_summary(transport), w),
+            Style::default().fg(Color::DarkGray),
+        ),
+    ]));
+    lines.extend(vec![
         Line::from(vec![
             Span::raw(" TUI -> "),
             Span::styled(nats_sym.clone(), Style::default().fg(nats_color)),
@@ -400,17 +475,24 @@ fn settings_health_flow_lines(
             ),
         ]),
         Line::from(vec![
-            Span::raw(" Strategy NATS "),
+            Span::raw(" Strategy NATS: "),
+            Span::styled(
+                strategy_nats_status_word,
+                Style::default().fg(strategy_nats_status_color),
+            ),
+            Span::raw("  "),
+            Span::styled(strategy_nats_subj_summary, Style::default().fg(Color::Cyan)),
+            Span::raw("  counts "),
             Span::styled(
                 format!(
-                    "signals {}  decisions {}",
+                    "{}/{}",
                     app.strategy_nats_signal_count, app.strategy_nats_decision_count
                 ),
                 Style::default().fg(Color::Cyan),
             ),
             Span::raw("  last: "),
             Span::styled(
-                truncate(&app.strategy_nats_last, 44),
+                truncate(&app.strategy_nats_last, 32),
                 Style::default().fg(Color::DarkGray),
             ),
         ]),
@@ -489,14 +571,17 @@ fn settings_health_flow_lines(
                 Style::default().fg(yw_color),
             ),
         ]),
-    ]
+    ]);
+    lines
 }
 
 fn settings_component_lines(
     transport: &NatsTransportHealthState,
     backends: &HashMap<String, BackendHealthState>,
     backend_counts: &BackendHealthCounts,
+    content_width: usize,
 ) -> Vec<Line<'static>> {
+    let w = content_width.max(40);
     let (transport_sym, transport_color) = transport_summary_label(transport);
     let transport_detail = transport
         .hint
@@ -506,47 +591,69 @@ fn settings_component_lines(
         .to_string();
     let mut component_names: Vec<_> = backends.keys().cloned().collect();
     component_names.sort();
-    let mut lines = vec![
-        Line::from(vec![
-            Span::styled(
-                format!("{transport_sym} "),
-                Style::default().fg(transport_color),
-            ),
-            Span::styled("NATS transport", Style::default().fg(Color::Cyan)),
-            Span::raw(" "),
-            Span::styled(
-                transport.status.clone(),
-                Style::default().fg(transport_color),
-            ),
+    let mut lines = vec![Line::from(vec![
+        Span::styled(
+            format!("{transport_sym} "),
+            Style::default().fg(transport_color),
+        ),
+        Span::styled("NATS transport", Style::default().fg(Color::Cyan)),
+        Span::raw(" "),
+        Span::styled(
+            transport.status.clone(),
+            Style::default().fg(transport_color),
+        ),
+        Span::raw("  "),
+        Span::styled(
+            truncate(&transport_detail, w.saturating_sub(24)),
+            Style::default().fg(Color::DarkGray),
+        ),
+    ])];
+    for stat_line in transport_nats_counter_lines(transport, content_width) {
+        lines.push(Line::from(vec![
             Span::raw("  "),
-            Span::styled(transport_detail, Style::default().fg(Color::DarkGray)),
-        ]),
-        Line::from(vec![
-            Span::raw("  "),
             Span::styled(
-                truncate(&transport_snapshot_jetstream_kv_summary(transport), 72),
+                truncate(&stat_line, w),
                 Style::default().fg(Color::DarkGray),
             ),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                format!("  services [{} total]", backend_counts.total),
-                Style::default().fg(Color::Cyan),
+        ]));
+    }
+    let rtt_rec = format!(
+        "last_rtt {}  reconnects {}",
+        transport
+            .last_rtt_ms
+            .map(|v| format!("{v}ms"))
+            .unwrap_or_else(|| "—".to_string()),
+        transport.reconnect_count,
+    );
+    lines.push(Line::from(vec![
+        Span::raw("  "),
+        Span::styled(truncate(&rtt_rec, w), Style::default().fg(Color::DarkGray)),
+    ]));
+    lines.push(Line::from(vec![
+        Span::raw("  "),
+        Span::styled(
+            truncate(&transport_snapshot_jetstream_kv_summary(transport), w),
+            Style::default().fg(Color::DarkGray),
+        ),
+    ]));
+    lines.push(Line::from(vec![
+        Span::styled(
+            format!("  services [{} total]", backend_counts.total),
+            Style::default().fg(Color::Cyan),
+        ),
+        Span::raw(" "),
+        Span::styled(
+            format!(
+                "ok {} degraded {} error {} disabled {} stale {}",
+                backend_counts.ok,
+                backend_counts.degraded,
+                backend_counts.error,
+                backend_counts.disabled,
+                backend_counts.stale,
             ),
-            Span::raw(" "),
-            Span::styled(
-                format!(
-                    "ok {} degraded {} error {} disabled {} stale {}",
-                    backend_counts.ok,
-                    backend_counts.degraded,
-                    backend_counts.error,
-                    backend_counts.disabled,
-                    backend_counts.stale,
-                ),
-                Style::default().fg(Color::DarkGray),
-            ),
-        ]),
-    ];
+            Style::default().fg(Color::DarkGray),
+        ),
+    ]));
     if component_names.is_empty() {
         lines.push(Line::from(Span::styled(
             "  No system.health service entries yet.",

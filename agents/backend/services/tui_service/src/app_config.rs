@@ -51,9 +51,8 @@ fn nth_weekday_of_month(
     let first = chrono::NaiveDate::from_ymd_opt(year, month, 1)?;
     let first_wd = first.weekday();
 
-    let first_offset = (7 + weekday.num_days_from_monday() as i32
-        - first_wd.num_days_from_monday() as i32)
-        % 7;
+    let first_offset =
+        (7 + weekday.num_days_from_monday() as i32 - first_wd.num_days_from_monday() as i32) % 7;
     let day = 1 + first_offset as u32 + (n - 1) * 7;
     chrono::NaiveDate::from_ymd_opt(year, month, day)
 }

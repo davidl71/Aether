@@ -3,6 +3,9 @@
 //! Most tabs use [`ScrollableTableState::selected`] as the highlighted row index; the optional
 //! [`ScrollableTableState::scroll`] field is the first visible row when implementing a viewport.
 //! Alerts use [`ScrollableTableState::shift_scroll`] on `scroll` only (paragraph-style list).
+//!
+//! **Invariant:** after the underlying row list shrinks or is replaced, call [`ScrollableTableState::clamp_to_len`]
+//! so `selected` / `scroll` stay valid before the next render or key handler.
 
 /// Clamp a possibly-out-of-range selected index to a list length.
 ///

@@ -12,6 +12,8 @@ use ratatui::{
 use crate::app::{App, LoanEntryState, LoanType as AppLoanType};
 use crate::scrollable_table::{centered_viewport_start, clamp_index};
 
+use super::text_trunc::truncate_chars;
+
 fn status_label(s: &LoanStatus) -> &'static str {
     match s {
         LoanStatus::Active => "Active",
@@ -24,15 +26,6 @@ fn type_label(t: &LoanType) -> &'static str {
     match t {
         LoanType::ShirBased => "SHIR",
         LoanType::CpiLinked => "CPI",
-    }
-}
-
-fn truncate(s: &str, max: usize) -> String {
-    if s.chars().count() <= max {
-        s.to_string()
-    } else {
-        let t: String = s.chars().take(max.saturating_sub(1)).collect();
-        format!("{}…", t)
     }
 }
 
@@ -121,13 +114,13 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
         .iter()
         .map(|l| {
             Row::new([
-                Cell::from(truncate(&l.loan_id, 12)),
-                Cell::from(truncate(&l.bank_name, 14)),
+                Cell::from(truncate_chars(&l.loan_id, 12)),
+                Cell::from(truncate_chars(&l.bank_name, 14)),
                 Cell::from(type_label(&l.loan_type)),
                 Cell::from(format!("{:.0}", l.principal)),
                 Cell::from(format!("{:.2}", l.interest_rate)),
                 Cell::from(status_label(&l.status)),
-                Cell::from(truncate(&l.maturity_date, 10)),
+                Cell::from(truncate_chars(&l.maturity_date, 10)),
             ])
         })
         .collect();

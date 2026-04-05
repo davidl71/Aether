@@ -25,7 +25,9 @@ pub(crate) fn settings_key_action(app: &App, key: KeyCode) -> Option<Action> {
         //
         // This keeps the wide Operations workspace behavior unchanged (Tab cycles Alerts/Logs/Settings)
         // while letting Settings behave like a self-contained focus surface in single-pane layouts.
-        KeyCode::Tab if app.workspace_focus_target(true).is_none() => Some(Action::SettingsSectionNext),
+        KeyCode::Tab if app.workspace_focus_target(true).is_none() => {
+            Some(Action::SettingsSectionNext)
+        }
         KeyCode::BackTab if app.workspace_focus_target(false).is_none() => {
             Some(Action::SettingsSectionPrev)
         }

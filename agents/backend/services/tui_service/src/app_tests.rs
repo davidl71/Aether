@@ -9,7 +9,8 @@ use tokio::sync::{mpsc, watch};
 
 use std::collections::{HashMap, VecDeque};
 
-use crate::workspace::{SettingsHealthFocus, SettingsSection};
+use crate::focus_context::FocusContext;
+use crate::workspace::{SettingsHealthFocus, SettingsSection, SecondaryFocus};
 use crate::{
     config::TuiConfig,
     events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget},
@@ -56,6 +57,21 @@ fn make_snapshot() -> TuiSnapshot {
     snap.inner.alerts.clear();
     snap.refresh_display_dto();
     snap
+}
+
+#[test]
+fn focus_context_reflects_tab_and_secondary_focus() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Settings;
+    app.settings_section = SettingsSection::Health;
+    app.settings_health_focus = SettingsHealthFocus::Services;
+    let fc: FocusContext = app.focus_context();
+    assert_eq!(fc.active_tab, Tab::Settings);
+    assert_eq!(fc.input_mode, InputMode::Normal);
+    assert_eq!(
+        fc.secondary_focus,
+        SecondaryFocus::SettingsHealth(SettingsHealthFocus::Services)
+    );
 }
 
 #[test]
@@ -682,7 +698,11 @@ fn settings_tab_tab_cycles_settings_section_when_no_workspace_focus_cycle() {
     app.settings_health_focus = SettingsHealthFocus::Transport;
 
     app.handle_key(KeyEvent::from(KeyCode::Tab));
-    assert_eq!(app.active_tab, Tab::Settings, "Tab should not leave Settings");
+    assert_eq!(
+        app.active_tab,
+        Tab::Settings,
+        "Tab should not leave Settings"
+    );
     assert_eq!(
         app.settings_section,
         SettingsSection::Config,
@@ -690,7 +710,11 @@ fn settings_tab_tab_cycles_settings_section_when_no_workspace_focus_cycle() {
     );
 
     app.handle_key(KeyEvent::from(KeyCode::BackTab));
-    assert_eq!(app.active_tab, Tab::Settings, "BackTab should not leave Settings");
+    assert_eq!(
+        app.active_tab,
+        Tab::Settings,
+        "BackTab should not leave Settings"
+    );
     assert_eq!(
         app.settings_section,
         SettingsSection::Health,
@@ -834,8 +858,8 @@ fn workspace_focus_target_cycles_market_workspace_tabs() {
 
 #[test]
 fn market_workspace_mouse_scroll_targets_pane_under_cursor() {
-    use crossterm::event::{MouseEvent, MouseEventKind};
     use api::{CandleSnapshot, SymbolSnapshot};
+    use crossterm::event::{MouseEvent, MouseEventKind};
 
     let (mut app, _, _) = make_app();
     app.set_last_main_area_size(190, 32);
@@ -922,7 +946,10 @@ fn market_workspace_mouse_scroll_targets_pane_under_cursor() {
 
     let action = crate::mouse::handle_mouse_event(&app, mouse, size).expect("expected action");
     assert!(
-        matches!(action, crate::input::Action::MouseScrollDownIn(Tab::Dashboard)),
+        matches!(
+            action,
+            crate::input::Action::MouseScrollDownIn(Tab::Dashboard)
+        ),
         "expected mouse scroll to route to Dashboard pane, got {action:?}"
     );
 
@@ -972,7 +999,9 @@ fn mouse_click_on_tab_bar_routes_via_recorded_regions() {
 
     assert_eq!(
         action,
-        crate::input::Action::JumpToTab((Tab::ALL.iter().position(|t| t == &tab).unwrap() + 1) as u8),
+        crate::input::Action::JumpToTab(
+            (Tab::ALL.iter().position(|t| t == &tab).unwrap() + 1) as u8
+        ),
         "expected mouse click to map to JumpToTab for the clicked tab"
     );
 }

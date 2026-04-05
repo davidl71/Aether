@@ -19,6 +19,9 @@
 //!   TICK_MS               UI redraw interval ms (default: 250)
 //!   SNAPSHOT_TTL_SECS     Seconds before data is shown as stale (default: 30)
 //!   TUI_POSITIONS_SORT    Positions tab order: as_received | symbol | pnl (default: as_received)
+//!   TUI_STRATEGY_NATS_SUBSCRIBE  Enable diagnostic subscriptions (default: off). See `config` module docs.
+//!   TUI_STRATEGY_NATS_SIGNAL_SUBJECT   Override signal wildcard (default: strategy.signal.>)
+//!   TUI_STRATEGY_NATS_DECISION_SUBJECT Override decision wildcard (default: strategy.decision.>)
 //!
 //! # Mosh (mobile shell)
 //!
@@ -69,8 +72,6 @@ mod app;
 mod app_config;
 mod chart_search_history;
 #[cfg(feature = "tui-interact")]
-mod field_list_focus;
-#[cfg(feature = "tui-interact")]
 mod chart_search_interact;
 mod circuit_breaker;
 mod config;
@@ -79,6 +80,9 @@ mod dirty_flags;
 mod discoverability;
 mod events;
 mod expiry_buckets;
+mod focus_context;
+#[cfg(feature = "tui-interact")]
+mod field_list_focus;
 mod input;
 mod input_loans;
 mod input_settings;
@@ -306,20 +310,25 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    // Optional diagnostic: strategy.signal.* / strategy.decision.* (see nats::strategy_nats_subscribe_enabled).
-    if nats::strategy_nats_subscribe_enabled() {
+    // Optional diagnostic: strategy signal/decision wildcards (`TuiConfig::strategy_nats_*`).
+    if config.strategy_nats_subscribe {
         let nats_url_strategy_sig = config.nats_url.clone();
+        let strategy_sig_subject = config.strategy_nats_signal_subject.clone();
         let strategy_sig_tx = event_tx.clone();
         tokio::spawn(async move {
             loop {
                 match nats_adapter::NatsClient::connect(&nats_url_strategy_sig).await {
                     Ok(client) => {
-                        if let Err(e) =
-                            nats::run_strategy_signal_subscriber(client, strategy_sig_tx.clone())
-                                .await
+                        if let Err(e) = nats::run_strategy_signal_subscriber(
+                            client,
+                            strategy_sig_tx.clone(),
+                            strategy_sig_subject.clone(),
+                        )
+                        .await
                         {
                             tracing::warn!(
                                 error = %e,
+                                subject = %strategy_sig_subject,
                                 "Strategy signal subscriber ended, reconnecting"
                             );
                         }
@@ -327,7 +336,8 @@ async fn main() -> color_eyre::Result<()> {
                     Err(e) => {
                         tracing::warn!(
                             error = %e,
-                            "Failed to connect strategy.signal subscriber to NATS"
+                            subject = %strategy_sig_subject,
+                            "Failed to connect strategy signal subscriber to NATS"
                         );
                     }
                 }
@@ -335,17 +345,22 @@ async fn main() -> color_eyre::Result<()> {
             }
         });
         let nats_url_strategy_dec = config.nats_url.clone();
+        let strategy_dec_subject = config.strategy_nats_decision_subject.clone();
         let strategy_dec_tx = event_tx.clone();
         tokio::spawn(async move {
             loop {
                 match nats_adapter::NatsClient::connect(&nats_url_strategy_dec).await {
                     Ok(client) => {
-                        if let Err(e) =
-                            nats::run_strategy_decision_subscriber(client, strategy_dec_tx.clone())
-                                .await
+                        if let Err(e) = nats::run_strategy_decision_subscriber(
+                            client,
+                            strategy_dec_tx.clone(),
+                            strategy_dec_subject.clone(),
+                        )
+                        .await
                         {
                             tracing::warn!(
                                 error = %e,
+                                subject = %strategy_dec_subject,
                                 "Strategy decision subscriber ended, reconnecting"
                             );
                         }
@@ -353,7 +368,8 @@ async fn main() -> color_eyre::Result<()> {
                     Err(e) => {
                         tracing::warn!(
                             error = %e,
-                            "Failed to connect strategy.decision subscriber to NATS"
+                            subject = %strategy_dec_subject,
+                            "Failed to connect strategy decision subscriber to NATS"
                         );
                     }
                 }
@@ -707,7 +723,9 @@ async fn run_loan_bulk_importer(
                 continue;
             }
         };
-        let req = LoansBulkImportRequest { loans: parsed.loans };
+        let req = LoansBulkImportRequest {
+            loans: parsed.loans,
+        };
         let res: Result<Result<LoansBulkImportResponse, String>, String> =
             match NatsClient::connect(&nats_url).await {
                 Ok(nc) => request_json_with_retry(&nc, topics::api::loans::IMPORT_BULK, &req)

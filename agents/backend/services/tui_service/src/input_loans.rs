@@ -62,7 +62,10 @@ pub(crate) fn apply_loan_action(app: &mut App, action: Action) -> bool {
             };
             let trimmed = buf.trim();
             if trimmed.is_empty() {
-                app.push_toast("Enter a path to a loans JSON or CSV file.", ToastLevel::Warning);
+                app.push_toast(
+                    "Enter a path to a loans JSON or CSV file.",
+                    ToastLevel::Warning,
+                );
                 app.loan_import_path = Some(buf);
                 return true;
             }

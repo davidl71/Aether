@@ -1,8 +1,15 @@
 //! TUI configuration loaded from the shared config file with env overrides.
+//!
+//! Strategy diagnostic NATS subjects default to `nats_adapter::topics::strategy` (`strategy.signal.>`,
+//! `strategy.decision.>`). Override with:
+//! - `TUI_STRATEGY_NATS_SUBSCRIBE` — enable diagnostic subscribers (`1` / `true` / `yes` / `on`).
+//! - `TUI_STRATEGY_NATS_SIGNAL_SUBJECT` — full wildcard subject for signals (default: registry / `topics::strategy::all_signals()`).
+//! - `TUI_STRATEGY_NATS_DECISION_SUBJECT` — full wildcard subject for decisions (default: `topics::strategy::all_decisions()`).
 
 use std::path::PathBuf;
 
 use api::project_paths::shared_config_candidate_paths;
+use nats_adapter::topics::strategy as strategy_topics;
 use serde::Deserialize;
 use tracing::{info, warn};
 
@@ -148,6 +155,12 @@ pub struct TuiConfig {
     pub positions_sort: PositionsSortMode,
     /// Theme (env: TUI_THEME: default | high_contrast)
     pub theme: TuiTheme,
+    /// When true, spawn diagnostic subscribers for strategy signal/decision feeds (env: TUI_STRATEGY_NATS_SUBSCRIBE).
+    pub strategy_nats_subscribe: bool,
+    /// Wildcard subscription subject for strategy signals — must align with `nats_adapter::topics::strategy` (env: TUI_STRATEGY_NATS_SIGNAL_SUBJECT).
+    pub strategy_nats_signal_subject: String,
+    /// Wildcard subscription subject for strategy decisions (env: TUI_STRATEGY_NATS_DECISION_SUBJECT).
+    pub strategy_nats_decision_subject: String,
 }
 
 impl Default for TuiConfig {
@@ -166,6 +179,9 @@ impl Default for TuiConfig {
             yield_kv_bucket: "LIVE_STATE".into(),
             positions_sort: PositionsSortMode::default(),
             theme: TuiTheme::parse_env(DEFAULT_TUI_THEME).unwrap_or_default(),
+            strategy_nats_subscribe: false,
+            strategy_nats_signal_subject: strategy_topics::all_signals().to_string(),
+            strategy_nats_decision_subject: strategy_topics::all_decisions().to_string(),
         }
     }
 }
@@ -354,6 +370,25 @@ impl TuiConfig {
                 self.theme = theme;
             }
         }
+
+        // Strategy NATS diagnostics (subjects match `docs/NATS_TOPICS_REGISTRY.md` / `nats_adapter::topics::strategy`).
+        if let Ok(value) = std::env::var("TUI_STRATEGY_NATS_SUBSCRIBE") {
+            if let Some(parsed) = parse_bool(&value) {
+                self.strategy_nats_subscribe = parsed;
+            }
+        }
+        if let Ok(value) = std::env::var("TUI_STRATEGY_NATS_SIGNAL_SUBJECT") {
+            let value = value.trim();
+            if !value.is_empty() {
+                self.strategy_nats_signal_subject = value.to_string();
+            }
+        }
+        if let Ok(value) = std::env::var("TUI_STRATEGY_NATS_DECISION_SUBJECT") {
+            let value = value.trim();
+            if !value.is_empty() {
+                self.strategy_nats_decision_subject = value.to_string();
+            }
+        }
     }
 
     #[cfg(test)]
@@ -379,6 +414,9 @@ pub fn config_key_scope(key: &str) -> SettingScope {
         | "NATS_KV_BUCKET"
         | "TUI_POSITIONS_SORT"
         | "TUI_THEME" => SettingScope::Editable,
+        "TUI_STRATEGY_NATS_SUBSCRIBE"
+        | "TUI_STRATEGY_NATS_SIGNAL_SUBJECT"
+        | "TUI_STRATEGY_NATS_DECISION_SUBJECT" => SettingScope::EnvOnly,
         // Legacy REST compatibility knobs are still parsed from file/env, but
         // they are not operator-editable from the active NATS-first Settings UI.
         "REST_URL" | "REST_POLL_MS" | "REST_FALLBACK" => SettingScope::EnvOnly,
@@ -681,5 +719,37 @@ mod tests {
             config_key_scope("TUI_POSITIONS_SORT"),
             SettingScope::Editable
         );
+        assert_eq!(
+            config_key_scope("TUI_STRATEGY_NATS_SUBSCRIBE"),
+            SettingScope::EnvOnly
+        );
+    }
+
+    #[test]
+    fn strategy_nats_subscribe_and_subjects_env_overrides() {
+        let _guard = env_lock().lock().expect("env lock");
+        env::remove_var("IB_BOX_SPREAD_CONFIG");
+        env::set_var("TUI_STRATEGY_NATS_SUBSCRIBE", "on");
+        env::set_var(
+            "TUI_STRATEGY_NATS_SIGNAL_SUBJECT",
+            "strategy.signal.custom.>",
+        );
+        env::set_var(
+            "TUI_STRATEGY_NATS_DECISION_SUBJECT",
+            "strategy.decision.custom.>",
+        );
+
+        let c = TuiConfig::load();
+
+        assert!(c.strategy_nats_subscribe);
+        assert_eq!(c.strategy_nats_signal_subject, "strategy.signal.custom.>");
+        assert_eq!(
+            c.strategy_nats_decision_subject,
+            "strategy.decision.custom.>"
+        );
+
+        env::remove_var("TUI_STRATEGY_NATS_SUBSCRIBE");
+        env::remove_var("TUI_STRATEGY_NATS_SIGNAL_SUBJECT");
+        env::remove_var("TUI_STRATEGY_NATS_DECISION_SUBJECT");
     }
 }

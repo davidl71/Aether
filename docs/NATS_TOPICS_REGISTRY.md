@@ -119,6 +119,16 @@ Command lifecycle payloads use the protobuf envelope around `SystemCommandEvent`
 
 See `topics::market_data`, `topics::strategy`, `topics::orders`, `topics::positions`, `topics::risk`, `topics::rpc`, `topics::dlq` in the same Rust module for streaming and RPC naming patterns.
 
+### TUI diagnostic subscriptions (`tui_service`)
+
+Optional read-only subscribers use the same wildcard subjects as `topics::strategy::all_signals()` / `all_decisions()` by default:
+
+| Env var | Default | Purpose |
+|---------|---------|---------|
+| `TUI_STRATEGY_NATS_SUBSCRIBE` | (off) | Set `1` / `true` / `yes` / `on` to enable diagnostic subscribers. |
+| `TUI_STRATEGY_NATS_SIGNAL_SUBJECT` | `strategy.signal.>` | Full NATS subject (wildcard) for signal stream. |
+| `TUI_STRATEGY_NATS_DECISION_SUBJECT` | `strategy.decision.>` | Full NATS subject (wildcard) for decision stream. |
+
 ---
 
 ## Related docs

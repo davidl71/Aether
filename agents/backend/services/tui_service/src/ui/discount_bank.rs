@@ -10,14 +10,7 @@ use ratatui::{
 
 use crate::app::App;
 
-fn truncate(s: &str, max: usize) -> String {
-    if s.chars().count() <= max {
-        s.to_string()
-    } else {
-        let t: String = s.chars().take(max.saturating_sub(1)).collect();
-        format!("{}…", t)
-    }
-}
+use super::text_trunc::truncate_chars;
 
 pub fn render_discount_bank(f: &mut Frame, app: &App, area: Rect) {
     let block = Block::default()
@@ -189,7 +182,7 @@ fn render_transactions_table(f: &mut Frame, app: &App, area: Rect) {
                         Color::Green
                     };
                     Row::new([
-                        Cell::from(truncate(&tx.value_date, 10)),
+                        Cell::from(truncate_chars(&tx.value_date, 10)),
                         Cell::from(format!("{:.2}", tx.amount)).style(Style::default().fg(
                             if tx.is_debit {
                                 Color::Red
@@ -198,7 +191,7 @@ fn render_transactions_table(f: &mut Frame, app: &App, area: Rect) {
                             },
                         )),
                         Cell::from(type_label).style(Style::default().fg(type_color)),
-                        Cell::from(truncate(&tx.reference, 40)),
+                        Cell::from(truncate_chars(&tx.reference, 40)),
                     ])
                 })
                 .collect();

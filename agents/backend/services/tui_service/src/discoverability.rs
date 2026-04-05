@@ -7,10 +7,10 @@
 //! - Context hints: dynamic hints based on current mode/tab (`context_hints_for`)
 
 use ratatui::{
-    layout::{Alignment, Constraint, Direction, Layout, Margin, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span, Text},
-    widgets::{Block, Borders, Clear, HighlightSpacing, List, ListItem, Paragraph, Wrap},
+    text::{Line, Span},
+    widgets::{Block, Borders, Clear, HighlightSpacing, List, ListItem, Paragraph},
     Frame,
 };
 
