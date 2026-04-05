@@ -1223,8 +1223,10 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         spans.push(Span::styled(n.to_string(), alert_style));
     }
 
-    let ctx = crate::discoverability::context_hints_for(app.app_mode, app.active_tab);
-    let skip_global = if matches!(app.app_mode, AppMode::Navigation) {
+    let fc = app.focus_context();
+    let hint_mode = App::app_mode_for_input_mode(fc.input_mode);
+    let ctx = crate::discoverability::context_hints_for(&fc);
+    let skip_global = if matches!(hint_mode, AppMode::Navigation) {
         3
     } else {
         0

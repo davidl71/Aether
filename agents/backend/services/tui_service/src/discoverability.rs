@@ -14,9 +14,11 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, Tab};
+use crate::app::{App, InputMode, Tab};
+use crate::focus_context::FocusContext;
 use crate::input::Action;
 use crate::mode::AppMode;
+use crate::workspace::{SecondaryFocus, SettingsHealthFocus};
 
 /// A command that can be run from the command palette (invokes a typed [`crate::input::Action`]).
 #[derive(Debug, Clone)]
@@ -390,8 +392,10 @@ pub fn render_context_hints(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(paragraph, area);
 }
 
-/// Get context-sensitive hints for mode + tab (testable without a full [`App`]).
-pub(crate) fn context_hints_for(mode: AppMode, tab: Tab) -> Vec<(String, String)> {
+/// Get context-sensitive hints from a [`FocusContext`] (testable without a full [`App`]).
+pub(crate) fn context_hints_for(ctx: &FocusContext) -> Vec<(String, String)> {
+    let mode = App::app_mode_for_input_mode(ctx.input_mode);
+    let tab = ctx.active_tab;
     let mut hints = vec![];
 
     match mode {
@@ -455,6 +459,15 @@ pub(crate) fn context_hints_for(mode: AppMode, tab: Tab) -> Vec<(String, String)
                 Tab::Settings => {
                     hints.push(("0".into(), "this tab".into()));
                     hints.push(("e/Enter".into(), "edit".into()));
+                    match ctx.secondary_focus {
+                        SecondaryFocus::SettingsHealth(SettingsHealthFocus::Transport) => {
+                            hints.push(("↑/↓".into(), "health flow".into()));
+                        }
+                        SecondaryFocus::SettingsHealth(SettingsHealthFocus::Services) => {
+                            hints.push(("↑/↓".into(), "service rows".into()));
+                        }
+                        _ => {}
+                    }
                 }
             }
         }
@@ -479,7 +492,7 @@ pub(crate) fn context_hints_for(mode: AppMode, tab: Tab) -> Vec<(String, String)
 }
 
 fn get_context_hints(app: &App) -> Vec<(String, String)> {
-    context_hints_for(app.app_mode, app.active_tab)
+    context_hints_for(&app.focus_context())
 }
 
 /// Calculate a centered rectangle
@@ -506,6 +519,14 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn fc(input_mode: InputMode, tab: Tab, secondary_focus: SecondaryFocus) -> FocusContext {
+        FocusContext {
+            input_mode,
+            active_tab: tab,
+            secondary_focus,
+        }
+    }
 
     #[test]
     fn test_command_palette_filter() {
@@ -551,25 +572,35 @@ mod tests {
 
     #[test]
     fn test_context_hints_navigation() {
-        let hints = context_hints_for(AppMode::Navigation, Tab::Dashboard);
+        let hints = context_hints_for(&fc(InputMode::Normal, Tab::Dashboard, SecondaryFocus::None));
         assert!(hints.iter().any(|(k, _)| k == "Tab"));
     }
 
     #[test]
     fn test_context_hints_edit_includes_tab_charts() {
-        let hints = context_hints_for(AppMode::Edit, Tab::Charts);
+        let hints = context_hints_for(&fc(InputMode::ChartSearch, Tab::Charts, SecondaryFocus::None));
         assert!(hints.iter().any(|(k, _)| k == "↑↓"));
     }
 
     #[test]
     fn test_context_hints_dashboard_navigation() {
-        let hints = context_hints_for(AppMode::Navigation, Tab::Dashboard);
+        let hints = context_hints_for(&fc(InputMode::Normal, Tab::Dashboard, SecondaryFocus::None));
         assert!(hints.iter().any(|(k, _)| k == "Enter"));
     }
 
     #[test]
     fn test_context_hints_logs_navigation() {
-        let hints = context_hints_for(AppMode::Navigation, Tab::Logs);
+        let hints = context_hints_for(&fc(InputMode::Normal, Tab::Logs, SecondaryFocus::None));
         assert!(hints.iter().any(|(k, _)| k == "+/-"));
+    }
+
+    #[test]
+    fn test_context_hints_settings_health_transport() {
+        let hints = context_hints_for(&fc(
+            InputMode::Normal,
+            Tab::Settings,
+            SecondaryFocus::SettingsHealth(SettingsHealthFocus::Transport),
+        ));
+        assert!(hints.iter().any(|(_, d)| d == "health flow"));
     }
 }

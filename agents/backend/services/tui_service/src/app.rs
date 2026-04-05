@@ -136,7 +136,7 @@ pub enum DetailPopupContent {
     FmpSymbol(FmpDetail),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InputMode {
     Normal,
     Help,

@@ -60,6 +60,8 @@ Input is resolved **top-down**: the highest active overlay’s `InputMode` wins;
 2. **Per-mode handlers** return `Consumed | Bubble` so shared keys (e.g. `Esc`, `?`) behave consistently.
 3. **Pane hints** (`PaneHintMode`) generated from `PaneSpec` + `SecondaryFocus` + `InputMode` in one helper to feed `render_hint_bar`.
 
+**Today:** `discoverability::context_hints_for(&FocusContext)` drives compact status-bar hint strips and includes Settings → Health nested focus (`↑/↓` transport vs services).
+
 No big-bang rewrite: introduce helpers and shrink `match` duplication tab-by-tab.
 
 ---
