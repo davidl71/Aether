@@ -5,13 +5,7 @@ Use this repo’s **Todo2** (`.todo2/todo2.db`) and **exarp-go** via the portabl
 ## PROJECT_ROOT and canonical store
 
 - **MCP / portable runner:** command `scripts/run_exarp_go.sh` with `env.PROJECT_ROOT` = workspace root (see `.cursor/mcp.json`).
-- **Canonical tasks:** `.todo2/todo2.db` (SQLite). `.todo2/state.todo2.json` is a mirror.
-- After any task change that might skip sync (bulk CLI, raw DB, or tooling quirks), run:
-
-```bash
-cd "$(git rev-parse --show-toplevel)"
-./scripts/run_exarp_go.sh task sync
-```
+- **Canonical tasks:** `.todo2/todo2.db` (SQLite) only. Do **not** run `task sync` / `task_workflow` `action=sync` in this repo to refresh `.todo2/state.todo2.json` (JSON mirror not used; gitignored if recreated).
 
 ## One-shot CLI (from repo root)
 
@@ -29,8 +23,6 @@ Always pass a subcommand — running the wrapper with **no** args starts stdio M
 ```bash
 ./scripts/run_exarp_go.sh task update --status Review --new-status Done
 ```
-
-Then run `task sync` so JSON-backed views match.
 
 ### Task comments and dependencies (JSON tool)
 
@@ -71,5 +63,5 @@ For parallel or multi-crate manifest edits:
 
 - `.cursor/rules/aether-todo2-exarp-cheatsheet.mdc` — short AI-facing summary.
 - `.cursor/rules/project-automation.mdc`, `automation-tool-suggestions.mdc` — MCP patterns, `workingDirectory`.
-- `AGENTS.md` — exarp workflow; **Learned User Preferences** (task sync).
+- `AGENTS.md` — exarp workflow; Todo2 canonical DB (no JSON mirror sync).
 - `scripts/run_exarp_go_tool.sh` — sanitized `-tool` / `-args` invocations.

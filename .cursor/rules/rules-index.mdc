@@ -18,7 +18,7 @@ Use this to pick the right rule for the current task.
 | `documentation.mdc` | @docs usage, global docs, API/architecture references (auto when editing `docs/**/*.md`) |
 | `hooks.mdc` | Git hooks (pre-commit, docs validation), exarp-go setup_hooks |
 | `lint-generated-files.mdc` | Lint generated/edited files **after** thinking/generation complete; pre-commit lint-staged |
-| `aether-todo2-exarp-cheatsheet.mdc` | **This repo:** Todo2 `PROJECT_ROOT`, `task sync`, bulk Review→Done, JSON `task_workflow`, Cargo.lock + TUI layout hints |
+| `aether-todo2-exarp-cheatsheet.mdc` | **This repo:** Todo2 `PROJECT_ROOT`, bulk Review→Done, JSON `task_workflow`, Cargo.lock + TUI layout hints (no JSON mirror sync) |
 | `project-automation.mdc` | exarp-go MCP tools, docs health, Todo2 alignment, security scanning |
 | `automation-tool-suggestions.mdc` | When to suggest automation tools (context-aware) |
 | `exarp-followup-tasks.mdc` | When to create Todo2 follow-up tasks (verify, E2E) after implementation Done |

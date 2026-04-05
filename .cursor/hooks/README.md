@@ -13,11 +13,7 @@ Hooks in this directory run at specific Cursor lifecycle events (e.g. when a new
 
 ## Todo2 mirror (not a separate hook)
 
-Session prime reads current tasks from exarp-go; it does **not** run `task sync`. After **bulk** task updates outside chat (batch status changes, migrations), run manually from repo root:
-
-`./scripts/run_exarp_go.sh task sync`
-
-so `.todo2/state.todo2.json` stays aligned with `.todo2/todo2.db`. Cheatsheet: `.cursor/skills/aether-todo2-exarp/SKILL.md`.
+Session prime reads current tasks from exarp-go. This project does **not** use a `state.todo2.json` mirror or routine **`task sync`**; canonical tasks are in `.todo2/todo2.db`. Cheatsheet: `.cursor/skills/aether-todo2-exarp/SKILL.md`.
 
 ## Reference
 

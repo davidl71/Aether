@@ -1,5 +1,5 @@
 ---
-description: Aether Todo2 + exarp-go quick reference (PROJECT_ROOT, task sync, bulk Review→Done, JSON task_workflow, Cargo.lock, TUI layout helpers)
+description: Aether Todo2 + exarp-go quick reference (PROJECT_ROOT, bulk Review→Done, JSON task_workflow, Cargo.lock, TUI layout helpers; no JSON mirror sync)
 alwaysApply: false
 ---
 
@@ -11,11 +11,9 @@ This **repo’s** tasks live in `.todo2/` here. **`PROJECT_ROOT` for exarp-go MC
 
 ## Non-negotiables
 
-- **Canonical store:** `.todo2/todo2.db`. Mirror **`state.todo2.json`** via `./scripts/run_exarp_go.sh task sync` after bulk updates or when UI JSON drifts.
+- **Canonical store:** `.todo2/todo2.db` only. Do **not** run `./scripts/run_exarp_go.sh task sync` or **`task_workflow`** `action=sync` here to maintain `.todo2/state.todo2.json` (mirror not used; file gitignored if recreated).
 - **CLI:** always pass a subcommand to `run_exarp_go.sh` (no args = stdio MCP).
-- **Bulk Review → Done:**  
-  `./scripts/run_exarp_go.sh task update --status Review --new-status Done`  
-  then `task sync`.
+- **Bulk Review → Done:** `./scripts/run_exarp_go.sh task update --status Review --new-status Done` (no follow-up sync required for this repo).
 
 ## When MCP/CLI args fail
 

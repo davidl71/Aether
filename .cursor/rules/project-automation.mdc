@@ -11,7 +11,7 @@
 - Multi-language dependency security scanning (Python, Rust, npm)
 - Automation opportunity discovery
 - PWA configuration review
-- Task synchronization between systems
+- Task list/update via Todo2 (SQLite); **not** SQLite↔JSON sync in this workspace by default
 
 **Usage Pattern:**
 Use exarp-go tools when you need:
@@ -125,22 +125,17 @@ When an implementation task (e.g. from IMPROVEMENT_PLAN or a plan) is marked **D
 ---
 
 #### `task_workflow` (`action=sync`)
-Synchronize the exarp task store and list/update Todo2-backed tasks for this project.
+Merges SQLite with `.todo2/state.todo2.json`. **Aether:** do **not** invoke sync in normal Cursor/agent flows—this repo uses **`.todo2/todo2.db` only**; the JSON mirror is unused (gitignored if recreated). Use **`action=list`** (or `./scripts/run_exarp_go.sh task list`) to read tasks.
 
-**When to use:**
-- When tasks exist in multiple systems
-- To keep systems in sync
-- Before major migrations
-- To audit task consistency
+**When to use sync here:** Only if a human explicitly asks to reconcile or regenerate the JSON mirror (rare).
 
 **Usage:**
 ```
-"Sync exarp tasks for this repo"
-"List current tasks with task_workflow sync"
+"List current tasks with task_workflow action=list"
 ```
 
 **Parameters:**
-- `sub_action`: use `list` to display tasks after sync
+- `action`: `list` for routine backlog reads; avoid `sync` unless explicitly requested
 - `status_filter` (Optional): filter list results
 
 ---

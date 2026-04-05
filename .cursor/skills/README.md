@@ -7,7 +7,7 @@ Reusable workflows and checklists for this repo. Use by opening or @-mentioning 
 | Skill | File | When to use |
 |-------|------|--------------|
 | **exarp-go** | [exarp-go/SKILL.md](exarp-go/SKILL.md) | Task management, project health, session prime/handoff, scorecards (`PROJECT_ROOT` = target repo) |
-| **Aether Todo2 + exarp** | [aether-todo2-exarp/SKILL.md](aether-todo2-exarp/SKILL.md) | **This repo’s** `.todo2/`: sync, bulk Review→Done, `task_workflow` JSON, Cargo.lock, TUI workspace helpers |
+| **Aether Todo2 + exarp** | [aether-todo2-exarp/SKILL.md](aether-todo2-exarp/SKILL.md) | **This repo’s** `.todo2/` (SQLite): bulk Review→Done, `task_workflow` JSON, Cargo.lock, TUI workspace helpers (no JSON mirror sync) |
 | **build-shortcuts** | [build-shortcuts/SKILL.md](build-shortcuts/SKILL.md) | Make, cargo, CMake presets, build/test/lint shortcuts |
 | **oh-my-opencode** | [.opencode/oh-my-opencode/README.md](/.opencode/oh-my-opencode/README.md) | Oh My OpenCode config - themes, shortcuts, hooks, enhanced workflow |
 | **UI/UX Pro Max** | [ui-ux-pro-max/SKILL.md](ui-ux-pro-max/SKILL.md) | Web/PWA design systems, landing pages, dashboards (design-system generator, styles, palettes) |

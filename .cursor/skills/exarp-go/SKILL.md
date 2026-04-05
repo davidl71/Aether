@@ -15,7 +15,7 @@ exarp-go is **one tool**; **`PROJECT_ROOT` is whichever project’s `.todo2/` yo
 - When **developing exarp-go itself**, `PROJECT_ROOT` must be the **exarp-go** clone (contains its `Makefile`, `cmd/server`, migrations).
 - This skill file may live under Aether for editor discovery; **always match `PROJECT_ROOT` to the backlog you intend to use.**
 
-**Aether-only quick ref:** `.cursor/skills/aether-todo2-exarp/SKILL.md` (bulk Review→Done, `task sync`, JSON `task_workflow`, Cargo.lock, TUI layout notes).
+**Aether-only quick ref:** `.cursor/skills/aether-todo2-exarp/SKILL.md` (bulk Review→Done, JSON `task_workflow`, Cargo.lock, TUI layout notes; no `task sync` / JSON mirror).
 
 If `PROJECT_ROOT` is wrong, exarp-go reads the wrong `.todo2/` and wrong `docs/` for health/scorecard.
 

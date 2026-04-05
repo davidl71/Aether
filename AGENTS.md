@@ -346,20 +346,20 @@ context referenced by the agents and skills that follow.
 
 **Cheatsheet (Aether Todo2 + exarp):** `.cursor/skills/aether-todo2-exarp/SKILL.md` and
 `.cursor/rules/aether-todo2-exarp-cheatsheet.mdc` — bulk `task update --status Review --new-status Done`,
-`task sync`, JSON `task_workflow` for comments/dependencies, `agents/backend` Cargo.lock discipline,
-TUI workspace layout module (`ui/workspace_layout.rs`) vs chart hint naming.
+JSON `task_workflow` for comments/dependencies, `agents/backend` Cargo.lock discipline,
+TUI workspace layout module (`ui/workspace_layout.rs`) vs chart hint naming (no `task sync` / JSON mirror).
 
 Use **`docs/AI_WORKFLOW.md`** for the preferred prompt structure, backlog
 hygiene, and thread-splitting defaults used in this repo.
 
 ## Learned User Preferences
 
-- After changing task status in the DB or via exarp-go, run **`./scripts/run_exarp_go.sh task sync`** so `.todo2/state.todo2.json` and JSON-backed views stay aligned with SQLite.
+- Do **not** run **`./scripts/run_exarp_go.sh task sync`** or **`task_workflow`** `action=sync` in routine Cursor workflows for this repo; canonical tasks are **`.todo2/todo2.db` only** (see `.cursor/rules/todo2-overview.mdc`).
 
 ## Learned Workspace Facts
 
-- `scripts/run_exarp_go.sh` with **no** arguments starts stdio MCP mode; in a normal terminal it looks hung. For one-shot CLI use, always pass a subcommand (for example `task sync`, `task list`).
-- Todo2: treat **`.todo2/todo2.db` as canonical** for task status; **`.todo2/state.todo2.json`** mirrors the DB. After DB changes, run `./scripts/run_exarp_go.sh task sync`. If a JSON-backed UI still disagrees with SQLite, prefer the DB and treat it as a sync or tooling gap.
+- `scripts/run_exarp_go.sh` with **no** arguments starts stdio MCP mode; in a normal terminal it looks hung. For one-shot CLI use, always pass a subcommand (for example `task list`, `task update`).
+- Todo2: **`.todo2/todo2.db` is canonical** for task status. **`.todo2/state.todo2.json`** is not part of this repo’s workflow (removed / gitignored if tooling recreates it). Prefer SQLite or `task list` over any JSON mirror.
 - **RAM disk:** `workspace_ram_disk_manager.sh` is not in this repo; folder-open / Cursor RAM-disk tasks that called it were removed. For disk-caching workflows use **`scripts/setup_disk_caching.sh`** and CMake presets with **`*-ramdisk`** / `build-ramdisk`, not a missing workspace startup script.
 - **`api` → `market_data` dependency:** do not make `market_data` depend on `api` (Cargo cycle). Shared credential resolution lives in **`credential_store`**; `market_data` and similar low crates should use that crate only; callers that already use `api` keep **`api::credentials`** as the stable path.
 - **NATS subjects:** canonical `api.*` and system command subject strings are **`nats_adapter::topics`** (`topics::api`, `topics::system::all_commands()`). Operator-oriented listing: **`docs/NATS_TOPICS_REGISTRY.md`** (keep in sync when adding subjects).

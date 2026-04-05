@@ -10,7 +10,7 @@ globs: ".pre-commit-config.yaml,scripts/setup_pre_commit_hook.sh,.cursor/hooks/*
 
 - **session-prime.sh:** Runs when a new Composer conversation starts (sessionStart). Calls exarp-go session prime for this project via `scripts/run_exarp_go.sh` and returns `additional_context` (task summary, suggested next, handoff) so the AI has context without being asked. See `.cursor/hooks/README.md`.
 - **Requires:** exarp-go (PATH or EXARP_GO_ROOT), optional `jq`. Cursor must have session-start / context hooks enabled (see Cursor docs).
-- **After bulk task changes:** If you use scripts or CLI to mass-update Todo2 (e.g. all Review→Done), run `./scripts/run_exarp_go.sh task sync` so `.todo2/state.todo2.json` matches SQLite (see `.cursor/skills/aether-todo2-exarp/SKILL.md`).
+- **Todo2:** Canonical store is `.todo2/todo2.db`. Do **not** run `task sync` / `task_workflow` sync to maintain JSON in this repo (no `state.todo2.json` mirror workflow).
 
 ## Pre-commit (framework)
 
