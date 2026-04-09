@@ -355,6 +355,7 @@ hygiene, and thread-splitting defaults used in this repo.
 ## Learned User Preferences
 
 - **`task sync`:** Run **`./scripts/run_exarp_go.sh task sync`** when **`.todo2/state.todo2.json`** (or other JSON-backed views) must match SQLite—for example after **bulk** edits, imports, or when DB and JSON clearly diverge—not after **every** single **`task update`**. Routine checks use **`task list`**, **`task status`**, or MCP against the DB; avoid habitually syncing after each small change.
+- **Throughput:** Prefer **batched, parallel steps** (multiple tool reads/edits, several related files, or a few commands in one pass) over overly incremental turn-taking unless the user asks for small steps or risk requires isolation.
 - Prefer **`exarp-go` `task list` / `doctor`** (via **`./scripts/run_exarp_go.sh`** with the right cwd / **`PROJECT_ROOT`**) over ad-hoc **`sqlite3`** on **`.todo2/todo2.db`** for routine backlog reads; reserve raw SQL for schema or debugging.
 
 ## Learned Workspace Facts
