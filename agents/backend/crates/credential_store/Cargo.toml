@@ -5,7 +5,7 @@ edition = "2021"
 version = "0.1.0"
 
 [dependencies]
-dirs = "5"
+dirs = "6"
 tracing = { workspace = true }
 keyring = { version = "3", optional = true }
 
