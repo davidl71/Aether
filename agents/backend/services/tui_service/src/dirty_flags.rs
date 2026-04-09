@@ -28,6 +28,11 @@
 //!   `mark_regions` when data arrives.
 //! - **Gate:** Only when [`crate::app::App::needs_redraw`] is true does the loop call
 //!   `terminal.draw`; dirty regions further narrow work inside `ui::render`.
+//!
+//! **Baseline (code-level, no extra tooling):** Typical loop uses `tick_ms` from config
+//! / `TICK_MS` (often 250 ms). Input and `mark_regions` set subset flags; `mark_all` or
+//! unset selective optimization forces full-widget redraw paths. Compare before/after
+//! behavior with logs or a temporary timer around `terminal.draw` if profiling.
 
 /// Flags indicating which UI regions need redrawing.
 #[derive(Debug, Clone, Copy, Default, PartialEq)]

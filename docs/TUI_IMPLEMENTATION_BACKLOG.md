@@ -1,6 +1,6 @@
 # TUI implementation backlog (planning)
 
-**Last updated:** 2026-04-09  
+**Last updated:** 2026-04-05  
 **Canonical context:** [`TUI_ARCHITECTURE.md`](./TUI_ARCHITECTURE.md), [`TUI_PANE_MODEL.md`](./TUI_PANE_MODEL.md)  
 **Scope:** design notes and checklists only — no large refactors implied.
 
@@ -63,16 +63,12 @@
 
 ## 4. Pane model — regression checklist (T-1774817606353005000)
 
-Aligned with [`TUI_PANE_MODEL.md`](./TUI_PANE_MODEL.md). Run after focus/router/workspace changes.
+Canonical **checkbox list:** [`TUI_PANE_MODEL.md`](./TUI_PANE_MODEL.md) §7. Run after focus/router/workspace changes.
 
-- **Layer stack:** Overlays (help, detail, palette, credential, …) capture keys before tab body; `App::input_mode()` precedence unchanged.
-- **Tabs:** Tab / Shift-Tab; digit mnemonics; composed workspace inner-pane cycle when workspace hint active.
-- **Workspaces:** `visible_workspace()` + min size; no silent workspace switch while edit-style modes hold focus (documented invariant §4).
-- **Settings:** Section list vs **Health** sub-focus (transport vs services); keys match hint strip / help overlay.
-- **Scroll:** Tables use `ScrollableTableState`; `clamp_to_len` after snapshot/resize.
-- **Mouse:** Tab click hit regions (region-based routing) still correct when tab bar or layout tweaks.
-- **Narrow terminal:** Spot-check [`SETTINGS_SHORT_TERMINAL_QA.md`](./SETTINGS_SHORT_TERMINAL_QA.md) scenarios.
-- **Toasts / status:** Mode-transition toast; transport health does not spam (see `app_tests.rs`).
+Summary (see §7 for the full list):
+
+- **Layer stack:** Overlays capture keys before tab body; `App::input_mode()` precedence unchanged.
+- **Tabs / workspaces / Settings / scroll / mouse / narrow terminal / toasts** — as in §7.
 
 ---
 

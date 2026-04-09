@@ -435,7 +435,7 @@ fn render_split_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceS
 fn workspace_banner(spec: WorkspaceSpec, focus_label: &str, max_width: u16) -> Paragraph<'static> {
     let extra_hint: &'static str = match spec.kind {
         VisibleWorkspace::Market if max_width >= 140 => "  |  Wheel: pane under cursor",
-        VisibleWorkspace::Market if max_width >= 110 => "  |  Wheel→pane",
+        VisibleWorkspace::Market if max_width >= 100 => "  |  Wheel→pane",
         VisibleWorkspace::Market => " |^v",
         _ => "",
     };

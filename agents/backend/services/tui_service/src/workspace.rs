@@ -137,7 +137,7 @@ impl VisibleWorkspace {
             VisibleWorkspace::SplitPane => Some(WorkspaceSpec {
                 kind: self,
                 title: "Split pane",
-                summary: "Dashboard + Positions",
+                summary: "Dashboard · positions",
                 tabs: &SPLIT_PANE_TABS,
                 min_width: 0,
                 min_height: 0,
@@ -164,7 +164,7 @@ impl VisibleWorkspace {
             VisibleWorkspace::Credit => Some(WorkspaceSpec {
                 kind: self,
                 title: "Credit Workspace",
-                summary: "Loans + Bank visible",
+                summary: "Loans · discount bank",
                 tabs: &CREDIT_WORKSPACE_TABS,
                 min_width: 170,
                 min_height: 18,

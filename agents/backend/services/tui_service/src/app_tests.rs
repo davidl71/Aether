@@ -639,7 +639,7 @@ fn split_pane_renders_visible_mode_label() {
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Split pane"));
-    assert!(content.contains("Dashboard + Positions"));
+    assert!(content.contains("Dashboard · positions"));
     assert!(content.contains("PANE:DASH+POS"));
 }
 

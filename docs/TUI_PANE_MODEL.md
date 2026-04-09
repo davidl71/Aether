@@ -66,10 +66,20 @@ No big-bang rewrite: introduce helpers and shrink `match` duplication tab-by-tab
 
 ---
 
-## 7. Verification (when router work lands)
+## 7. Verification (manual regression checklist)
 
-- Regression checklist: **T-1774817606353005000** (tabs, workspaces, Settings sections, overlays, mouse tab click **T-1774965243417103000**).
-- Short-terminal Settings QA: **`docs/SETTINGS_SHORT_TERMINAL_QA.md`**.
+Run after focus/router/workspace/layout changes. Short-terminal Settings: **`docs/SETTINGS_SHORT_TERMINAL_QA.md`**.
+
+- [ ] **Layer stack:** Help, detail, palette, credential modal, and other overlays consume keys before the tab body; `App::input_mode()` precedence unchanged.
+- [ ] **Tabs:** Tab / Shift-Tab; digit mnemonics; in a composed workspace, Tab cycles **inner** panes when the workspace hint is active.
+- [ ] **Workspaces:** `visible_workspace()` matches layout; min-size hints if applicable; no silent workspace switch while edit-style modes hold focus (see §4).
+- [ ] **Settings:** Section list vs Health sub-focus (transport vs services); keys match hint strip and help overlay.
+- [ ] **Scroll:** Tables use `ScrollableTableState`; `clamp_to_len` after snapshot/resize.
+- [ ] **Mouse:** Tab bar click regions still correct; Market workspace pane hit-testing matches render splits (wheel routes to pane under cursor).
+- [ ] **Narrow terminal:** Spot-check Settings stacked/wide thresholds and Operations column bias.
+- [ ] **Toasts / status:** Mode-transition toasts; transport health does not spam (see `app_tests.rs`).
+
+Related task ids (historical): **T-1774817606353005000**, mouse tab regions **T-1774965243417103000**.
 
 ---
 
