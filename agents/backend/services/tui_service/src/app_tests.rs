@@ -537,6 +537,23 @@ fn alerts_tab_displays_placeholder_when_no_snapshot() {
 }
 
 #[test]
+fn render_clears_dirty_flags_after_draw() {
+    let (mut app, _, _) = make_app();
+    app.dirty_flags.mark_tabs();
+    app.dirty_flags.mark_content();
+    app.dirty_flags.mark_hint_bar();
+    app.dirty_flags.mark_status_bar();
+    app.dirty_flags.mark_overlay();
+    assert!(app.dirty_flags.is_dirty());
+
+    let backend = TestBackend::new(120, 24);
+    let mut terminal = Terminal::new(backend).unwrap();
+    terminal.draw(|f| render(f, &mut app)).unwrap();
+
+    assert!(!app.dirty_flags.is_dirty());
+}
+
+#[test]
 fn alerts_tab_renders_live_alert_messages() {
     let (mut app, _, _) = make_app();
     let mut snap = make_snapshot();

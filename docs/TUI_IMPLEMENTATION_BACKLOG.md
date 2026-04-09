@@ -49,15 +49,7 @@
 
 ## 3. Numeric columns — measurement helper API (T-1774817606463474000)
 
-**Goal:** Right-align numeric table columns without copy-pasted `width` math (see [`TUI_ARCHITECTURE.md`](./TUI_ARCHITECTURE.md) Phase 3 table polish).
-
-**Proposed small API (sketch):**
-
-- `fn display_width_cells(s: &str) -> usize` — Unicode-aware display width if needed, else `s.chars().count()` initially.
-- `fn max_numeric_width(samples: impl Iterator<Item = impl AsRef<str>>) -> usize` — max over formatted strings.
-- `fn format_numeric_column(w: usize, value: &str) -> String` — pad left to `w` (or `Span` builder for ratatui).
-
-**Constraints:** Keep in `ui/` helper module; no new dependencies unless `unicode-width` (or similar) is already in the workspace — verify `Cargo.toml` before adding.
+**Implemented (first slice):** [`ui/numeric_format.rs`](../agents/backend/services/tui_service/src/ui/numeric_format.rs) — `display_width_cells`, `max_display_width`, `pad_left` (char-count width; see module caveat). **Pilot:** Positions table **Qty** column samples widths and pads; sweep other tables remains **T-1774817606463912000**.
 
 ---
 

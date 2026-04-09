@@ -15,6 +15,7 @@ pub mod logs;
 mod orders;
 mod positions;
 mod text_trunc;
+mod numeric_format;
 pub(crate) mod tree_panel;
 pub use positions::positions_display_info;
 pub(crate) use positions::sort_positions_for_operator;

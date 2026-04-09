@@ -1,6 +1,6 @@
 # TUI Architecture
 
-**Last updated:** 2026-04-05
+**Last updated:** 2026-04-09
 **Service:** `agents/backend/services/tui_service`
 **Framework:** ratatui + crossterm + tokio
 
@@ -147,6 +147,8 @@ The block uses `centered_rect(86, 34, …)` (percent of terminal). Footer: *Pres
 | **`context_hints_for`** (`discoverability.rs`) | Optional extra hints for mode+tab (used if wired to UI); keep roughly aligned with overlay when you change bindings |
 
 When you add or change a key binding, update **`render_help_overlay`** first, then the hint bar and/or `context_hints_for` if the shortcut is tab-specific.
+
+**macOS terminals:** Operator-facing notes for **Terminal.app** vs **iTerm2** (Option-as-Meta, ⌘ chord tables aligned with `discoverability.rs`, and where paper/live status appears) live in **[`TUI_MACOS_SHORTCUTS.md`](./TUI_MACOS_SHORTCUTS.md)**.
 
 ---
 

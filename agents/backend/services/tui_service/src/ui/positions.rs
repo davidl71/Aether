@@ -16,6 +16,8 @@ use ratatui::{
 use crate::app::App;
 use crate::scrollable_table::{centered_viewport_start, clamp_index};
 
+use super::numeric_format::{max_display_width, pad_left};
+
 /// Return type for `positions_display_info`: (row_count, position_index_per_row, combo_key_per_row)
 type DisplayInfo = (
     usize,
@@ -161,7 +163,7 @@ pub fn render_positions_panel(f: &mut Frame, app: &App, area: Rect) {
 }
 
 pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
-    let (header, rows, selected_label) = if let Some(ref snap) = app.snapshot() {
+    let (header, rows, selected_label, qty_col_w) = if let Some(ref snap) = app.snapshot() {
         let positions = &snap.dto().positions;
         let (_, index_map, combo_key_per_row) = positions_display_info(
             positions,
@@ -173,6 +175,22 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
         } else {
             Vec::new()
         };
+
+        let mut qty_samples: Vec<String> = Vec::new();
+        for (row_idx, pos_idx) in index_map.iter().enumerate() {
+            if let Some(Some(combo_key)) = combo_key_per_row.get(row_idx) {
+                let group = groups.iter().find(|g| &g.key == combo_key);
+                let qty_s = if let Some(g) = group {
+                    fmt_qty(g.total_quantity)
+                } else {
+                    fmt_qty(0)
+                };
+                qty_samples.push(qty_s);
+            } else if let Some(idx) = *pos_idx {
+                qty_samples.push(fmt_qty(positions[idx].quantity));
+            }
+        }
+        let qty_col_w = max_display_width(qty_samples.iter().map(String::as_str));
 
         let header = Row::new([
             Cell::from("Symbol").style(Style::default().add_modifier(Modifier::BOLD)),
@@ -272,7 +290,10 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
                                 .add_modifier(Modifier::BOLD)
                                 .patch(base_style),
                         ),
-                        Cell::from(Line::from(qty).right_aligned()).style(
+                        Cell::from(
+                            Line::from(pad_left(qty_col_w, qty.as_str())).right_aligned(),
+                        )
+                        .style(
                             Style::default()
                                 .add_modifier(Modifier::BOLD)
                                 .patch(base_style),
@@ -296,6 +317,7 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
                     ])
                 } else if let Some(idx) = *pos_idx {
                     let pos = &positions[idx];
+                    let qty_str = fmt_qty(pos.quantity);
                     let pnl_color = pnl_fg(pos.unrealized_pnl);
                     if is_selected {
                         selected_label = pos.symbol.clone();
@@ -303,7 +325,9 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
                     let pnl_cell_style = Style::default().fg(pnl_color).patch(base_style);
                     Row::new([
                         Cell::from(format!("  {}", pos.symbol)).style(base_style),
-                        Cell::from(Line::from(fmt_qty(pos.quantity)).right_aligned())
+                        Cell::from(
+                            Line::from(pad_left(qty_col_w, qty_str.as_str())).right_aligned(),
+                        )
                             .style(base_style),
                         Cell::from(Line::from(fmt_money(pos.cost_basis)).right_aligned())
                             .style(base_style),
@@ -319,13 +343,15 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
                 }
             })
             .collect();
-        (header, table_rows, selected_label)
+        (header, table_rows, selected_label, qty_col_w)
     } else {
         let header = Row::new(["Symbol", "Qty", "Cost", "Mark", "P&L", "Strat"])
             .style(Style::default().add_modifier(Modifier::BOLD));
         let rows = vec![Row::new(["Waiting for snapshot…", "", "", "", "", ""])];
-        (header, rows, String::new())
+        (header, rows, String::new(), 8usize)
     };
+
+    let qty_constraint = (qty_col_w as u16).saturating_add(2).clamp(8, 24);
 
     let block = Block::default()
         .title({
@@ -382,7 +408,7 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
         window,
         [
             Constraint::Length(18),
-            Constraint::Length(10),
+            Constraint::Length(qty_constraint),
             Constraint::Length(12),
             Constraint::Length(12),
             Constraint::Length(12),
