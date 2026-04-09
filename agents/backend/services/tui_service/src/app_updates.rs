@@ -1,5 +1,17 @@
 use super::*;
 
+use crate::ui::ToastLevel;
+
+fn alert_toast_preview(message: &str) -> String {
+    const MAX: usize = 120;
+    let t = message.trim();
+    let mut out: String = t.chars().take(MAX).collect();
+    if t.chars().count() > MAX {
+        out.push('…');
+    }
+    format!("Alert: {out}")
+}
+
 impl App {
     /// Replaces the current snapshot (used by tick processing).
     #[inline]
@@ -110,6 +122,13 @@ impl App {
         }
         let snap = unsafe { &mut *snap_ptr };
         if let Some(ref mut s) = snap {
+            let toast = match &level {
+                api::AlertLevel::Warning => {
+                    Some((alert_toast_preview(&message), ToastLevel::Warning))
+                }
+                api::AlertLevel::Error => Some((alert_toast_preview(&message), ToastLevel::Error)),
+                api::AlertLevel::Info => None,
+            };
             s.inner.alerts.push(Alert {
                 level,
                 message,
@@ -120,6 +139,10 @@ impl App {
             }
             s.refresh_display_dto();
             self.mark_regions(|d| d.mark_content());
+
+            if let Some((msg, lvl)) = toast {
+                self.push_toast(msg, lvl);
+            }
         }
     }
 

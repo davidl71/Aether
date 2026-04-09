@@ -28,6 +28,8 @@
 - Optional later: `new(selected, scroll)` / `with_selected` for tests only; avoid public setters that bypass invariants.
 - Stragglers: any remaining ad hoc `usize` scroll on table-like UIs should migrate per pane model (see [`TUI_PANE_MODEL.md`](./TUI_PANE_MODEL.md) §5).
 
+**Migration status (2026-04, T-1774817606420931000):** `App` holds [`ScrollableTableState`](../agents/backend/services/tui_service/src/scrollable_table.rs) for positions, orders, dashboard, scenarios, yield curve, loans, discount bank, ledger, and `alerts_scroll` for Alerts list scrolling. Logs use `tui_logger` widget state (`log_state`), not `ScrollableTableState`. Chart symbol search / `tui-interact` pilots use separate focus state. No legacy `usize` scroll fields remain on `App` for those tables.
+
 ---
 
 ## 2. Toasts — queue, policy, concurrency (T-1774817606441825000)
@@ -49,7 +51,7 @@
 
 ## 3. Numeric columns — measurement helper API (T-1774817606463474000)
 
-**Implemented (first slice):** [`ui/numeric_format.rs`](../agents/backend/services/tui_service/src/ui/numeric_format.rs) — `display_width_cells`, `max_display_width`, `pad_left` (char-count width; see module caveat). **Pilot:** Positions table **Qty** column samples widths and pads; sweep other tables remains **T-1774817606463912000**.
+**Implemented:** [`ui/numeric_format.rs`](../agents/backend/services/tui_service/src/ui/numeric_format.rs) — `display_width_cells`, `max_display_width`, `pad_left`. **Tables using it:** Positions **Qty**, Dashboard symbol numeric columns (Last/Bid/Ask/Spread/Move%), Orders **Qty**. Optional later: scenarios, yield curve, ledger numeric columns if layout review wants it.
 
 ---
 

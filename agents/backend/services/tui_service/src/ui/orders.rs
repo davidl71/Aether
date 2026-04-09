@@ -13,6 +13,8 @@ use ratatui::{
 use crate::app::App;
 use crate::scrollable_table::{centered_viewport_start, clamp_index};
 
+use super::numeric_format::{max_display_width, pad_left};
+
 #[allow(unused_imports)]
 pub use render_orders_panel as render_orders;
 
@@ -154,21 +156,14 @@ pub fn render_orders_table(
     ])
     .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
-    let filter_lower = app.order_filter.to_lowercase();
-    let all_rows: Vec<Row> = if let Some(ref snap) = app.snapshot() {
-        snap.dto()
-            .orders
+    let (all_rows, qty_col_w) = if let Some(ref snap) = app.snapshot() {
+        let filtered = app.filtered_orders(snap);
+        let qty_samples: Vec<String> = filtered.iter().map(|o| o.quantity.to_string()).collect();
+        let qty_w = max_display_width(qty_samples.iter().map(|s| s.as_str())).clamp(4, 14);
+        let rows = filtered
             .iter()
-            .filter(|o| {
-                if app.order_filter.is_empty() {
-                    true
-                } else {
-                    o.symbol.to_lowercase().contains(&filter_lower)
-                        || o.status.to_lowercase().contains(&filter_lower)
-                        || o.side.to_lowercase().contains(&filter_lower)
-                }
-            })
-            .map(|o| {
+            .zip(qty_samples.iter())
+            .map(|(o, qty_s)| {
                 let side_color = if o.side == "BUY" {
                     Color::Green
                 } else {
@@ -179,14 +174,16 @@ pub fn render_orders_table(
                     Cell::from(o.id.clone()),
                     Cell::from(o.symbol.clone()),
                     Cell::from(o.side.clone()).style(Style::default().fg(side_color)),
-                    Cell::from(Line::from(o.quantity.to_string()).right_aligned()),
+                    Cell::from(Line::from(pad_left(qty_w, qty_s.as_str())).right_aligned()),
                     Cell::from(o.status.clone()),
                     Cell::from(submitted),
                 ])
             })
-            .collect()
+            .collect();
+        let col = qty_w.saturating_add(1) as u16;
+        (rows, col)
     } else {
-        vec![Row::new(["No data", "", "", "", "", ""])]
+        (vec![Row::new(["No data", "", "", "", "", ""])], 6u16)
     };
 
     let selected_order_summary = if let Some(ref snap) = app.snapshot() {
@@ -250,7 +247,7 @@ pub fn render_orders_table(
             Constraint::Length(10),
             Constraint::Length(8),
             Constraint::Length(6),
-            Constraint::Length(6),
+            Constraint::Length(qty_col_w.max(6)),
             Constraint::Length(10),
             Constraint::Length(12),
         ],

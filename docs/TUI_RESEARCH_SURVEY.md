@@ -81,7 +81,20 @@
 
 ---
 
-## 6. Refresh checklist
+## 6. Phase 3 adoption decision (T-1774817606507550000)
+
+**Decision:** **Hybrid / adopt with flags.**
+
+- **Stay** on **ratatui 0.30** + **crossterm 0.28.x** as the default stack (see §4 — upgrade only as a deliberate, lockfile-wide change when Ratatui’s backend line moves).
+- **Adopt** optional **`ratatui-interact`** behind **`--features tui-interact`** for field↔list pilots (charts search, orders filter focus, palette, loans import) per [`TUI_RATATUI_INTERACT.md`](./TUI_RATATUI_INTERACT.md); do not require the feature for production-style builds until UX sign-off.
+- **Defer** bumping **crossterm** to **0.29+** until a ratatui release we pin explicitly supports it end-to-end (avoid mixed terminal stacks).
+- **Pass** on adding new TUI dependencies for the same problems solved by small `ScrollableTableState` + existing input routing unless a pilot proves net simplification.
+
+**Review:** Revisit when ratatui ships a minor that documents a supported crossterm range change, or when a pilot needs interact APIs not practical to mirror by hand.
+
+---
+
+## 7. Refresh checklist
 
 After changing `tui_service` or workspace dependencies:
 

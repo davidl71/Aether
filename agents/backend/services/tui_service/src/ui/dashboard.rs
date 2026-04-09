@@ -13,6 +13,8 @@ use ratatui::{
 
 use crate::app::App;
 
+use super::numeric_format::{max_display_width, pad_left};
+
 const TREND_COLUMN_WIDTH: u16 = 14;
 const METRICS_HEIGHT: u16 = 4;
 
@@ -64,11 +66,21 @@ pub fn render_dashboard_market_view(f: &mut Frame, app: &App, area: Rect) {
     ])
     .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
-    let rows: Vec<Row> = if let Some(ref snap) = app.snapshot() {
+    let (rows, col_w) = if let Some(ref snap) = app.snapshot() {
         let watchlist_upper: HashSet<_> =
             app.watchlist().iter().map(|w| w.to_uppercase()).collect();
-        snap.inner
-            .symbols
+        let syms = &snap.inner.symbols;
+        let lasts: Vec<String> = syms.iter().map(|s| format!("{:.2}", s.last)).collect();
+        let bids: Vec<String> = syms.iter().map(|s| format!("{:.2}", s.bid)).collect();
+        let asks: Vec<String> = syms.iter().map(|s| format!("{:.2}", s.ask)).collect();
+        let spreads: Vec<String> = syms.iter().map(|s| format!("{:.2}", s.spread)).collect();
+        let rois: Vec<String> = syms.iter().map(|s| format!("{:.2}", s.roi)).collect();
+        let w_last = max_display_width(lasts.iter().map(|s| s.as_str())).clamp(4, 12);
+        let w_bid = max_display_width(bids.iter().map(|s| s.as_str())).clamp(4, 12);
+        let w_ask = max_display_width(asks.iter().map(|s| s.as_str())).clamp(4, 12);
+        let w_spread = max_display_width(spreads.iter().map(|s| s.as_str())).clamp(4, 12);
+        let w_roi = max_display_width(rois.iter().map(|s| s.as_str())).clamp(4, 10);
+        let rows: Vec<Row> = syms
             .iter()
             .enumerate()
             .map(|(i, s)| {
@@ -89,28 +101,42 @@ pub fn render_dashboard_market_view(f: &mut Frame, app: &App, area: Rect) {
                 };
                 Row::new([
                     Cell::from(s.symbol.clone()),
-                    Cell::from(Line::from(format!("{:.2}", s.last)).right_aligned()),
-                    Cell::from(Line::from(format!("{:.2}", s.bid)).right_aligned()),
-                    Cell::from(Line::from(format!("{:.2}", s.ask)).right_aligned()),
-                    Cell::from(Line::from(format!("{:.2}", s.spread)).right_aligned()),
-                    Cell::from(Line::from(format!("{:.2}", s.roi)).right_aligned()),
+                    Cell::from(Line::from(pad_left(w_last, lasts[i].as_str())).right_aligned()),
+                    Cell::from(Line::from(pad_left(w_bid, bids[i].as_str())).right_aligned()),
+                    Cell::from(Line::from(pad_left(w_ask, asks[i].as_str())).right_aligned()),
+                    Cell::from(Line::from(pad_left(w_spread, spreads[i].as_str())).right_aligned()),
+                    Cell::from(Line::from(pad_left(w_roi, rois[i].as_str())).right_aligned()),
                 ])
                 .style(style)
             })
-            .collect()
+            .collect();
+        (
+            rows,
+            (
+                8u16,
+                w_last as u16,
+                w_bid as u16,
+                w_ask as u16,
+                w_spread as u16,
+                w_roi as u16,
+            ),
+        )
     } else {
-        vec![Row::new(["Waiting for data...", "", "", "", "", ""])]
+        (
+            vec![Row::new(["Waiting for data...", "", "", "", "", ""])],
+            (8u16, 9, 9, 9, 9, 8),
+        )
     };
 
     let table = Table::new(
         rows,
         [
-            Constraint::Length(8),
-            Constraint::Length(9),
-            Constraint::Length(9),
-            Constraint::Length(9),
-            Constraint::Length(9),
-            Constraint::Length(8),
+            Constraint::Length(col_w.0),
+            Constraint::Length(col_w.1.saturating_add(1)),
+            Constraint::Length(col_w.2.saturating_add(1)),
+            Constraint::Length(col_w.3.saturating_add(1)),
+            Constraint::Length(col_w.4.saturating_add(1)),
+            Constraint::Length(col_w.5.saturating_add(1)),
         ],
     )
     .header(header)
