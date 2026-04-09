@@ -146,7 +146,7 @@ impl VisibleWorkspace {
             VisibleWorkspace::Market => Some(WorkspaceSpec {
                 kind: self,
                 title: "Market Workspace",
-                summary: "Dash + Pos + Orders + Yield visible",
+                summary: "Dashboard · positions · orders · yield",
                 tabs: &MARKET_WORKSPACE_TABS,
                 min_width: 170,
                 min_height: 22,
@@ -155,7 +155,7 @@ impl VisibleWorkspace {
             VisibleWorkspace::Operations => Some(WorkspaceSpec {
                 kind: self,
                 title: "Operations Workspace",
-                summary: "Alerts + Logs + Settings visible",
+                summary: "Alerts · logs · embedded settings",
                 tabs: &OPERATIONS_WORKSPACE_TABS,
                 min_width: 170,
                 min_height: 20,

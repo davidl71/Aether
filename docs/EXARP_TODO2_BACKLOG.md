@@ -61,6 +61,37 @@ Prefer JSON + `compact` where supported (see exarp-go `.cursor/rules/exarp-mcp-o
 
 If you need a **single canonical “backlog”** export (e.g. always Todo+In Progress, or include Review), that would be a small exarp-go change: align `IsBacklogStatus` / list filters / docs and possibly add a `task_workflow` filter such as `backlog_preset=strict|open|execution`. Not required for normal use.
 
+## Backlog by component
+
+Component-style tags keep filtered views repeatable. When creating tasks, prefer normalized tags such as `tui`, `cli`, `backend`, `api`, `market-data`, `docs`, `build`, `database` (see [`CLOUD_AGENT_BACKLOG_CLERK.md`](./CLOUD_AGENT_BACKLOG_CLERK.md)). **Todo2 may still store hashtags** (for example `#tui`); tools treat tags differently:
+
+| Goal | What to use |
+|------|-------------|
+| Dependency-ordered slice + tag filter | **`task_analysis`** `action=execution_plan` with **`filter_tag`** or comma-separated **`filter_tags`**. Match is **exact** on the stored string (pass `#tui` if tasks are tagged `#tui`). |
+| Raw lists by status | **`task_workflow`** `action=list` with `status`; optional `order=dependency` / `order=execution`. |
+| Wave-aligned batch, prefer a component | From repo root: `python3 scripts/parallel_wave_remaining.py <wave> [batch_size] --tag <name>` with `wave` in `0`, `1`, or `2`. **`--tag` ignores a leading `#`**, so `--tag tui` matches `#tui`. Repeat `--tag`; add **`--strict-tag`** to only take matching tasks (batch may be smaller). Waves live under **`waves`** in [`.cursor/plans/parallel-execution-waves.json`](../.cursor/plans/parallel-execution-waves.json) (keys `"0"`, `"1"`, `"2"`). Full runbook: [`WAVE_RESUME_RUNBOOK.md`](./WAVE_RESUME_RUNBOOK.md). |
+| Unblocked “suggested next” | **`session`** `action=prime` with tasks included for **`suggested_next`**. |
+
+**Verify `PROJECT_ROOT` before any exarp-go call** (wrong root ⇒ wrong backlog):
+
+```bash
+./scripts/run_exarp_go.sh doctor
+```
+
+**Examples (CLI tool mode from Aether root):**
+
+```bash
+./scripts/run_exarp_go.sh -tool task_analysis -args '{"action":"execution_plan","filter_tag":"#tui"}'
+./scripts/run_exarp_go.sh -tool task_analysis -args '{"action":"execution_plan","filter_tags":"#tui,#cli"}'
+python3 scripts/parallel_wave_remaining.py 0 15 --tag tui
+```
+
+After direct edits to **`.todo2/todo2.db`**, refresh mirrors and IDE views:
+
+```bash
+./scripts/run_exarp_go.sh task sync
+```
+
 ## References
 
 - exarp-go: `internal/models/constants.go` (`IsOpenStatus`), `internal/tools/graph_helpers.go` (`BacklogExecutionOrder`), `internal/tools/task_analysis_deps.go` (`execution_plan`).

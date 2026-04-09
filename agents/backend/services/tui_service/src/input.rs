@@ -159,6 +159,8 @@ pub enum Action {
     StrategyCancelAll,
     OrdersCancel,
     ForceSnapshot,
+    /// Cycle `TUI_THEME` (default ↔ high_contrast); Ctrl+T or macOS ⌘⇧T.
+    ThemeCycle,
     SplitPaneToggle,
     WorkspaceFocusPrev,
     WorkspaceFocusNext,

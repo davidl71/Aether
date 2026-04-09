@@ -8,6 +8,7 @@ Usage:
   python3 scripts/parallel_wave_remaining.py <wave_index> [batch_size] --tag tui
   python3 scripts/parallel_wave_remaining.py <wave_index> [batch_size] --tag cli --strict-tag
   wave_index: 0, 1, or 2 (matches parallel-execution-waves.json "waves" keys)
+  --tag values are normalized (leading # ignored) so e.g. --tag tui matches Todo2 tag #tui.
   batch_size: default 15
 Example:
   python3 scripts/parallel_wave_remaining.py 0
@@ -22,6 +23,14 @@ import re
 import subprocess
 import sys
 from argparse import ArgumentParser
+
+
+def norm_tag(s: str) -> str:
+    """Lowercase and strip a single leading '#', so 'tui' matches '#tui' in Todo2."""
+    t = str(s).strip().lower()
+    if t.startswith("#"):
+        t = t[1:]
+    return t
 
 
 def repo_root() -> str:
@@ -116,13 +125,12 @@ def get_non_done_tasks(root: str) -> dict[str, set[str]]:
             parsed = parse_exarp_tool_stdout(out.stdout)
             if parsed is None:
                 continue
-            items = None
+            items: list = []
             if isinstance(parsed, list):
                 items = parsed
             elif isinstance(parsed, dict):
-                items = parsed.get("tasks", parsed.get("items", []))
-                if not isinstance(items, list):
-                    items = []
+                raw = parsed.get("tasks", parsed.get("items", []))
+                items = raw if isinstance(raw, list) else []
 
             for t in items:
                 if not isinstance(t, dict):
@@ -138,7 +146,7 @@ def get_non_done_tasks(root: str) -> dict[str, set[str]]:
                     tag_list = [str(x).strip() for x in raw_tags if str(x).strip()]
                 else:
                     tag_list = []
-                tasks_by_id[tid] = {x.lower() for x in tag_list if x}
+                tasks_by_id[tid] = {norm_tag(x) for x in tag_list if x}
         except (json.JSONDecodeError, subprocess.TimeoutExpired, FileNotFoundError):
             continue
 
@@ -177,7 +185,7 @@ def parse_args(argv: list[str]) -> tuple[int, int, list[str], bool]:
         dest="tags",
         action="append",
         default=[],
-        help="Prefer batching tasks that include this tag (repeatable). Example: --tag tui",
+        help="Prefer batching tasks that include this tag (repeatable). Matches stored tags with or without leading '#'. Example: --tag tui",
     )
     parser.add_argument(
         "--strict-tag",
@@ -185,7 +193,7 @@ def parse_args(argv: list[str]) -> tuple[int, int, list[str], bool]:
         help="If set, only include tasks that match --tag in the batch (may yield smaller batch).",
     )
     ns = parser.parse_args(argv)
-    tags = [t.strip().lower() for t in (ns.tags or []) if t and t.strip()]
+    tags = [norm_tag(t) for t in (ns.tags or []) if t and str(t).strip()]
     return ns.wave_index, ns.batch_size, tags, bool(ns.strict_tag)
 
 

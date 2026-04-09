@@ -66,6 +66,19 @@ pub(crate) fn settings_layout_embedded(area: Rect) -> SettingsLayout {
     settings_layout_with_min_width(area, 92)
 }
 
+/// Distribute `total` rows across the four stacked Settings sections (config, symbols,
+/// sources, alpaca). Lengths sum to `total` (some may be 0 when `total` is very small).
+fn settings_stacked_mid_heights(total: u16) -> [u16; 4] {
+    let t = total;
+    let base = t / 4;
+    let rem = t % 4;
+    let mut h = [base; 4];
+    for i in 0..usize::from(rem) {
+        h[i] = h[i].saturating_add(1);
+    }
+    h
+}
+
 fn settings_layout_with_min_width(area: Rect, wide_min_width: u16) -> SettingsLayout {
     // "Wide" layout is used both for the full Settings tab and for embedded
     // Settings panes (e.g. Operations workspace right column). Keep the
@@ -128,13 +141,14 @@ fn settings_layout_with_min_width(area: Rect, wide_min_width: u16) -> SettingsLa
                 Constraint::Length(hint_h),
             ])
             .split(area);
+        let mid_heights = settings_stacked_mid_heights(outer[1].height);
         let mid = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Ratio(1, 4),
-                Constraint::Ratio(1, 4),
-                Constraint::Ratio(1, 4),
-                Constraint::Ratio(1, 4),
+                Constraint::Length(mid_heights[0]),
+                Constraint::Length(mid_heights[1]),
+                Constraint::Length(mid_heights[2]),
+                Constraint::Length(mid_heights[3]),
             ])
             .split(outer[1]);
         SettingsLayout {
@@ -233,4 +247,18 @@ pub(super) fn section_block(title: impl Into<String>, active: bool) -> Block<'st
 
 pub(super) fn truncate(s: &str, max: usize) -> String {
     super::text_trunc::truncate_chars(s, max)
+}
+
+#[cfg(test)]
+mod settings_layout_tests {
+    use super::settings_stacked_mid_heights;
+
+    #[test]
+    fn stacked_mid_heights_sum_to_total() {
+        for t in 0u16..=48 {
+            let h = settings_stacked_mid_heights(t);
+            let sum: u16 = h.iter().sum();
+            assert_eq!(sum, t, "t={t} -> {h:?}");
+        }
+    }
 }

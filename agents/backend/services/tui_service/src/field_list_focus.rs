@@ -50,6 +50,11 @@ impl FieldListFocus {
             .current()
             .is_some_and(|r| *r == FieldListRegion::Field)
     }
+
+    /// Active band when the overlay is open (`on_open`); [`None`] after `on_close` or before register.
+    pub(crate) fn focused_region(&self) -> Option<FieldListRegion> {
+        self.focus.current().copied()
+    }
 }
 
 #[cfg(test)]
@@ -76,5 +81,15 @@ mod tests {
         s.tab_next();
         s.on_close();
         assert!(!s.allows_field_edit());
+        assert!(s.focused_region().is_none());
+    }
+
+    #[test]
+    fn focused_region_tracks_tab_target() {
+        let mut s = FieldListFocus::new();
+        s.on_open();
+        assert_eq!(s.focused_region(), Some(FieldListRegion::Field));
+        s.tab_next();
+        assert_eq!(s.focused_region(), Some(FieldListRegion::List));
     }
 }

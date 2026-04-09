@@ -1,5 +1,7 @@
 //! Orders tab: read-only snapshot orders (filter + scroll). No placement or cancel.
 
+use std::collections::BTreeMap;
+
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -14,26 +16,56 @@ use crate::scrollable_table::{centered_viewport_start, clamp_index};
 #[allow(unused_imports)]
 pub use render_orders_panel as render_orders;
 
-pub fn render_orders_panel(f: &mut Frame, app: &App, area: Rect) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(0)])
-        .split(area);
-
-    render_orders_filter(f, app, chunks[0]);
-    render_orders_table(f, app, chunks[1]);
+/// Pilot: status counts for the current filtered list (read-only grouping summary).
+fn order_status_rollup_line(app: &App) -> Option<String> {
+    let snap = app.snapshot().as_ref()?;
+    let filtered = app.filtered_orders(snap);
+    if filtered.is_empty() {
+        return None;
+    }
+    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+    for o in &filtered {
+        *counts.entry(o.status.clone()).or_insert(0) += 1;
+    }
+    let parts: Vec<String> = counts
+        .into_iter()
+        .map(|(k, n)| format!("{k}:{n}"))
+        .collect();
+    Some(format!("By status: {}", parts.join("  ")))
 }
 
-pub fn render_orders_filter(f: &mut Frame, app: &App, area: Rect) {
-    let filter_text = if app.order_filter.is_empty() {
+pub fn render_orders_panel(f: &mut Frame, app: &App, area: Rect) {
+    let pal = app.ui_palette();
+    let rollup = order_status_rollup_line(app);
+    let filter_text = orders_filter_caption(app);
+    let mut filter_block = filter_text;
+    if let Some(r) = &rollup {
+        filter_block.push('\n');
+        filter_block.push_str(r);
+    }
+    let filter_lines = filter_block.lines().count() as u16;
+    // Title row + borders + text lines (compact; avoids clipping the rollup).
+    let filter_h = filter_lines.saturating_add(2).max(3).min(8);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(filter_h), Constraint::Min(0)])
+        .split(area);
+
+    render_orders_filter(f, app, &pal, filter_block, chunks[0]);
+    render_orders_table(f, app, &pal, chunks[1]);
+}
+
+fn orders_filter_caption(app: &App) -> String {
+    if app.order_filter.is_empty() {
         if app.order_filter_active {
-            "Filter mode active: type symbol/status/side, Esc to exit".to_string()
+            "Filter mode: type symbol, status, or side; Esc clear; / exits when empty".to_string()
         } else {
             "Filter: / to activate".to_string()
         }
     } else {
         format!(
-            "Filter [{}]: {} (symbol/status/side, Esc to clear)",
+            "Filter [{}]: {} (symbol/status/side substring; Esc clear; / exits when empty)",
             if app.order_filter_active {
                 "ACTIVE"
             } else {
@@ -41,8 +73,17 @@ pub fn render_orders_filter(f: &mut Frame, app: &App, area: Rect) {
             },
             app.order_filter
         )
-    };
-    let filter_widget = Paragraph::new(filter_text)
+    }
+}
+
+fn render_orders_filter(
+    f: &mut Frame,
+    app: &App,
+    pal: &crate::theme_palette::UiPalette,
+    text: String,
+    area: Rect,
+) {
+    let filter_widget = Paragraph::new(text)
         .block(
             Block::default()
                 .title(if app.order_filter_active {
@@ -53,7 +94,7 @@ pub fn render_orders_filter(f: &mut Frame, app: &App, area: Rect) {
                 .borders(Borders::ALL)
                 .border_style(if app.order_filter_active {
                     Style::default()
-                        .fg(Color::Yellow)
+                        .fg(pal.filter_border_active)
                         .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default()
@@ -61,17 +102,22 @@ pub fn render_orders_filter(f: &mut Frame, app: &App, area: Rect) {
         )
         .style(if app.order_filter.is_empty() {
             if app.order_filter_active {
-                Style::default().fg(Color::Cyan)
+                Style::default().fg(pal.filter_text_active)
             } else {
-                Style::default().fg(Color::DarkGray)
+                Style::default().fg(pal.muted)
             }
         } else {
-            Style::default().fg(Color::Cyan)
+            Style::default().fg(pal.filter_text_active)
         });
     f.render_widget(filter_widget, area);
 }
 
-pub fn render_orders_table(f: &mut Frame, app: &App, area: Rect) {
+pub fn render_orders_table(
+    f: &mut Frame,
+    app: &App,
+    pal: &crate::theme_palette::UiPalette,
+    area: Rect,
+) {
     let header = Row::new([
         Cell::from("ID"),
         Cell::from("Symbol"),
@@ -162,8 +208,8 @@ pub fn render_orders_table(f: &mut Frame, app: &App, area: Rect) {
             if is_selected {
                 row.style(
                     Style::default()
-                        .fg(Color::Black)
-                        .bg(Color::Yellow)
+                        .fg(pal.selection_fg)
+                        .bg(pal.selection_bg)
                         .add_modifier(Modifier::BOLD),
                 )
             } else {

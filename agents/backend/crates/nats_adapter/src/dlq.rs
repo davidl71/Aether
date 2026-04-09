@@ -1,12 +1,11 @@
 //! Dead Letter Queue (DLQ) Service
 //!
 //! Handles failed messages by sending them to a dead letter queue topic
-//! with retry logic and exponential backoff (via `backoff` crate).
+//! with retry logic and exponential backoff (std-only; matches `backoff` crate
+//! behavior for `randomization_factor = 0` and `max_elapsed_time = None`).
 
 use std::time::Duration;
 
-use backoff::backoff::Backoff;
-use backoff::exponential::ExponentialBackoffBuilder;
 use tracing::{error, warn};
 use uuid::Uuid;
 
@@ -164,28 +163,40 @@ impl DlqService {
         Ok(())
     }
 
-    /// Calculate retry delay using exponential backoff (via `backoff` crate).
+    /// Calculate retry delay using exponential backoff (same sequence as
+    /// `backoff::ExponentialBackoff` with `randomization_factor = 0` and no max elapsed).
     pub fn calculate_retry_delay(&self, attempt: u32) -> Duration {
-        let mut eb: backoff::ExponentialBackoff = ExponentialBackoffBuilder::new()
-            .with_initial_interval(Duration::from_millis(self.config.initial_retry_delay_ms))
-            .with_multiplier(self.config.backoff_multiplier)
-            .with_max_interval(Duration::from_millis(self.config.max_retry_delay_ms))
-            .with_randomization_factor(0.0)
-            .with_max_elapsed_time(None)
-            .build();
-        let mut out = Duration::from_millis(self.config.initial_retry_delay_ms);
-        for _ in 0..=attempt {
-            if let Some(d) = eb.next_backoff() {
-                out = d;
-            }
-        }
-        out
+        exponential_retry_delay_for_attempt(
+            attempt,
+            self.config.initial_retry_delay_ms,
+            self.config.max_retry_delay_ms,
+            self.config.backoff_multiplier,
+        )
     }
 
     /// Get the DLQ configuration
     pub fn config(&self) -> &DlqConfig {
         &self.config
     }
+}
+
+/// Exponential retry delay for `attempt` (0-based), matching `backoff` with zero jitter.
+pub(crate) fn exponential_retry_delay_for_attempt(
+    attempt: u32,
+    initial_retry_delay_ms: u64,
+    max_retry_delay_ms: u64,
+    backoff_multiplier: f64,
+) -> Duration {
+    let initial = Duration::from_millis(initial_retry_delay_ms);
+    let max_d = Duration::from_millis(max_retry_delay_ms);
+    let max_s = max_d.as_secs_f64();
+    let mut interval_s = initial.as_secs_f64().min(max_s);
+    let mut out = initial;
+    for _ in 0..=attempt {
+        out = Duration::from_secs_f64(interval_s);
+        interval_s = (interval_s * backoff_multiplier).min(max_s);
+    }
+    out
 }
 
 /// Extract error type from NatsAdapterError
@@ -197,5 +208,50 @@ pub fn error_type_from_error(error: &NatsAdapterError) -> &'static str {
         NatsAdapterError::Encoding(_) => "serialization_error",
         NatsAdapterError::InvalidSubject(_) => "validation_error",
         _ => "unknown_error",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exponential_retry_delay_matches_steps() {
+        assert_eq!(
+            exponential_retry_delay_for_attempt(0, 100, 5000, 2.0),
+            Duration::from_millis(100)
+        );
+        assert_eq!(
+            exponential_retry_delay_for_attempt(1, 100, 5000, 2.0),
+            Duration::from_millis(200)
+        );
+        assert_eq!(
+            exponential_retry_delay_for_attempt(2, 100, 5000, 2.0),
+            Duration::from_millis(400)
+        );
+        assert_eq!(
+            exponential_retry_delay_for_attempt(3, 100, 5000, 2.0),
+            Duration::from_millis(800)
+        );
+    }
+
+    #[test]
+    fn exponential_retry_delay_respects_max() {
+        assert_eq!(
+            exponential_retry_delay_for_attempt(0, 100, 250, 2.0),
+            Duration::from_millis(100)
+        );
+        assert_eq!(
+            exponential_retry_delay_for_attempt(1, 100, 250, 2.0),
+            Duration::from_millis(200)
+        );
+        assert_eq!(
+            exponential_retry_delay_for_attempt(2, 100, 250, 2.0),
+            Duration::from_millis(250)
+        );
+        assert_eq!(
+            exponential_retry_delay_for_attempt(3, 100, 250, 2.0),
+            Duration::from_millis(250)
+        );
     }
 }

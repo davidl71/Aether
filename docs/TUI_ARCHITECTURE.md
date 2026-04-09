@@ -14,6 +14,8 @@ Large-terminal operational workspaces are composed in `ui/mod.rs`. Shared worksp
 
 **Pane & focus:** See **[`TUI_PANE_MODEL.md`](./TUI_PANE_MODEL.md)** for the workspace / overlay / `InputMode` / `ScrollableTableState` model and the migration plan toward a central input router.
 
+**Planning backlog:** **[`TUI_IMPLEMENTATION_BACKLOG.md`](./TUI_IMPLEMENTATION_BACKLOG.md)** — ScrollableTableState / toasts / numeric columns / pane regression checklist / layout helper map (task IDs inline).
+
 ---
 
 ## Current Architecture
@@ -75,6 +77,8 @@ tui_service/src/
 ├── config.rs             # TuiConfig (loaded from TOML)
 ├── config_watcher.rs     # hot-reload watcher
 ├── input_settings.rs     # Settings-only key handling and action application
+├── theme_palette.rs      # UiPalette from TuiTheme (borders, shortcuts, pilot styling)
+├── input/router.rs       # Global key routing (e.g. theme cycle before command palette)
 ├── nats.rs               # NATS snapshot subscriber
 ├── circuit_breaker.rs    # reconnect backoff
 ├── expiry_buckets.rs     # options expiry bucketing
@@ -95,6 +99,14 @@ tui_service/src/
     ├── loans.rs          # Loans tab
     └── discount_bank.rs  # Discount bank tab
 ```
+
+---
+
+## Theme and palette
+
+- **Startup:** `TUI_THEME` selects the base palette (`default` or `high_contrast`); see `main.rs` module docs and Settings.
+- **`UiPalette`** (`theme_palette.rs`) maps `TuiTheme` to Ratatui `Color` pairs so borders, status/hint styling, and pilot surfaces (for example Orders rollups) stay consistent when the theme changes.
+- **Runtime cycle:** **Ctrl+T** cycles the in-process theme (macOS terminals may surface the same action as **⌘⇧T**). Routed in `input/router.rs`, applied via `Action::ThemeCycle` in `input_shell.rs`, and listed in the command palette (`discoverability.rs`, action `theme_cycle`). `dirty_flags` marks layout dirty so the next tick redraws with the new palette.
 
 ---
 
@@ -119,7 +131,7 @@ Content is hard-coded in **`render_help_overlay`** in `ui/mod.rs` (not generated
 - Status bar modes (NAV / EDIT / VIEW), toasts
 - macOS chords: ⌘, Settings; ⌘/ help; ⌘⇧P palette; ⌘0–⌘9; ⌘p split; ⌘r refresh; ⌘w close
 - Digit jumps `1`–`9`, `0` → tab mnemonic map (Dash … Settings)
-- Utilities: `M` mode cycle, `` ` `` log panel, `g` tree panel, `p` split, `f` FMP vs refresh, `Esc` dismiss
+- Utilities: `M` mode cycle, **Ctrl+T** / **⌘⇧T** theme cycle, `` ` `` log panel, `g` tree panel, `p` split, `f` FMP vs refresh, `Esc` dismiss
 - Composed workspaces (Market / Operations / Credit): Tab cycles **inner** panes when the workspace hint is active
 - Per-area bindings: Dashboard/Positions/Alerts; Orders; Discount Bank; Loans (list, form, bulk path); Charts + Yield (shared line); Scenarios + Logs; Settings (including `0` / ⌘0 jump); exploration-mode letters **S T K O** / **X** (Orders)
 

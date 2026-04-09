@@ -11,7 +11,6 @@ common = { path = "../common" }
 async-nats = { git = "https://github.com/nats-io/nats.rs", tag = "async-nats/v0.47.0", default-features = false, features = ["server_2_10", "server_2_11", "server_2_12", "service", "jetstream", "nkeys", "crypto", "kv", "websockets", "nuid", "ring"] }
 bytes = "1.5"
 chrono = { workspace = true }
-backoff = { workspace = true }
 futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

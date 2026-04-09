@@ -69,7 +69,7 @@ No big-bang rewrite: introduce helpers and shrink `match` duplication tab-by-tab
 ## 7. Verification (when router work lands)
 
 - Regression checklist: **T-1774817606353005000** (tabs, workspaces, Settings sections, overlays, mouse tab click **T-1774965243417103000**).
-- Short-terminal: **T-1774817606571913000**–**T-1774817606572367000**.
+- Short-terminal Settings QA: **`docs/SETTINGS_SHORT_TERMINAL_QA.md`**.
 
 ---
 

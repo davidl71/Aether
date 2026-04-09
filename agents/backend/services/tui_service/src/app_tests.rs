@@ -10,7 +10,7 @@ use tokio::sync::{mpsc, watch};
 use std::collections::{HashMap, VecDeque};
 
 use crate::focus_context::FocusContext;
-use crate::workspace::{SettingsHealthFocus, SettingsSection, SecondaryFocus, VisibleWorkspace};
+use crate::workspace::{SecondaryFocus, SettingsHealthFocus, SettingsSection, VisibleWorkspace};
 use crate::{
     config::TuiConfig,
     events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget},
@@ -73,6 +73,8 @@ fn focus_context_reflects_tab_and_secondary_focus() {
         SecondaryFocus::SettingsHealth(SettingsHealthFocus::Services)
     );
     assert_eq!(fc.visible_workspace, VisibleWorkspace::None);
+    #[cfg(feature = "tui-interact")]
+    assert_eq!(fc.field_list_subfocus, None);
 }
 
 #[test]
@@ -755,8 +757,8 @@ fn wide_terminal_renders_market_workspace() {
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Market Workspace"));
-    assert!(content.contains("Dash + Pos + Orders + Yield visible"));
-    assert!(content.contains("Scroll: pane under cursor"));
+    assert!(content.contains("Dashboard · positions · orders · yield"));
+    assert!(content.contains("Wheel: pane under cursor"));
 }
 
 #[test]
@@ -770,7 +772,7 @@ fn wide_terminal_renders_operations_workspace() {
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Operations Workspace"));
-    assert!(content.contains("Alerts + Logs + Settings visible"));
+    assert!(content.contains("Alerts · logs · embedded settings"));
     assert!(
         content.contains("Alpaca credentials"),
         "composed ops workspace should include Settings → Alpaca like full Settings tab"
@@ -1057,6 +1059,27 @@ fn settings_tab_uses_wide_layout_in_medium_terminal() {
 }
 
 #[test]
+fn settings_tab_stacked_layout_renders_at_short_height() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Settings;
+
+    // Narrow + short: stacked Settings; health + mid sections must lay out without panic.
+    let backend = TestBackend::new(80, 12);
+    let mut terminal = Terminal::new(backend).unwrap();
+    let frame = terminal.draw(|f| render(f, &mut app)).unwrap();
+
+    let content = buffer_to_string(&frame.area, &frame.buffer);
+    assert!(
+        content.contains("System health")
+            && content.contains("Config overrides")
+            && content.contains("Symbols / watchlist")
+            && content.contains("Data sources"),
+        "expected core Settings sections at 80x12, got snippet: {}",
+        &content[..content.len().min(400)]
+    );
+}
+
+#[test]
 fn settings_health_scroll_down_advances_nested_focus_before_next_section() {
     let (mut app, _, _) = make_app();
     app.active_tab = Tab::Settings;
@@ -1097,6 +1120,8 @@ fn orders_tab_renders_filter_mode_cues() {
     assert!(content.contains("Orders [FILTER]"));
     assert!(content.contains("symbol/status/side"));
     assert!(content.contains("SPY"));
+    assert!(content.contains("By status:"));
+    assert!(content.contains("Submitted:1"));
 }
 
 #[test]

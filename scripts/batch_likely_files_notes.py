@@ -92,9 +92,6 @@ NOTES: dict[str, str] = {
     "T-1774817606507094000": "upstream docs (tickrs/tui-input/etc.)",
     "T-1774817606507387000": "scratch branch / `tui_service` spike",
     "T-1774817606507550000": "`docs/` decision note",
-    "T-1774817606571913000": "`tui_service` settings layout breakpoints",
-    "T-1774817606572191000": "`tui_service` settings responsive layout",
-    "T-1774817606572367000": "`tui_service` QA checklist",
     # Deferred loans CSV/PDF
     "T-1774864120067507000": "`tui_service` loans + PDF parser crate choice, `crates/api` if ingest API",
     "T-1774864120067504000": "`tui_service` loans + CSV mapping, backend route if any",

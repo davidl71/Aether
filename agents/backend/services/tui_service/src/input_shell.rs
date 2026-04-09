@@ -194,6 +194,21 @@ pub(crate) fn apply_shell_action(app: &mut App, action: Action) -> bool {
                 app.fetch_fmp(sym);
             }
         }
+        Action::ThemeCycle => {
+            let next = app.config.theme.next();
+            app.config_overrides
+                .insert("TUI_THEME".into(), next.as_setting_value().to_string());
+            app.reapply_config_overrides();
+            app.push_toast(
+                format!(
+                    "Theme: {} (override TUI_THEME={})",
+                    next.label(),
+                    next.as_setting_value()
+                ),
+                crate::ui::ToastLevel::Info,
+            );
+            app.mark_regions(|d| d.mark_all());
+        }
         Action::SplitPaneToggle => {
             app.split_pane = !app.split_pane;
             app.positions_table.reset();

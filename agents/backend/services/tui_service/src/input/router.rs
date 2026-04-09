@@ -17,7 +17,7 @@ pub fn dispatch_key_event(app: &App, key: KeyEvent) -> Option<Action> {
         return None;
     }
 
-    // macOS: Cmd+Shift+P opens command palette (before plain Super handling).
+    // macOS: Cmd+Shift+P palette, Cmd+Shift+T theme (before plain Super handling).
     if key
         .modifiers
         .contains(KeyModifiers::SUPER | KeyModifiers::SHIFT)
@@ -25,6 +25,16 @@ pub fn dispatch_key_event(app: &App, key: KeyEvent) -> Option<Action> {
         if matches!(key.code, KeyCode::Char('p') | KeyCode::Char('P')) {
             return Some(Action::CommandPalette);
         }
+        if matches!(key.code, KeyCode::Char('t') | KeyCode::Char('T')) {
+            return Some(Action::ThemeCycle);
+        }
+    }
+
+    // Theme cycle: Ctrl+T (all platforms). Handled before command palette consumes keys.
+    if key.modifiers.contains(KeyModifiers::CONTROL)
+        && matches!(key.code, KeyCode::Char('t') | KeyCode::Char('T'))
+    {
+        return Some(Action::ThemeCycle);
     }
 
     if key.modifiers.contains(KeyModifiers::SUPER) {

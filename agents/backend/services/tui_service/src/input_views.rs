@@ -42,13 +42,23 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
             }
         }
         Action::OrdersFilterFocus => {
-            app.order_filter_active = true;
-            #[cfg(feature = "tui-interact")]
-            app.orders_filter_interact.on_open();
-            app.command_success(
-                "orders_filter",
-                "Filter mode active: type symbol, status, or side; Esc to exit.",
-            );
+            if app.order_filter_active && app.order_filter.is_empty() {
+                app.order_filter_active = false;
+                #[cfg(feature = "tui-interact")]
+                app.orders_filter_interact.on_close();
+                app.command_success(
+                    "orders_filter",
+                    "Filter mode off (/ to type again). Saved text kept until Esc.",
+                );
+            } else {
+                app.order_filter_active = true;
+                #[cfg(feature = "tui-interact")]
+                app.orders_filter_interact.on_open();
+                app.command_success(
+                    "orders_filter",
+                    "Filter mode active: type symbol, status, or side; Esc clears; / exits when empty.",
+                );
+            }
         }
         Action::OrdersFilterChar(c) => {
             app.order_filter_active = true;

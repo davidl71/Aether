@@ -299,7 +299,7 @@ Follow imperative, 72-character subject lines ("Add TSV formatter for CLI"). In 
 | `.claude/settings.json` | Claude Code permissions |
 | `.claude/agents/` | Custom Claude agents |
 
-**Gaps affecting AI tooling:** `docs/API_DOCUMENTATION_INDEX.md` is still cited from AGENTS.md, CLAUDE.md, and other guides but **is not in the repo**—search `docs/` and `agents/backend/` until the file returns or references are fixed. **`.cursor/commands.json`** still runs `python3 python/tools/*.py` for several palette commands; **`python/tools/` is missing** (`python/` is effectively `generated/` only), so those commands fail until scripts exist or paths change.
+**Gaps affecting AI tooling:** **`docs/API_DOCUMENTATION_INDEX.md`** is restored as a path index (integration map, not a full vendor API manual—extend as needed). **`.cursor/commands.json`** still runs `python3 python/tools/*.py` for several palette commands; **`python/tools/` is missing** (`python/` is effectively `generated/` only), so those commands fail until scripts exist or paths change.
 
 **Excluded from AI context:**
 - `docs/archive/` — Historical C++/LEAN/WASM research; git-tracked but not indexed by AI tools. See `docs/ARCHIVE_CPP_KNOWLEDGE_SUMMARY.md` for extracted knowledge relevant to current development.
@@ -354,14 +354,20 @@ hygiene, and thread-splitting defaults used in this repo.
 
 ## Learned User Preferences
 
-- Do **not** run **`./scripts/run_exarp_go.sh task sync`** or **`task_workflow`** `action=sync` in routine Cursor workflows for this repo; canonical tasks are **`.todo2/todo2.db` only** (see `.cursor/rules/todo2-overview.mdc`).
+- After changing task status in the DB or via exarp-go, run **`./scripts/run_exarp_go.sh task sync`** so **`.todo2/state.todo2.json`** and JSON-backed views stay aligned with **`.todo2/todo2.db`**.
+- Prefer **`exarp-go` `task list` / `doctor`** (via **`./scripts/run_exarp_go.sh`** with the right cwd / **`PROJECT_ROOT`**) over ad-hoc **`sqlite3`** on **`.todo2/todo2.db`** for routine backlog reads; reserve raw SQL for schema or debugging.
 
 ## Learned Workspace Facts
 
 - `scripts/run_exarp_go.sh` with **no** arguments starts stdio MCP mode; in a normal terminal it looks hung. For one-shot CLI use, always pass a subcommand (for example `task list`, `task update`).
-- Todo2: **`.todo2/todo2.db` is canonical** for task status. **`.todo2/state.todo2.json`** is not part of this repo’s workflow (removed / gitignored if tooling recreates it). Prefer SQLite or `task list` over any JSON mirror.
+- Todo2: **`.todo2/todo2.db` is canonical** for task status; **`.todo2/state.todo2.json`** mirrors it. **`SyncTodo2Tasks` merges DB + JSON (DB wins on conflict)**—removing tasks in only one store can let duplicates return until both match; use **`task_workflow`** / DB + **`sync`** (or edit both, then sync) when deduping.
 - **RAM disk:** `workspace_ram_disk_manager.sh` is not in this repo; folder-open / Cursor RAM-disk tasks that called it were removed. For disk-caching workflows use **`scripts/setup_disk_caching.sh`** and CMake presets with **`*-ramdisk`** / `build-ramdisk`, not a missing workspace startup script.
 - **`api` → `market_data` dependency:** do not make `market_data` depend on `api` (Cargo cycle). Shared credential resolution lives in **`credential_store`**; `market_data` and similar low crates should use that crate only; callers that already use `api` keep **`api::credentials`** as the stable path.
 - **NATS subjects:** canonical `api.*` and system command subject strings are **`nats_adapter::topics`** (`topics::api`, `topics::system::all_commands()`). Operator-oriented listing: **`docs/NATS_TOPICS_REGISTRY.md`** (keep in sync when adding subjects).
 - **`docs/EXECUTION_COCKPIT.md`** is an **exarp-generated snapshot** (automation / execution cockpit), not the source of truth; canonical task state is **`.todo2/todo2.db`** and **`task list` / `task_workflow`**. Refresh the file after bulk task edits so it does not reference stale or removed IDs.
 - **exarp-go work** (MCP/CLI/tooling in the exarp-go repo) should be tracked in **that repo’s Todo2** with **`PROJECT_ROOT`** set to the **exarp-go tree**, not as parallel **Todo** rows in Aether—keeps migrations, binaries, and backlog aligned with the code that implements them.
+- **exarp-go `projectroot.Find()`:** if **`PROJECT_ROOT`** points at the **exarp-go source** tree but **cwd** is a **different** repo that has **`.todo2`**, resolution prefers the **cwd** project’s DB; set **`EXARP_STRICT_PROJECT_ROOT=1`** (or `true`) to force **env-first** behavior. Use **`doctor`** to confirm which **`todo2.db`** is active.
+- **OpenCode exarp-go plugin:** **`.opencode/plugins/exarp-go.ts`** resolves **`sessionID`** / **`sessionId`** on **`chat.message`**; if neither is present the hook skips first-message injection (avoids **`sessionID required but not found`** toasts). Restart OpenCode after plugin edits.
+- **exarp-go task / analysis API (recent):** **`task_workflow`** responses when moving tasks to **Review** use **`review_instructions`** (vendor HITL **`goto_human_instructions`** was removed). **`task_analysis`** with **`action=parallelization`** accepts **`filter_tag`** / **`filter_tags`** to scope parallel groups (same idea as execution plan).
+- **exarp-go `task_workflow` `update` quirk:** On some builds, **priority-only** (or similar field-only) updates fail or are ignored; update **`.todo2/todo2.db`** directly and run **`./scripts/run_exarp_go.sh task sync`**, or use **`scripts/apply_task_ranks_and_deps.py`** for batch rank/dependency edits the tool layer mishandles.
+- **RUSTSEC-2024-0384 (`instant`):** **`instant`** entered the graph via **`market_data`** dev-dependency **`wiremock` 0.5** → **`http-types`** → **`futures-lite`** → **`fastrand`**; bumping **`wiremock` to `0.6`** in **`agents/backend/crates/market_data/Cargo.toml`** removes that chain—confirm with **`cd agents/backend && cargo audit`**.

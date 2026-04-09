@@ -19,6 +19,25 @@ use super::{section_active, section_block, truncate};
 
 const DEFAULT_HEALTH_STALE_AFTER_SECS: i64 = 45;
 
+/// Split the health block between the main flow tree and the Components strip.
+/// Heights always sum to `area_h` so short terminals (stacked Settings) never
+/// over-constrain ratatui's layout solver.
+fn health_section_vertical_split(area_h: u16) -> (u16, u16) {
+    let h = area_h.max(1);
+    let components_h = if h <= 1 {
+        0u16
+    } else if h <= 5 {
+        1u16
+    } else if h <= 9 {
+        (h / 3).clamp(2, 4).min(h - 1)
+    } else {
+        let c = 4u16.min(h.saturating_sub(6));
+        c.max(3).min(h.saturating_sub(1))
+    };
+    let flow_h = h.saturating_sub(components_h).max(1);
+    (flow_h, components_h)
+}
+
 fn fmt_bytes_u64(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = 1024 * 1024;
@@ -190,9 +209,10 @@ pub(crate) fn render_settings_health_section(f: &mut Frame, app: &App, area: Rec
         snapshot_age,
         content_w,
     );
+    let (flow_h, components_h) = health_section_vertical_split(area.height);
     let health_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(6), Constraint::Length(4)])
+        .constraints([Constraint::Length(flow_h), Constraint::Length(components_h)])
         .split(area);
     let component_lines = settings_component_lines(
         &transport,
@@ -709,4 +729,18 @@ fn settings_component_lines(
         Some(Line::from(spans))
     }));
     lines
+}
+
+#[cfg(test)]
+mod health_layout_tests {
+    use super::health_section_vertical_split;
+
+    #[test]
+    fn health_vertical_split_partitions_area() {
+        for h in 1u16..=40 {
+            let (flow, comp) = health_section_vertical_split(h);
+            assert_eq!(flow.saturating_add(comp), h, "h={h}");
+            assert!(flow >= 1, "h={h}");
+        }
+    }
 }

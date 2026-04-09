@@ -15,9 +15,11 @@ use ratatui::{
 };
 
 use crate::app::{App, InputMode, Tab};
+use crate::config::TuiTheme;
 use crate::focus_context::FocusContext;
 use crate::input::Action;
 use crate::mode::AppMode;
+use crate::theme_palette::UiPalette;
 use crate::workspace::{SecondaryFocus, SettingsHealthFocus};
 
 /// A command that can be run from the command palette (invokes a typed [`crate::input::Action`]).
@@ -219,6 +221,9 @@ fn build_command_registry() -> Vec<Command> {
         Command::new("command_palette", "Command Palette", Action::CommandPalette)
             .description("Search and run commands")
             .keys(vec![":".into(), "⌘⇧P".into()]),
+        Command::new("theme_cycle", "Cycle UI theme", Action::ThemeCycle)
+            .description("Toggle TUI_THEME default ↔ high_contrast (session override)")
+            .keys(vec!["Ctrl+T".into(), "⌘⇧T".into()]),
         Command::new("mode_cycle", "Cycle Mode", Action::ModeCycle)
             .description("Cycle NAV / EDIT / VIEW")
             .keys(vec!["m".into()]),
@@ -300,19 +305,25 @@ fn build_command_registry() -> Vec<Command> {
     ]
 }
 
-/// Render the command palette
-pub fn render_command_palette(f: &mut Frame, palette: &CommandPalette, area: Rect) {
+/// Render the command palette (`theme` drives chrome via [`UiPalette`]).
+pub fn render_command_palette(
+    f: &mut Frame,
+    palette: &CommandPalette,
+    theme: TuiTheme,
+    area: Rect,
+) {
     if !palette.visible {
         return;
     }
 
+    let pal = UiPalette::from_theme(theme);
     let area = centered_rect(60, 70, area);
     f.render_widget(Clear, area);
 
     let block = Block::default()
         .title(" Command Palette ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Cyan))
+        .border_style(Style::default().fg(pal.palette_border))
         .title_style(Style::default().add_modifier(Modifier::BOLD));
 
     let inner = block.inner(area);
@@ -323,17 +334,15 @@ pub fn render_command_palette(f: &mut Frame, palette: &CommandPalette, area: Rec
         .constraints([Constraint::Length(3), Constraint::Min(0)])
         .split(inner);
 
-    // Search input
-    let search_style = Style::default().fg(Color::Yellow);
+    let search_style = Style::default().fg(pal.help_title);
     let search_text = format!("> {}", palette.search);
     let search = Paragraph::new(search_text).style(search_style).block(
         Block::default()
             .borders(Borders::BOTTOM)
-            .border_style(Style::default().fg(Color::DarkGray)),
+            .border_style(Style::default().fg(pal.palette_search_border)),
     );
     f.render_widget(search, chunks[0]);
 
-    // Command list
     let items: Vec<ListItem> = palette
         .filtered
         .iter()
@@ -344,15 +353,15 @@ pub fn render_command_palette(f: &mut Frame, palette: &CommandPalette, area: Rec
 
             let style = if i == palette.selected {
                 Style::default()
-                    .bg(Color::Cyan)
-                    .fg(Color::Black)
+                    .bg(pal.palette_border)
+                    .fg(pal.selection_fg)
                     .add_modifier(Modifier::BOLD)
             } else {
                 Style::default()
             };
 
             ListItem::new(Line::from(vec![
-                Span::styled(keys, Style::default().fg(Color::DarkGray)),
+                Span::styled(keys, Style::default().fg(pal.muted)),
                 Span::raw("  "),
                 Span::raw(&cmd.name),
             ]))
@@ -403,6 +412,7 @@ pub(crate) fn context_hints_for(ctx: &FocusContext) -> Vec<(String, String)> {
             hints.push(("Tab".into(), "next".into()));
             hints.push(("?".into(), "help".into()));
             hints.push((":".into(), "palette".into()));
+            hints.push(("^T".into(), "theme".into()));
 
             match tab {
                 Tab::Dashboard => {
@@ -417,6 +427,8 @@ pub(crate) fn context_hints_for(ctx: &FocusContext) -> Vec<(String, String)> {
                 }
                 Tab::Orders => {
                     hints.push(("/".into(), "filter".into()));
+                    #[cfg(feature = "tui-interact")]
+                    hints.push(("Tab".into(), "field/table".into()));
                 }
                 Tab::Charts => {
                     hints.push(("/".into(), "search".into()));
@@ -474,10 +486,83 @@ pub(crate) fn context_hints_for(ctx: &FocusContext) -> Vec<(String, String)> {
         AppMode::Edit => {
             hints.push(("Esc".into(), "cancel".into()));
             hints.push(("Enter".into(), "confirm".into()));
+
+            #[cfg(feature = "tui-interact")]
+            if let Some(sub) = ctx.field_list_subfocus {
+                use crate::focus_context::FieldListSubFocus;
+
+                hints.push((
+                    "Tab".into(),
+                    match sub {
+                        FieldListSubFocus::Field => "list",
+                        FieldListSubFocus::List => "field",
+                    }
+                    .into(),
+                ));
+                if matches!(sub, FieldListSubFocus::List) {
+                    hints.push(("↑↓".into(), "list".into()));
+                }
+            }
+
+            if matches!(ctx.input_mode, InputMode::CommandPalette) {
+                #[cfg(not(feature = "tui-interact"))]
+                {
+                    hints.push(("Type".into(), "search".into()));
+                    hints.push(("↑↓".into(), "select".into()));
+                }
+                #[cfg(feature = "tui-interact")]
+                {
+                    if ctx.field_list_subfocus.is_none() {
+                        hints.push(("Type".into(), "search".into()));
+                        hints.push(("↑↓".into(), "select".into()));
+                    }
+                }
+            }
+
             match tab {
-                Tab::Charts => hints.push(("↑↓".into(), "search hit".into())),
-                Tab::Orders => hints.push(("Char".into(), "filter".into())),
-                Tab::Loans => hints.push(("Tab".into(), "field".into())),
+                Tab::Charts => {
+                    #[cfg(not(feature = "tui-interact"))]
+                    hints.push(("↑↓".into(), "search hit".into()));
+                    #[cfg(feature = "tui-interact")]
+                    {
+                        use crate::focus_context::FieldListSubFocus;
+
+                        let show_arrows = ctx.field_list_subfocus.is_none()
+                            || matches!(ctx.field_list_subfocus, Some(FieldListSubFocus::Field));
+                        if show_arrows {
+                            hints.push(("↑↓".into(), "search hit".into()));
+                        }
+                    }
+                }
+                Tab::Orders => {
+                    #[cfg(not(feature = "tui-interact"))]
+                    {
+                        hints.push(("Char".into(), "filter".into()));
+                        hints.push(("/".into(), "exit if empty".into()));
+                    }
+                    #[cfg(feature = "tui-interact")]
+                    {
+                        use crate::focus_context::FieldListSubFocus;
+
+                        let show_char = ctx.field_list_subfocus.is_none()
+                            || matches!(ctx.field_list_subfocus, Some(FieldListSubFocus::Field));
+                        if show_char {
+                            hints.push(("Char".into(), "filter".into()));
+                        }
+                    }
+                }
+                Tab::Loans => {
+                    #[cfg(feature = "tui-interact")]
+                    let skip_loan_tab_hint = matches!(
+                        (ctx.input_mode, ctx.field_list_subfocus),
+                        (InputMode::LoanImportPath, Some(_))
+                    );
+                    #[cfg(not(feature = "tui-interact"))]
+                    let skip_loan_tab_hint = false;
+                    if !skip_loan_tab_hint {
+                        hints.push(("Tab".into(), "field".into()));
+                    }
+                }
                 Tab::Settings => hints.push(("↑↓".into(), "value".into())),
                 _ => {}
             }
@@ -526,7 +611,36 @@ mod tests {
             active_tab: tab,
             secondary_focus,
             visible_workspace: crate::workspace::VisibleWorkspace::None,
+            #[cfg(feature = "tui-interact")]
+            field_list_subfocus: None,
         }
+    }
+
+    #[cfg(feature = "tui-interact")]
+    #[test]
+    fn context_hints_field_list_list_focus_shows_tab_to_field() {
+        let hints = context_hints_for(&FocusContext {
+            input_mode: InputMode::ChartSearch,
+            active_tab: Tab::Charts,
+            secondary_focus: SecondaryFocus::None,
+            visible_workspace: crate::workspace::VisibleWorkspace::None,
+            field_list_subfocus: Some(crate::focus_context::FieldListSubFocus::List),
+        });
+        assert!(hints.iter().any(|(k, d)| k == "Tab" && d == "field"));
+        assert!(hints.iter().any(|(k, d)| k == "↑↓" && d == "list"));
+    }
+
+    #[cfg(feature = "tui-interact")]
+    #[test]
+    fn context_hints_field_list_field_shows_tab_to_list() {
+        let hints = context_hints_for(&FocusContext {
+            input_mode: InputMode::ChartSearch,
+            active_tab: Tab::Charts,
+            secondary_focus: SecondaryFocus::None,
+            visible_workspace: crate::workspace::VisibleWorkspace::None,
+            field_list_subfocus: Some(crate::focus_context::FieldListSubFocus::Field),
+        });
+        assert!(hints.iter().any(|(k, d)| k == "Tab" && d == "list"));
     }
 
     #[test]
@@ -565,6 +679,7 @@ mod tests {
         assert!(ids.contains(&"split_pane"));
         assert!(ids.contains(&"log_panel"));
         assert!(ids.contains(&"tree_panel"));
+        assert!(ids.contains(&"theme_cycle"));
 
         let help = commands.iter().find(|c| c.id == "help").unwrap();
         assert!(help.keys.iter().any(|k| k == "?"));
@@ -579,7 +694,11 @@ mod tests {
 
     #[test]
     fn test_context_hints_edit_includes_tab_charts() {
-        let hints = context_hints_for(&fc(InputMode::ChartSearch, Tab::Charts, SecondaryFocus::None));
+        let hints = context_hints_for(&fc(
+            InputMode::ChartSearch,
+            Tab::Charts,
+            SecondaryFocus::None,
+        ));
         assert!(hints.iter().any(|(k, _)| k == "↑↓"));
     }
 

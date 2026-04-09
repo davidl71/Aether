@@ -4,10 +4,9 @@
 //! mutating state here except via explicit callbacks (e.g. the command palette).
 
 pub(crate) mod alerts;
-mod chrome_layout;
 mod candlestick;
-mod text_trunc;
 pub mod charts;
+mod chrome_layout;
 mod dashboard;
 mod discount_bank;
 pub mod feedback;
@@ -15,6 +14,7 @@ mod loans;
 pub mod logs;
 mod orders;
 mod positions;
+mod text_trunc;
 pub(crate) mod tree_panel;
 pub use positions::positions_display_info;
 pub(crate) use positions::sort_positions_for_operator;
@@ -80,7 +80,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
     if paint_layered {
         render_toast_area(f, &app.toast_manager, f.area());
         if app.show_help {
-            render_help_overlay(f, f.area());
+            render_help_overlay(f, app, f.area());
         }
         if app.show_log_panel {
             render_log_panel_overlay(f, app, f.area());
@@ -91,7 +91,12 @@ pub fn render(f: &mut Frame, app: &mut App) {
         if let Some(ref content) = app.detail_popup {
             render_detail_overlay(f, f.area(), content);
         }
-        crate::discoverability::render_command_palette(f, &app.command_palette, f.area());
+        crate::discoverability::render_command_palette(
+            f,
+            &app.command_palette,
+            app.config.theme,
+            f.area(),
+        );
     }
 
     app.dirty_flags.clear_all();
@@ -427,12 +432,50 @@ fn render_split_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceS
     positions::render_positions_panel(f, app, chunks[1]);
 }
 
-fn workspace_banner(spec: WorkspaceSpec, focus_label: &str) -> Paragraph<'static> {
-    let extra_hint = match spec.kind {
-        VisibleWorkspace::Market => "  |  Scroll: pane under cursor",
+fn workspace_banner(spec: WorkspaceSpec, focus_label: &str, max_width: u16) -> Paragraph<'static> {
+    let extra_hint: &'static str = match spec.kind {
+        VisibleWorkspace::Market if max_width >= 140 => "  |  Wheel: pane under cursor",
+        VisibleWorkspace::Market if max_width >= 110 => "  |  Wheel→pane",
+        VisibleWorkspace::Market => " |^v",
         _ => "",
     };
 
+    let focus_cap = (max_width as usize)
+        .saturating_sub(38)
+        .saturating_sub(extra_hint.chars().count())
+        .clamp(6, 80);
+    let focus_display = text_trunc::truncate_chars(focus_label, focus_cap);
+
+    let summary_cap = (max_width as usize)
+        .saturating_sub(26)
+        .saturating_sub(focus_display.chars().count())
+        .saturating_sub(extra_hint.chars().count())
+        .max(10);
+    let summary_display = text_trunc::truncate_chars(spec.summary, summary_cap);
+
+    let line = Line::from(vec![
+        Span::styled(
+            format!(" {} ", spec.title),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(format!("{}  |  Focus: ", summary_display)),
+        Span::styled(
+            focus_display,
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(format!("  |  Tab/Shift-Tab cycles panes{}", extra_hint)),
+    ]);
+
+    if line.width() <= max_width as usize || max_width < 24 {
+        return Paragraph::new(line);
+    }
+
+    let tight_focus = text_trunc::truncate_chars(focus_label, 10);
+    let tight_summary = text_trunc::truncate_chars(spec.summary, 18);
     Paragraph::new(Line::from(vec![
         Span::styled(
             format!(" {} ", spec.title),
@@ -440,21 +483,24 @@ fn workspace_banner(spec: WorkspaceSpec, focus_label: &str) -> Paragraph<'static
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw(format!("{}  |  Focus: ", spec.summary)),
+        Span::raw(format!("{} | ", tight_summary)),
         Span::styled(
-            focus_label.to_string(),
+            tight_focus,
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw(format!("  |  Tab/Shift-Tab cycles panes{}", extra_hint)),
+        Span::raw(" | Tab panes"),
     ]))
 }
 
 fn render_market_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
     let (banner_row, body) = workspace_outer_rows(area);
 
-    f.render_widget(workspace_banner(spec, &app.focus_label()), banner_row);
+    f.render_widget(
+        workspace_banner(spec, &app.focus_label(), banner_row.width),
+        banner_row,
+    );
 
     let rows = Layout::default()
         .direction(Direction::Vertical)
@@ -462,11 +508,11 @@ fn render_market_workspace(f: &mut Frame, app: &App, area: Rect, spec: Workspace
         .split(body);
     let top = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(52), Constraint::Percentage(48)])
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(rows[0]);
     let bottom = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(48), Constraint::Percentage(52)])
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(rows[1]);
 
     dashboard::render_dashboard_panel(f, app, top[0]);
@@ -478,11 +524,14 @@ fn render_market_workspace(f: &mut Frame, app: &App, area: Rect, spec: Workspace
 fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
     let (banner_row, body) = workspace_outer_rows(area);
 
-    f.render_widget(workspace_banner(spec, &app.focus_label()), banner_row);
+    f.render_widget(
+        workspace_banner(spec, &app.focus_label(), banner_row.width),
+        banner_row,
+    );
 
     let columns = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(38), Constraint::Percentage(62)])
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
         .split(body);
     let left = Layout::default()
         .direction(Direction::Vertical)
@@ -507,7 +556,10 @@ fn render_credit_workspace(f: &mut Frame, app: &App, area: Rect, spec: Workspace
     } else {
         (48, 52)
     };
-    f.render_widget(workspace_banner(spec, &app.focus_label()), banner_row);
+    f.render_widget(
+        workspace_banner(spec, &app.focus_label(), banner_row.width),
+        banner_row,
+    );
 
     let panes = Layout::default()
         .direction(Direction::Horizontal)
@@ -732,13 +784,14 @@ fn render_detail_overlay(f: &mut Frame, area: Rect, content: &DetailPopupContent
 
 /// Centered modal keybinding reference (`?` / ⌘/ to open; any key closes). Keep in sync with
 /// `docs/TUI_ARCHITECTURE.md` § Help overlay; update hint bar / `discoverability::context_hints_for` when bindings change.
-fn render_help_overlay(f: &mut Frame, area: Rect) {
+fn render_help_overlay(f: &mut Frame, app: &App, area: Rect) {
+    let p = app.ui_palette();
     let lines = vec![
         Line::from(""),
         Line::from(Span::styled(
             " Key bindings ",
             Style::default()
-                .fg(Color::Yellow)
+                .fg(p.help_title)
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
@@ -770,7 +823,7 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         Line::from(vec![
             Span::styled(" macOS ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(
-                "⌘, Settings  ⌘/ help  ⌘⇧P palette  ⌘0 Settings  ⌘1–⌘9 = digit jumps  ⌘p split  ⌘r refresh  ⌘w close",
+                "⌘, Settings  ⌘/ help  ⌘⇧P palette  ⌘⇧T theme  ⌘0 Settings  ⌘1–⌘9 = digit jumps  ⌘p split  ⌘r refresh  ⌘w close",
             ),
         ]),
         Line::from(vec![
@@ -790,6 +843,8 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::raw("split pane  "),
             Span::styled(" f ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("FMP (Dash/Pos) or snapshot refresh (other tabs)  "),
+            Span::styled(" Ctrl+T ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("theme (TUI_THEME)  "),
             Span::styled(" Esc ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("close overlay / filter / etc."),
         ]),
@@ -821,7 +876,7 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::styled(" Orders ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("/ filter  Esc clear  "),
+            Span::raw("/ filter  / again exits empty filter  Esc clear  "),
             Span::styled(" x ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("cancel  "),
             Span::styled(" Disc ", Style::default().add_modifier(Modifier::BOLD)),
@@ -875,7 +930,7 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
     let block = Block::default()
         .title(" Help ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Cyan));
+        .border_style(Style::default().fg(p.accent));
     let area = centered_rect(86, 34, area);
     f.render_widget(ratatui::widgets::Clear, area);
     f.render_widget(inner.block(block), area);

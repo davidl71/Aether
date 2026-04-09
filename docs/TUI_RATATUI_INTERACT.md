@@ -85,7 +85,7 @@ Use `ClickRegionRegistry` / mouse helpers from the crate; keep keyboard path on 
 
 ## 4. Follow-up work
 
-1. Optional UI hint for which sub-region is focused (field vs list) on chart search, orders filter, palette, or import path.  
+1. **Status bar hints (done):** With `--features tui-interact`, [`FocusContext`](../agents/backend/services/tui_service/src/focus_context.rs) carries `field_list_subfocus`; [`context_hints_for`](../agents/backend/services/tui_service/src/discoverability.rs) shows **Tab** → list/field and **↑↓** on list where applicable (chart search, orders filter, palette, loan import).  
 2. Optional `app_tests` key sequences for Tab order when the feature is enabled in CI.  
 3. Optional: extend **loan form** (`LoanForm`) with `FieldListFocus` if a list-adjacent sub-pane is added.
 

@@ -19,6 +19,7 @@
 //!   TICK_MS               UI redraw interval ms (default: 250)
 //!   SNAPSHOT_TTL_SECS     Seconds before data is shown as stale (default: 30)
 //!   TUI_POSITIONS_SORT    Positions tab order: as_received | symbol | pnl (default: as_received)
+//!   TUI_THEME             default | high_contrast (palette; Settings row or Ctrl+T / macOS ⌘⇧T toggle)
 //!   TUI_STRATEGY_NATS_SUBSCRIBE  Enable diagnostic subscriptions (default: off). See `config` module docs.
 //!   TUI_STRATEGY_NATS_SIGNAL_SUBJECT   Override signal wildcard (default: strategy.signal.>)
 //!   TUI_STRATEGY_NATS_DECISION_SUBJECT Override decision wildcard (default: strategy.decision.>)
@@ -80,9 +81,9 @@ mod dirty_flags;
 mod discoverability;
 mod events;
 mod expiry_buckets;
-mod focus_context;
 #[cfg(feature = "tui-interact")]
 mod field_list_focus;
+mod focus_context;
 mod input;
 mod input_loans;
 mod input_settings;
@@ -97,6 +98,7 @@ mod option_symbol;
 mod pane;
 mod portfolio_summary;
 mod scrollable_table;
+mod theme_palette;
 #[cfg(feature = "tui-interact")]
 mod tui_interact;
 mod ui;

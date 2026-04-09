@@ -5,6 +5,29 @@
 //!
 //! If no bit is set, [`crate::ui::render`] paints the full frame (tests and paths
 //! that only set [`crate::app::App::needs_redraw`]).
+//!
+//! # Baseline render / tick cost (what to measure)
+//!
+//! - **Frame cost:** Wall time for `terminal.draw(|f| ui::render(f, app))` in
+//!   `run_loop` (`main.rs`). That includes ratatui buffer diff + stdout flush;
+//!   compare runs with `dirty_flags` all-dirty vs selective flags after typical input.
+//! - **Tick cost:** Time inside [`crate::app::App::tick`] (polling, snapshot merge,
+//!   spinners). Driven on the interval from `app.config.tick_ms` / env `TICK_MS`
+//!   in the same loop.
+//! - **Redraw frequency:** How often `app.needs_redraw` is true per wall-clock second
+//!   (full draws skipped when false at the top of the loop).
+//!
+//! # Where hooks live
+//!
+//! - **Consume flags / clear:** [`crate::ui::render`] reads `app.dirty_flags`, decides
+//!   which `render_*` branches run, then calls [`DirtyFlags::clear_all`].
+//! - **Produce flags:** [`crate::app::App::mark_dirty`] (full frame) and
+//!   [`crate::app::App::mark_regions`] (partial); input paths use
+//!   [`crate::mark_dirty_for_action!`] in [`crate::app::App::handle_action`].
+//! - **Async updates:** [`crate::app_updates`] and various `set_*` handlers call
+//!   `mark_regions` when data arrives.
+//! - **Gate:** Only when [`crate::app::App::needs_redraw`] is true does the loop call
+//!   `terminal.draw`; dirty regions further narrow work inside `ui::render`.
 
 /// Flags indicating which UI regions need redrawing.
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -147,6 +170,9 @@ macro_rules! mark_dirty_for_action {
     ($flags:expr, PositionsToggleCombo | PositionsCycleSort | OrdersFilterFocus | OrdersFilterChar(_) | OrdersFilterBackspace | OrdersFilterClear | OrdersFilterFocusNext | OrdersFilterFocusPrev) => {
         $flags.mark_content();
         $flags.mark_hint_bar()
+    };
+    ($flags:expr, ThemeCycle) => {
+        $flags.mark_all()
     };
     ($flags:expr, ToggleLogPanel | ToggleTreePanel) => {
         $flags.mark_overlay()

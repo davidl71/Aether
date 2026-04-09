@@ -933,6 +933,31 @@ impl App {
             active_tab: self.active_tab,
             secondary_focus: self.secondary_focus(),
             visible_workspace: self.visible_workspace(),
+            #[cfg(feature = "tui-interact")]
+            field_list_subfocus: self.field_list_subfocus_for_hints(),
+        }
+    }
+
+    #[cfg(feature = "tui-interact")]
+    fn field_list_subfocus_for_hints(&self) -> Option<crate::focus_context::FieldListSubFocus> {
+        use crate::field_list_focus::FieldListRegion;
+        use crate::focus_context::FieldListSubFocus;
+
+        let map = |r: FieldListRegion| match r {
+            FieldListRegion::Field => FieldListSubFocus::Field,
+            FieldListRegion::List => FieldListSubFocus::List,
+        };
+
+        match self.input_mode() {
+            InputMode::ChartSearch if self.chart_search_visible => {
+                self.chart_search_interact.focused_region().map(map)
+            }
+            InputMode::OrdersFilter => self.orders_filter_interact.focused_region().map(map),
+            InputMode::CommandPalette if self.command_palette.visible => {
+                self.command_palette_interact.focused_region().map(map)
+            }
+            InputMode::LoanImportPath => self.loan_import_interact.focused_region().map(map),
+            _ => None,
         }
     }
 
@@ -947,6 +972,11 @@ impl App {
         self.watchlist_override
             .as_deref()
             .unwrap_or(&self.config.watchlist)
+    }
+
+    /// Active UI colors for [`crate::config::TuiTheme`] (env / config / in-TUI overrides).
+    pub fn ui_palette(&self) -> crate::theme_palette::UiPalette {
+        crate::theme_palette::UiPalette::from_theme(self.config.theme)
     }
 
     pub fn input_mode(&self) -> InputMode {
