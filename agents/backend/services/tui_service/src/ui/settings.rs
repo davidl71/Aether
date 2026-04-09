@@ -61,9 +61,11 @@ pub(crate) fn settings_layout(area: Rect) -> SettingsLayout {
 }
 
 /// Like `settings_layout`, but tuned for narrower panes (e.g. the Operations workspace
-/// settings column) so we still get the 2-column layout in typical terminals.
+/// settings column). Threshold is lower than the full tab so paired with
+/// `operations_workspace_column_constraints` the inner health/config grid still fits on
+/// laptop-width frames.
 pub(crate) fn settings_layout_embedded(area: Rect) -> SettingsLayout {
-    settings_layout_with_min_width(area, 92)
+    settings_layout_with_min_width(area, 78)
 }
 
 /// Distribute `total` rows across the four stacked Settings sections (config, symbols,
@@ -81,9 +83,8 @@ fn settings_stacked_mid_heights(total: u16) -> [u16; 4] {
 
 fn settings_layout_with_min_width(area: Rect, wide_min_width: u16) -> SettingsLayout {
     // "Wide" layout is used both for the full Settings tab and for embedded
-    // Settings panes (e.g. Operations workspace right column). Keep the
-    // threshold low enough that the embedded pane can still use the 2-column
-    // layout in a reasonably wide terminal.
+    // Settings panes (e.g. Operations workspace right column). Embedded callers
+    // pass a lower `wide_min_width` and `ui::mod` biases column % so both fit.
     let wide_layout = area.width >= wide_min_width && area.height >= 18;
     if wide_layout {
         let rows = Layout::default()
@@ -251,7 +252,9 @@ pub(super) fn truncate(s: &str, max: usize) -> String {
 
 #[cfg(test)]
 mod settings_layout_tests {
-    use super::settings_stacked_mid_heights;
+    use ratatui::layout::Rect;
+
+    use super::{settings_layout_embedded, settings_stacked_mid_heights};
 
     #[test]
     fn stacked_mid_heights_sum_to_total() {
@@ -260,5 +263,27 @@ mod settings_layout_tests {
             let sum: u16 = h.iter().sum();
             assert_eq!(sum, t, "t={t} -> {h:?}");
         }
+    }
+
+    #[test]
+    fn embedded_stacked_when_narrow_width() {
+        let layout = settings_layout_embedded(Rect::new(0, 0, 77, 24));
+        assert_eq!(
+            layout.health.x, layout.config.x,
+            "stacked: config below health, same column"
+        );
+        assert!(
+            layout.config.y > layout.health.y,
+            "expected config panel below health in stacked mode"
+        );
+    }
+
+    #[test]
+    fn embedded_wide_when_width_at_threshold() {
+        let layout = settings_layout_embedded(Rect::new(0, 0, 78, 24));
+        assert!(
+            layout.health.x < layout.config.x,
+            "wide: health and config share top row side by side"
+        );
     }
 }

@@ -522,6 +522,23 @@ fn render_market_workspace(f: &mut Frame, app: &App, area: Rect, spec: Workspace
     yield_curve::render_yield_curve_panel(f, app, bottom[1]);
 }
 
+/// Horizontal split for Operations workspace body (alerts/logs | Settings).
+/// Biases width to the Settings column when the frame is narrow so embedded
+/// Settings can keep its internal wide (2-column) layout; see `settings_layout_embedded`.
+fn operations_workspace_column_constraints(body_width: u16) -> [Constraint; 2] {
+    let (left_pct, right_pct) = if body_width < 118 {
+        (22, 78)
+    } else if body_width < 150 {
+        (32, 68)
+    } else {
+        (40, 60)
+    };
+    [
+        Constraint::Percentage(left_pct),
+        Constraint::Percentage(right_pct),
+    ]
+}
+
 fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
     let (banner_row, body) = workspace_outer_rows(area);
 
@@ -532,7 +549,7 @@ fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: Works
 
     let columns = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
+        .constraints(operations_workspace_column_constraints(body.width))
         .split(body);
     let left = Layout::default()
         .direction(Direction::Vertical)

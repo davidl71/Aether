@@ -19,8 +19,9 @@ Use a fixed width (e.g. 120 cols); vary **rows**:
 | Width | Expect |
 |-------|--------|
 | ≥110, h≥18 | Wide layout on full tab. |
-| 92–109 | Stacked; embedded Operations column uses `settings_layout_embedded` threshold 92. |
-| &lt;92 | Stacked; truncation helpers apply in section bodies. |
+| 78–109 (embedded pane) | At height ≥18, embedded Operations Settings uses wide inner layout when pane width ≥78 (`settings_layout_embedded`). |
+| &lt;78 (embedded) | Stacked; truncation helpers apply in section bodies. |
+| Operations body | Narrow frames bias **22/78** or **32/68** (alerts·logs | Settings) so the right column can reach the embedded threshold. |
 
 ## Spot checks
 
