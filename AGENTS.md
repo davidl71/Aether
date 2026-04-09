@@ -354,7 +354,7 @@ hygiene, and thread-splitting defaults used in this repo.
 
 ## Learned User Preferences
 
-- After changing task status in the DB or via exarp-go, run **`./scripts/run_exarp_go.sh task sync`** so **`.todo2/state.todo2.json`** and JSON-backed views stay aligned with **`.todo2/todo2.db`**.
+- **`task sync`:** Run **`./scripts/run_exarp_go.sh task sync`** when **`.todo2/state.todo2.json`** (or other JSON-backed views) must match SQLite—for example after **bulk** edits, imports, or when DB and JSON clearly diverge—not after **every** single **`task update`**. Routine checks use **`task list`**, **`task status`**, or MCP against the DB; avoid habitually syncing after each small change.
 - Prefer **`exarp-go` `task list` / `doctor`** (via **`./scripts/run_exarp_go.sh`** with the right cwd / **`PROJECT_ROOT`**) over ad-hoc **`sqlite3`** on **`.todo2/todo2.db`** for routine backlog reads; reserve raw SQL for schema or debugging.
 
 ## Learned Workspace Facts
