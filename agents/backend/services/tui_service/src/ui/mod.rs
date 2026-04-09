@@ -502,17 +502,18 @@ fn render_market_workspace(f: &mut Frame, app: &App, area: Rect, spec: Workspace
         banner_row,
     );
 
+    // Keep splits in sync with `mouse::market_workspace_tab_at_point` (asymmetric grid).
     let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(body);
     let top = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .constraints([Constraint::Percentage(52), Constraint::Percentage(48)])
         .split(rows[0]);
     let bottom = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .constraints([Constraint::Percentage(48), Constraint::Percentage(52)])
         .split(rows[1]);
 
     dashboard::render_dashboard_panel(f, app, top[0]);
