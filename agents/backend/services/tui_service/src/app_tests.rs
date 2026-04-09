@@ -1115,14 +1115,24 @@ fn settings_health_scroll_down_advances_nested_focus_before_next_section() {
 fn orders_tab_renders_filter_mode_cues() {
     let (mut app, _, _) = make_app();
     let mut snap = make_snapshot();
-    snap.inner.orders = vec![OrderSnapshot {
-        id: "ord-1".into(),
-        symbol: "SPY".into(),
-        side: "BUY".into(),
-        quantity: 3,
-        status: "Submitted".into(),
-        submitted_at: Utc::now(),
-    }];
+    snap.inner.orders = vec![
+        OrderSnapshot {
+            id: "ord-1".into(),
+            symbol: "SPY".into(),
+            side: "BUY".into(),
+            quantity: 3,
+            status: "Submitted".into(),
+            submitted_at: Utc::now(),
+        },
+        OrderSnapshot {
+            id: "ord-2".into(),
+            symbol: "SPY".into(),
+            side: "SELL".into(),
+            quantity: 1,
+            status: "Filled".into(),
+            submitted_at: Utc::now(),
+        },
+    ];
     snap.refresh_display_dto();
     app.set_snapshot(Some(snap));
     app.active_tab = Tab::Orders;
@@ -1135,10 +1145,12 @@ fn orders_tab_renders_filter_mode_cues() {
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("Orders [FILTER]"));
-    assert!(content.contains("symbol/status/side"));
+    assert!(content.contains("Filter [typing]") || content.contains("Filter (typing)"));
     assert!(content.contains("SPY"));
     assert!(content.contains("By status:"));
-    assert!(content.contains("Submitted:1"));
+    assert!(content.contains("By side:"));
+    assert!(content.contains("buy"));
+    assert!(content.contains("sell"));
 }
 
 #[test]

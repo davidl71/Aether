@@ -257,6 +257,14 @@ fn build_command_registry() -> Vec<Command> {
         Command::new("jump_orders", "Jump to Orders", Action::JumpToTab(4))
             .description("Jump to Orders tab")
             .keys(vec!["4".into(), "⌘4".into()]),
+        Command::new(
+            "orders_filter_focus",
+            "Orders: filter focus",
+            Action::OrdersFilterFocus,
+        )
+        .description("Type to filter orders by symbol, status, or side (read-only list)")
+        .keys(vec!["/".into(), "i".into()])
+        .tabs(vec![Tab::Orders]),
         Command::new("jump_alerts", "Jump to Alerts", Action::JumpToTab(5))
             .description("Jump to Alerts tab")
             .keys(vec!["5".into(), "⌘5".into()]),
@@ -426,7 +434,7 @@ pub(crate) fn context_hints_for(ctx: &FocusContext) -> Vec<(String, String)> {
                     hints.push(("Enter".into(), "detail".into()));
                 }
                 Tab::Orders => {
-                    hints.push(("/".into(), "filter".into()));
+                    hints.push(("/ · i".into(), "filter".into()));
                     #[cfg(feature = "tui-interact")]
                     hints.push(("Tab".into(), "field/table".into()));
                 }
@@ -684,6 +692,14 @@ mod tests {
         let help = commands.iter().find(|c| c.id == "help").unwrap();
         assert!(help.keys.iter().any(|k| k == "?"));
         assert!(help.keys.iter().any(|k| k == "⌘/"));
+
+        let orders_filter = commands
+            .iter()
+            .find(|c| c.id == "orders_filter_focus")
+            .expect("orders filter palette command");
+        assert!(orders_filter.tabs.contains(&Tab::Orders));
+        assert!(orders_filter.keys.iter().any(|k| k == "/"));
+        assert!(orders_filter.keys.iter().any(|k| k == "i"));
     }
 
     #[test]

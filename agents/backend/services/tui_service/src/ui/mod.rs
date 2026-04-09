@@ -12,10 +12,10 @@ mod discount_bank;
 pub mod feedback;
 mod loans;
 pub mod logs;
+mod numeric_format;
 mod orders;
 mod positions;
 mod text_trunc;
-mod numeric_format;
 pub(crate) mod tree_panel;
 pub use positions::positions_display_info;
 pub(crate) use positions::sort_positions_for_operator;
@@ -30,7 +30,7 @@ use feedback::render_toast_area;
 #[cfg(test)]
 pub(crate) use yield_curve::render_yield_curve as render_yield_curve_tab;
 
-use chrome_layout::split_vertical_chrome;
+use chrome_layout::{split_vertical_chrome, split_workspace_outer_rows};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -403,17 +403,8 @@ fn render_operations_tab(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(logs_widget, rows[1]);
 }
 
-/// Single-line workspace banner row plus remaining content (shared by split + tile workspaces).
-fn workspace_outer_rows(area: Rect) -> (Rect, Rect) {
-    let outer = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(1), Constraint::Min(0)])
-        .split(area);
-    (outer[0], outer[1])
-}
-
 fn render_split_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
-    let (banner_row, body) = workspace_outer_rows(area);
+    let (banner_row, body) = split_workspace_outer_rows(area);
     let split_label = Paragraph::new(Line::from(vec![
         Span::styled(
             format!(" {} ", spec.title),
@@ -496,7 +487,7 @@ fn workspace_banner(spec: WorkspaceSpec, focus_label: &str, max_width: u16) -> P
 }
 
 fn render_market_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
-    let (banner_row, body) = workspace_outer_rows(area);
+    let (banner_row, body) = split_workspace_outer_rows(area);
 
     f.render_widget(
         workspace_banner(spec, &app.focus_label(), banner_row.width),
@@ -541,7 +532,7 @@ fn operations_workspace_column_constraints(body_width: u16) -> [Constraint; 2] {
 }
 
 fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
-    let (banner_row, body) = workspace_outer_rows(area);
+    let (banner_row, body) = split_workspace_outer_rows(area);
 
     f.render_widget(
         workspace_banner(spec, &app.focus_label(), banner_row.width),
@@ -568,7 +559,7 @@ fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: Works
 }
 
 fn render_credit_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
-    let (banner_row, body) = workspace_outer_rows(area);
+    let (banner_row, body) = split_workspace_outer_rows(area);
 
     let (loans_width, bank_width) = if app.active_tab == Tab::Loans {
         (52, 48)
@@ -1065,7 +1056,7 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         PaneHintMode::Orders => {
             spans.push(Span::raw("  "));
             spans.push(Span::styled(
-                "/",
+                "/·i",
                 Style::default().add_modifier(Modifier::BOLD),
             ));
             spans.push(Span::raw(

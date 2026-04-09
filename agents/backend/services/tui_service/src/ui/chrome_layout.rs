@@ -10,6 +10,20 @@ pub const TAB_BAR_HEIGHT: u16 = 3;
 pub const HINT_BAR_HEIGHT: u16 = 1;
 /// Status bar (single row).
 pub const STATUS_BAR_HEIGHT: u16 = 1;
+/// Single-line workspace banner (title / summary) above workspace body tiles.
+pub const WORKSPACE_BANNER_ROW_HEIGHT: u16 = 1;
+
+/// Split `area` into `(banner_row, body)` for tiled workspaces (Market, Operations, Credit, Split).
+pub fn split_workspace_outer_rows(area: Rect) -> (Rect, Rect) {
+    let outer = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(WORKSPACE_BANNER_ROW_HEIGHT),
+            Constraint::Min(0),
+        ])
+        .split(area);
+    (outer[0], outer[1])
+}
 
 /// Split `area` into `[tab_bar, main, hint_bar, status_bar]`.
 pub fn split_vertical_chrome(area: Rect) -> [Rect; 4] {
@@ -41,5 +55,14 @@ mod tests {
         assert_eq!(main.y + main.height, hint.y);
         assert_eq!(hint.y + hint.height, status.y);
         assert_eq!(status.y + status.height, area.y + area.height);
+    }
+
+    #[test]
+    fn split_workspace_banner_then_body() {
+        let area = Rect::new(0, 0, 80, 20);
+        let (banner, body) = split_workspace_outer_rows(area);
+        assert_eq!(banner.height, WORKSPACE_BANNER_ROW_HEIGHT);
+        assert_eq!(banner.y + banner.height, body.y);
+        assert_eq!(body.y + body.height, area.y + area.height);
     }
 }

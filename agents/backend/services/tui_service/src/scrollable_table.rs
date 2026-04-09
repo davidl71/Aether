@@ -4,8 +4,38 @@
 //! [`ScrollableTableState::scroll`] field is the first visible row when implementing a viewport.
 //! Alerts use [`ScrollableTableState::shift_scroll`] on `scroll` only (paragraph-style list).
 //!
-//! **Invariant:** after the underlying row list shrinks or is replaced, call [`ScrollableTableState::clamp_to_len`]
-//! so `selected` / `scroll` stay valid before the next render or key handler.
+//! # Single owner on [`crate::app::App`]
+//!
+//! Each pane keeps **one** [`ScrollableTableState`] on [`crate::app::App`] (for example
+//! `positions_table`, `orders_table`, `dashboard_table`). That struct is the source of truth for
+//! both cursor and viewport offset for that pane. **Do not** duplicate `selected` / `scroll` in
+//! render-only or input-local state; read and update the `App` field (or pass a `&mut` to it) so
+//! navigation, mouse, and draw agree on the same indices.
+//!
+//! # [`ScrollableTableState::clamp_to_len`] vs [`ScrollableTableState::adjust_scroll`]
+//!
+//! - **`clamp_to_len(len)`** — Run when the **logical row count** changes: new snapshot, filter
+//!   tightening, combo expand/collapse, or any event that changes how many rows exist for the
+//!   pane. It clamps `selected` to `0..len` (or zeros both when `len == 0`) and then ensures
+//!   `scroll <= selected` so the viewport anchor stays consistent. It does **not** grow the
+//!   visible window; it only repairs indices after the list shrinks or is replaced.
+//!
+//! - **`adjust_scroll(visible_height)`** — Run when the **viewport height in rows** changes
+//!   (terminal resize → recompute `visible_height` from layout) or after moving `selected` while
+//!   using a scrolling window. It only moves `scroll` so `selected` lies inside the visible range
+//!   `[scroll, scroll + visible_height)` (no-op if `visible_height == 0`). It assumes indices
+//!   are already valid for the current list length; if the list might have shrunk, call
+//!   `clamp_to_len` **first**, then `adjust_scroll`.
+//!
+//! **Invariant:** after the underlying row list shrinks or is replaced, call `clamp_to_len` so
+//! `selected` / `scroll` stay valid before the next render or key handler.
+//!
+//! # Resize behavior
+//!
+//! On terminal resize, layout code typically produces a new `visible_height`. If the row count
+//! for that pane may have changed in the same tick (e.g. snapshot update), apply **`clamp_to_len`
+//! then `adjust_scroll`**. If only geometry changed, **`adjust_scroll` alone** is enough. Order
+//! matters: clamping after adjusting scroll can leave a stale `selected` past the new `len`.
 
 /// Clamp a possibly-out-of-range selected index to a list length.
 ///

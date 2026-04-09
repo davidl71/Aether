@@ -290,14 +290,12 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
                                 .add_modifier(Modifier::BOLD)
                                 .patch(base_style),
                         ),
-                        Cell::from(
-                            Line::from(pad_left(qty_col_w, qty.as_str())).right_aligned(),
-                        )
-                        .style(
-                            Style::default()
-                                .add_modifier(Modifier::BOLD)
-                                .patch(base_style),
-                        ),
+                        Cell::from(Line::from(pad_left(qty_col_w, qty.as_str())).right_aligned())
+                            .style(
+                                Style::default()
+                                    .add_modifier(Modifier::BOLD)
+                                    .patch(base_style),
+                            ),
                         Cell::from(Line::from(cost).right_aligned()).style(
                             Style::default()
                                 .add_modifier(Modifier::BOLD)
@@ -328,7 +326,7 @@ pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
                         Cell::from(
                             Line::from(pad_left(qty_col_w, qty_str.as_str())).right_aligned(),
                         )
-                            .style(base_style),
+                        .style(base_style),
                         Cell::from(Line::from(fmt_money(pos.cost_basis)).right_aligned())
                             .style(base_style),
                         Cell::from(Line::from(fmt_money(pos.mark)).right_aligned())

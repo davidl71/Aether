@@ -136,6 +136,9 @@ fn orders_key_action(app: &App, key: KeyCode, input_mode: InputMode) -> Option<A
         (KeyCode::PageDown, _) => Some(Action::OrdersScrollPageDown),
         (KeyCode::Enter, _) => Some(Action::OrdersDetail),
         (KeyCode::Char('x') | KeyCode::Char('X'), _) => Some(Action::OrdersCancel),
+        (KeyCode::Char('i') | KeyCode::Char('I'), InputMode::Normal) => {
+            Some(Action::OrdersFilterFocus)
+        }
         (KeyCode::Char('/'), InputMode::OrdersFilter) => {
             #[cfg(feature = "tui-interact")]
             if !app.orders_filter_interact.allows_field_edit() {

@@ -34,40 +34,66 @@ fn order_status_rollup_line(app: &App) -> Option<String> {
     Some(format!("By status: {}", parts.join("  ")))
 }
 
+/// Pilot: buy vs sell counts for the current filtered list (read-only grouping summary).
+fn order_side_rollup_line(app: &App) -> Option<String> {
+    let snap = app.snapshot().as_ref()?;
+    let filtered = app.filtered_orders(snap);
+    if filtered.is_empty() {
+        return None;
+    }
+    let mut buy = 0usize;
+    let mut sell = 0usize;
+    let mut other = 0usize;
+    for o in &filtered {
+        match o.side.as_str() {
+            "BUY" => buy += 1,
+            "SELL" => sell += 1,
+            _ => other += 1,
+        }
+    }
+    if other == 0 {
+        Some(format!("By side: {buy} buy / {sell} sell"))
+    } else {
+        Some(format!("By side: {buy} buy / {sell} sell / {other} other"))
+    }
+}
+
 pub fn render_orders_panel(f: &mut Frame, app: &App, area: Rect) {
     let pal = app.ui_palette();
-    let rollup = order_status_rollup_line(app);
-    let filter_text = orders_filter_caption(app);
-    let mut filter_block = filter_text;
-    if let Some(r) = &rollup {
-        filter_block.push('\n');
-        filter_block.push_str(r);
+    let mut filter_text = orders_filter_caption(app);
+    for rollup in [order_status_rollup_line(app), order_side_rollup_line(app)]
+        .into_iter()
+        .flatten()
+    {
+        filter_text.push('\n');
+        filter_text.push_str(&rollup);
     }
-    let filter_lines = filter_block.lines().count() as u16;
+    let filter_lines = filter_text.lines().count() as u16;
     // Title row + borders + text lines (compact; avoids clipping the rollup).
-    let filter_h = filter_lines.saturating_add(2).max(3).min(8);
+    let filter_h = filter_lines.saturating_add(2).max(3).min(10);
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(filter_h), Constraint::Min(0)])
         .split(area);
 
-    render_orders_filter(f, app, &pal, filter_block, chunks[0]);
+    render_orders_filter(f, app, &pal, filter_text, chunks[0]);
     render_orders_table(f, app, &pal, chunks[1]);
 }
 
 fn orders_filter_caption(app: &App) -> String {
     if app.order_filter.is_empty() {
         if app.order_filter_active {
-            "Filter mode: type symbol, status, or side; Esc clear; / exits when empty".to_string()
+            "Filter (typing) — match symbol, status, or side · Esc clears and exits · / exits when empty"
+                .to_string()
         } else {
-            "Filter: / to activate".to_string()
+            "Filter — press / or i to type (substring on symbol, status, side)".to_string()
         }
     } else {
         format!(
-            "Filter [{}]: {} (symbol/status/side substring; Esc clear; / exits when empty)",
+            "Filter [{}]: «{}» — Esc clears filter · / exits typing when buffer empty",
             if app.order_filter_active {
-                "ACTIVE"
+                "typing"
             } else {
                 "saved"
             },

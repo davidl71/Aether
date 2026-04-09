@@ -48,7 +48,7 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
                 app.orders_filter_interact.on_close();
                 app.command_success(
                     "orders_filter",
-                    "Filter mode off (/ to type again). Saved text kept until Esc.",
+                    "Filter mode off (/ or i to type again). Saved text kept until Esc clears.",
                 );
             } else {
                 app.order_filter_active = true;
@@ -56,7 +56,7 @@ pub(crate) fn apply_view_action(app: &mut App, action: Action) -> bool {
                 app.orders_filter_interact.on_open();
                 app.command_success(
                     "orders_filter",
-                    "Filter mode active: type symbol, status, or side; Esc clears; / exits when empty.",
+                    "Filter mode: type symbol, status, or side (/ or i to focus; Esc clears; / exits when empty).",
                 );
             }
         }

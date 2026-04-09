@@ -1,9 +1,56 @@
-//! Terminal feedback primitives: toasts, progress bars, status indicators
+//! Terminal feedback primitives: toasts, progress bars, status indicators.
 //!
-//! This module provides visual feedback mechanisms for the TUI:
-//! - Toast notifications with stacking and auto-dismiss
-//! - Progress bars for long-running operations
-//! - Status indicators for connection and operation state
+//! ## Toasts (`ToastManager`)
+//!
+//! Toasts are short-lived messages shown in the overlay (see [`render_toast_area`]).
+//!
+//! ### Queue caps (two layers)
+//!
+//! - **Visible cap** ([`MAX_VISIBLE_TOASTS`], currently 3): rendering and [`ToastManager::visible_toasts`]
+//!   return at most this many *active* (non-expired) toasts. When more are active, selection is
+//!   **severity-first** (errors win), then **newest** within the same level; see
+//!   [`ToastManager::visible_toasts`].
+//! - **Stored queue cap** ([`MAX_QUEUED_TOASTS`], currently 32): the backing deque never grows
+//!   beyond this length. [`ToastManager::push`] calls [`ToastManager::trim_queue`], which drops
+//!   the **oldest** entries when over cap. Expired toasts can still occupy slots until
+//!   [`ToastManager::cleanup_expired`] runs, so the cap bounds worst-case memory, not “only live
+//!   messages.”
+//!
+//! ### Dedupe
+//!
+//! [`ToastManager::push`] treats two messages as the same toast when their **normalized** text
+//! matches: whitespace runs are collapsed ([`normalize_toast_message`]). If an **active** toast
+//! matches, that entry is **refreshed** instead of appending: message text updates, severity becomes
+//! `max(old, new)`, TTL resets from “now” using [`ToastLevel::duration`], and the toast moves to the
+//! **back** of the queue. Empty normalized messages skip dedupe matching.
+//!
+//! ### TTL (time-to-live)
+//!
+//! Each toast stores [`Toast::expires_at`]. Durations come from [`ToastLevel::duration`]: default
+//! **4s** for non-error levels, **6s** for [`ToastLevel::Error`]. [`ToastManager::cleanup_expired`]
+//! removes expired entries; rendering uses only `expires_at > now` (see [`ToastManager::active_toasts`],
+//! [`ToastManager::visible_toasts`]).
+//!
+//! ### Single-threaded writer invariant
+//!
+//! [`ToastManager`] uses a plain [`VecDeque`] with no locking. The TUI expects **all** `push`,
+//! `dismiss`, and `cleanup_expired` calls to happen from the **same thread** that owns [`App`](crate::app::App)
+//! and runs the ratatui draw loop (typically the main event loop). Background tasks must **not**
+//! touch [`ToastManager`] directly; they send [`crate::events::AppEvent`] (or other messages) and let
+//! the UI thread apply them—today that path ends in [`crate::app::App::push_toast`].
+//!
+//! ### Future `AppEvent` path
+//!
+//! Call sites that want toasts from async code already converge on the channel + UI-thread handler
+//! pattern. A dedicated variant (e.g. a single `AppEvent` carrying message + level) could further
+//! centralize copy/paste and keep all toast policy in one `match` arm; until then, [`ToastManager`]
+//! remains the authoritative policy implementation and [`App::push_toast`](crate::app::App::push_toast)
+//! is the integration point.
+//!
+//! ## Other types
+//!
+//! - **Progress** ([`ProgressBar`], [`render_progress_bar`]): long-running operations.
+//! - **Status** ([`StatusIndicator`], [`render_status_line`]): compact connection/operation state.
 
 use ratatui::{
     layout::Rect,

@@ -1,6 +1,6 @@
 # TUI implementation backlog (planning)
 
-**Last updated:** 2026-04-05  
+**Last updated:** 2026-04-09  
 **Canonical context:** [`TUI_ARCHITECTURE.md`](./TUI_ARCHITECTURE.md), [`TUI_PANE_MODEL.md`](./TUI_PANE_MODEL.md)  
 **Scope:** design notes and checklists only — no large refactors implied.
 
@@ -9,7 +9,7 @@
 | T-1774817606420467000 | ScrollableTableState: API + ownership |
 | T-1774817606441825000 | Toasts: queue, policy, concurrency |
 | T-1774817606463474000 | Numeric columns: measurement helper API |
-| T-1774817606507094000 | Research: docs index survey (this file §5) |
+| T-1774817606507094000 | Research: stack survey [`TUI_RESEARCH_SURVEY.md`](./TUI_RESEARCH_SURVEY.md) (§5 index below) |
 | T-1774817606353005000 | Pane model: regression checklist |
 | T-1774807919706789000 | Shared layout / hint helpers (post–workspace split) |
 
@@ -66,10 +66,13 @@ Summary (see §7 for the full list):
 
 ## 5. Docs / README survey — TUI-related entries (T-1774817606507094000)
 
+**Dependency versions, upstream docs, MSRV, and maintenance notes:** see **[`TUI_RESEARCH_SURVEY.md`](./TUI_RESEARCH_SURVEY.md)** (ratatui / crossterm / tokio from `tui_service`’s `Cargo.toml`).
+
 Inventory of first-class **TUI** docs under `docs/` (excluding `docs/archive/` and deep `research/` unless listed).
 
 | Doc | Role |
 |-----|------|
+| [`TUI_RESEARCH_SURVEY.md`](./TUI_RESEARCH_SURVEY.md) | ratatui / crossterm / tokio versions, upstream links, MSRV, maintenance |
 | [`TUI_ARCHITECTURE.md`](./TUI_ARCHITECTURE.md) | Main loop, file map, planned phases |
 | [`TUI_PANE_MODEL.md`](./TUI_PANE_MODEL.md) | Focus, workspaces, scroll ownership |
 | [`TUI_INPUT_DECISION.md`](./TUI_INPUT_DECISION.md) | Input policy |

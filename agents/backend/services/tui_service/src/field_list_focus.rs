@@ -57,7 +57,9 @@ impl FieldListFocus {
     }
 }
 
-#[cfg(test)]
+// Integration with real widgets / terminal input is exercised manually; these tests only pin
+// the `FocusManager` wrapper contract (open/close, Tab order, `allows_field_edit`).
+#[cfg(all(test, feature = "tui-interact"))]
 mod tests {
     use super::*;
 
@@ -91,5 +93,53 @@ mod tests {
         assert_eq!(s.focused_region(), Some(FieldListRegion::Field));
         s.tab_next();
         assert_eq!(s.focused_region(), Some(FieldListRegion::List));
+    }
+
+    #[test]
+    fn before_on_open_no_region_and_field_edit_disabled() {
+        let s = FieldListFocus::new();
+        assert_eq!(s.focused_region(), None);
+        assert!(!s.allows_field_edit());
+    }
+
+    #[test]
+    fn tab_next_prev_before_on_open_is_safe_noop() {
+        let mut s = FieldListFocus::new();
+        s.tab_next();
+        s.tab_prev();
+        assert_eq!(s.focused_region(), None);
+        assert!(!s.allows_field_edit());
+    }
+
+    #[test]
+    fn prev_from_field_wraps_to_list() {
+        let mut s = FieldListFocus::new();
+        s.on_open();
+        assert_eq!(s.focused_region(), Some(FieldListRegion::Field));
+        s.tab_prev();
+        assert_eq!(s.focused_region(), Some(FieldListRegion::List));
+        assert!(!s.allows_field_edit());
+    }
+
+    #[test]
+    fn on_open_resets_to_field_after_list_focus() {
+        let mut s = FieldListFocus::new();
+        s.on_open();
+        s.tab_next();
+        assert_eq!(s.focused_region(), Some(FieldListRegion::List));
+        s.on_open();
+        assert_eq!(s.focused_region(), Some(FieldListRegion::Field));
+        assert!(s.allows_field_edit());
+    }
+
+    #[test]
+    fn reopen_after_close_starts_on_field() {
+        let mut s = FieldListFocus::new();
+        s.on_open();
+        s.tab_next();
+        s.on_close();
+        s.on_open();
+        assert_eq!(s.focused_region(), Some(FieldListRegion::Field));
+        assert!(s.allows_field_edit());
     }
 }
